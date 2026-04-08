@@ -105,21 +105,14 @@ async function fetchPracticeQuestion() {
     loadingText.style.display = 'block';
 
     try {
-        if (!ai) {
-            loadingText.innerText = "Error: No valid API Key was provided. Please refresh the page.";
-            loadingText.style.display = 'block';
-            return;
-        }
-        
-        // Using the GoogleGenAI sdk with gemini-3.1-flash-lite-preview
-        const response = await ai.models.generateContent({
-            model: 'gemini-3.1-flash-lite-preview',
-            contents: "Generate a single organic chemistry mechanism practice question with just the reactants, plus reaction conditions/catalysts. Make sure the reaction is actually valid. \nCRITICAL RULES:\n1. NEVER explicitly write out hydrogens (NO 'H3', NO 'H2', NO 'CH3'). \n2. Bromoethane must be `CCBr`, NEVER `CH3CH2Br`.\n3. Acetone must be `CC(=O)C`, NEVER `CH3C(=O)CH3`.\n\nOutput ONLY a valid JSON object in a yaml/markdown block exactly like this (NO OTHER TEXT). Make sure the 'conditions' field is formatted as a valid LaTeX mhchem string (e.g. H_2SO_4, \\Delta):\n```json\n{\n  \"reactants\": \"CC(=O)C.C1=CC=CC=C1\",\n  \"conditions\": \"H_2SO_4, \\\\Delta\"\n}\n```",
-            config: {
-                maxOutputTokens: 2000,
-                temperature: 1
-            }
+        const gemini_response = await fetch('https://your-vercel-app.vercel.app/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt: "Generate a single organic chemistry mechanism practice question with just the reactants, plus reaction conditions/catalysts. Make sure the reaction is actually valid. \nCRITICAL RULES:\n1. NEVER explicitly write out hydrogens (NO 'H3', NO 'H2', NO 'CH3'). \n2. Bromoethane must be `CCBr`, NEVER `CH3CH2Br`.\n3. Acetone must be `CC(=O)C`, NEVER `CH3C(=O)CH3`.\n\nOutput ONLY a valid JSON object in a yaml/markdown block exactly like this (NO OTHER TEXT). Make sure the 'conditions' field is formatted as a valid LaTeX mhchem string (e.g. H_2SO_4, \\Delta):\n```json\n{\n  \"reactants\": \"CC(=O)C.C1=CC=CC=C1\",\n  \"conditions\": \"H_2SO_4, \\\\Delta\"\n}\n```" })
         });
+
+        const response = await gemini_response.json();
+        console.log(response.candidates[0].content.parts[0].text);
 
         loadingText.style.display = 'none';
         if (response.text) {
@@ -193,13 +186,13 @@ async function fetchPracticeQuestion() {
             arrowContainer.style.padding = '0 15px';
             arrowContainer.style.color = '#333';
             arrowContainer.style.fontSize = '1.8rem';
-            
+
             // Format for mhchem
             const conditions = data.conditions || '';
             arrowContainer.innerText = `\\( \\ce{->[${conditions}]} \\)`;
-            
+
             container.appendChild(arrowContainer);
-            
+
             if (window.MathJax) {
                 MathJax.typesetPromise([arrowContainer]).catch(err => console.error('MathJax error:', err));
             }
