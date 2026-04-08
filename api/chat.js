@@ -6,7 +6,11 @@ export default async function handler(req, res) {
     }
 
     const { prompt } = req.body;
-    const API_KEY = process.env.GEMINI_API_KEY; // Hidden variable
+    const API_KEY = process.env.GEMINI_API_KEY;
+
+    if (!API_KEY) {
+        return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
+    }
 
     try {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent?key=${API_KEY}`, {
