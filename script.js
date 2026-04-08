@@ -205,14 +205,11 @@ async function fetchPracticeQuestion() {
             }
 
         } else {
-            console.error(data);
             loadingText.innerText = "Error loading reaction.";
             loadingText.style.display = 'block';
         }
     } catch (e) {
-        console.error(e);
-        loadingText.innerText = "Error loading reaction.";
-        loadingText.style.display = 'block';
+        console.log("Oh no!");
     }
 }
 generateBtn.addEventListener('click', (e) => {
