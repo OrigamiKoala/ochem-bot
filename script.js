@@ -7,9 +7,16 @@ const generateBtn = document.getElementById('generate-btn');
 
 let isDrawing = false;
 
+const apiKey = "__API_KEY__";
+
+async function loadConfig() {
+    const response = await fetch('/get_api.py');
+    const config = await response.json();
+    apiKey = config.api_key;
+}
+
 // The __API_KEY__ placeholder is replaced by the actual API_KEY secret during GitHub Actions deployment.
 // Make sure you have restricted your API key to "origamikoala.github.io" in Google Cloud Console!
-const apiKey = "__API_KEY__";
 const ai = apiKey && apiKey !== '__API_KEY__' ? new GoogleGenAI({ apiKey: apiKey }) : null;
 
 // Handle window resizing correctly to avoid stretching
