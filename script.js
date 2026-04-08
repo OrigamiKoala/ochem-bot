@@ -111,7 +111,11 @@ async function fetchPracticeQuestion() {
         });
 
         if (!response.ok) {
-            throw new Error(`API returned ${response.status}`);
+            const errorData = await response.json();
+            const msg = errorData.error || `API returned ${response.status}`;
+            loadingText.innerText = `Error: ${msg}`;
+            loadingText.style.display = 'block';
+            return;
         }
 
         const result = await response.json();
@@ -158,16 +162,16 @@ async function fetchPracticeQuestion() {
                     const plus = document.createElement('div');
                     plus.innerText = '+';
                     plus.className = 'plus-sign';
-                    plus.style.fontSize = '2rem';
-                    plus.style.padding = '0 10px';
+                    plus.style.fontSize = '1.8rem';
+                    plus.style.padding = '0 5px';
                     container.appendChild(plus);
                 }
 
                 container.appendChild(newCanvas);
 
                 let options = {
-                    width: (container.clientWidth / molecules.length) - 40,
-                    height: container.clientHeight - 40,
+                    width: 120, // Reduced fixed width for tighter spacing
+                    height: 120,
                 };
                 let smilesDrawer = new SmilesDrawer.Drawer(options);
 
