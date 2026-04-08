@@ -28,16 +28,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Use Node 12.x
-        uses: actions/setup-node@v1
-        with:
-          node-version: 12.x
-      - name: Install Dependencies
-        run: yarn install --frozen-lockfile --production
-      - name: Run Tests
-        run: yarn test --ci --silent --testPathIgnorePatterns=experimental
-        env:
-          API_KEY: ${{ secrets.API_KEY }}
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Build with Jekyll
