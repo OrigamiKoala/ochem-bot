@@ -1,4 +1,4 @@
-const apiKey = 'AIzaSyBZpeTDP9s0gqlzubHarHlP1eTONxGrncU';
+const apiKey = process.env.GEMINI_API_KEY;
 
 async function testFetch() {
     console.log("Fetching...");

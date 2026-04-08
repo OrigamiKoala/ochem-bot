@@ -7,11 +7,11 @@ const generateBtn = document.getElementById('generate-btn');
 
 let isDrawing = false;
 
-const apiKey = "${ API_KEY }";
+const apiKey = "${ GEMINI_API_KEY }";
 
-// The __API_KEY__ placeholder is replaced by the actual API_KEY secret during GitHub Actions deployment.
+// The __GEMINI_API_KEY__ placeholder is replaced by the actual GEMINI_API_KEY secret during GitHub Actions deployment.
 // Make sure you have restricted your API key to "origamikoala.github.io" in Google Cloud Console!
-const ai = apiKey && apiKey !== '${ API_KEY }' ? new GoogleGenAI({ apiKey: apiKey }) : null;
+const ai = apiKey && apiKey !== '${ GEMINI_API_KEY }' ? new GoogleGenAI({ apiKey: apiKey }) : null;
 
 // Handle window resizing correctly to avoid stretching
 function resizeCanvas() {
