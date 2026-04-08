@@ -1,5 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
-
+console.log("hi!");
 const canvas = document.getElementById('whiteboard');
 const ctx = canvas.getContext('2d');
 const clearBtn = document.getElementById('clear-btn');
