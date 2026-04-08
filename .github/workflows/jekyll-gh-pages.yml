@@ -29,7 +29,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
       - name: Add API Key
-        run: ./deploy.sh
+        run: |
+          echo "Hi."
         env:
           GEMINI_API_KEY: ${{ secrets.API_KEY }}
       - name: Setup Pages
