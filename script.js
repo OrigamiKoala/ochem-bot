@@ -9,7 +9,7 @@ let isDrawing = false;
 
 // The __API_KEY__ placeholder is replaced by the actual API_KEY secret during GitHub Actions deployment.
 // Make sure you have restricted your API key to "origamikoala.github.io" in Google Cloud Console!
-const apiKey = "{{ site.env.GEMINI_API_KEY }}";
+const apiKey = "__API_KEY__";
 const ai = apiKey && apiKey !== '__API_KEY__' ? new GoogleGenAI({ apiKey: apiKey }) : null;
 
 // Handle window resizing correctly to avoid stretching
