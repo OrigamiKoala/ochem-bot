@@ -26,6 +26,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      - name: Run script
+        env:
+          API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python your_script.py
       - name: Checkout
         uses: actions/checkout@v4
       - name: Setup Pages
