@@ -28,10 +28,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Run script
-        env:
-          API_KEY: ${{ secrets.API_KEY }}
-        run: python swapkey.py
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Build with Jekyll
