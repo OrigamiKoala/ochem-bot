@@ -105,7 +105,7 @@ async function fetchPracticeQuestion() {
     loadingText.style.display = 'block';
 
     try {
-        const gemini_response = await fetch('https://your-vercel-app.vercel.app/api/chat', {
+        const gemini_response = await fetch('https://ochem-bot.vercel.app/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt: "Generate a single organic chemistry mechanism practice question with just the reactants, plus reaction conditions/catalysts. Make sure the reaction is actually valid. \nCRITICAL RULES:\n1. NEVER explicitly write out hydrogens (NO 'H3', NO 'H2', NO 'CH3'). \n2. Bromoethane must be `CCBr`, NEVER `CH3CH2Br`.\n3. Acetone must be `CC(=O)C`, NEVER `CH3C(=O)CH3`.\n\nOutput ONLY a valid JSON object in a yaml/markdown block exactly like this (NO OTHER TEXT). Make sure the 'conditions' field is formatted as a valid LaTeX mhchem string (e.g. H_2SO_4, \\Delta):\n```json\n{\n  \"reactants\": \"CC(=O)C.C1=CC=CC=C1\",\n  \"conditions\": \"H_2SO_4, \\\\Delta\"\n}\n```" })
