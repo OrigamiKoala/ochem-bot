@@ -96,8 +96,9 @@ async function fetchPracticeQuestion() {
     const container = document.getElementById('reaction-container');
     const loadingText = document.getElementById('loading-text');
 
-    // Clear all existing dynamic canvases from the previous reaction
-    container.querySelectorAll('canvas').forEach(c => c.remove());
+    // Immediate clear of all existing dynamic elements before starting the fetch
+    container.querySelectorAll('canvas, .plus-sign, .reaction-arrow').forEach(el => el.remove());
+    loadingText.innerText = "Loading...";
     loadingText.style.display = 'block';
 
     try {
@@ -112,8 +113,12 @@ async function fetchPracticeQuestion() {
 
         if (!response.ok) {
             const errorData = await response.json();
-            const msg = errorData.error || `API returned ${response.status}`;
-            loadingText.innerText = `Error: ${msg}`;
+            // Show high demand message for 429 (Too Many Requests), 503 (Service Unavailable), or 500 (Internal Server Error)
+            const msg = (response.status === 429 || response.status === 503 || response.status === 500)
+                ? "Sorry, the bot is currently experiencing high demand. Please try again later."
+                : (errorData.error || `API returned ${response.status}`);
+            
+            loadingText.innerText = msg;
             loadingText.style.display = 'block';
             return;
         }
@@ -149,8 +154,7 @@ async function fetchPracticeQuestion() {
             // We need to split the string and render each molecule to its own canvas
             const molecules = smiles.split('.').map(s => s.trim()).filter(s => s.length > 0);
 
-            // Clear any plus signs or arrows we added
-            container.querySelectorAll('.plus-sign, .reaction-arrow').forEach(el => el.remove());
+            // Elements are already cleared at the start of the function
 
             molecules.forEach((mol, index) => {
                 // Create a dynamic canvas for each molecule
@@ -209,7 +213,9 @@ async function fetchPracticeQuestion() {
             loadingText.style.display = 'block';
         }
     } catch (e) {
-        console.log("Oh no!");
+        console.error("Fetch error:", e);
+        loadingText.innerText = "Sorry, the bot is currently experiencing high demand. Please try again later.";
+        loadingText.style.display = 'block';
     }
 }
 generateBtn.addEventListener('click', (e) => {
