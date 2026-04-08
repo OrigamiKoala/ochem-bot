@@ -7,7 +7,7 @@ const generateBtn = document.getElementById('generate-btn');
 
 let isDrawing = false;
 
-const apiKey = "${ GEMINI_API_KEY }";
+const apiKey = process.env.GEMINI_API_KEY;
 
 // The __GEMINI_API_KEY__ placeholder is replaced by the actual GEMINI_API_KEY secret during GitHub Actions deployment.
 // Make sure you have restricted your API key to "origamikoala.github.io" in Google Cloud Console!
