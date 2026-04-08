@@ -28,6 +28,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Add API Key
+        run: ./deploy.sh
+        env:
+          GEMINI_API_KEY: ${{ secrets.API_KEY }}
       - name: Setup Pages
         uses: actions/configure-pages@v5
       - name: Build with Jekyll
