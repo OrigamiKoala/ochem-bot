@@ -209,7 +209,7 @@ async function fetchBatchReactions() {
     }
 
     try {
-        const prompt = "Generate 5 organic chemistry questions in JSON format. \nRULES:\n1. SMILES: NO hydrogens (e.g. CCBr).\n2. LaTeX: Use DOUBLE backslashes (e.g. \\\\Delta).\n3. Structure: {\"reactions\": [{\"reactants\": \"...\", \"conditions\": \"...\", \"answer\": \"...\"}]}";
+        const prompt = "Generate 3 organic chemistry questions in JSON format. \nRULES:\n1. SMILES: NO hydrogens (e.g. CCBr).\n2. LaTeX: Use DOUBLE backslashes (e.g. \\\\Delta).\n3. Structure: {\"reactions\": [{\"reactants\": \"...\", \"conditions\": \"...\", \"answer\": \"...\"}]}";
 
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -307,7 +307,7 @@ function displayNextReaction() {
     renderReaction(nextReaction);
 
     // If we're running low, fetch more in the background
-    if (reactionQueue.length <= 1) {
+    if (reactionQueue.length <= 2) {
         fetchBatchReactions();
     }
 }
