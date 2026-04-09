@@ -882,7 +882,7 @@ function handleGiveUp() {
 generateBtn.addEventListener('click', (e) => {
     e.preventDefault();
     if (!currentReaction || isShowingAnswer) {
-        displayNextReaction();
+        fetchBatchReactions(true);
     } else {
         handleGiveUp();
     }
@@ -944,5 +944,5 @@ submitBtn.addEventListener('click', (e) => {
     submitDrawing();
 });
 
-// Start the session with an initial adaptive question
-fetchBatchReactions(true);
+// Initial state: wait for user to click "New"
+updateButtonState();
