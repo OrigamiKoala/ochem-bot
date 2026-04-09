@@ -43,6 +43,13 @@ const explanationDisplay = document.getElementById('explanation-display');
 const explanationContent = document.getElementById('explanation-text-content');
 const difficultySlider = document.getElementById('difficulty-slider');
 
+// About Modal Elements
+const aboutBtn = document.getElementById('about-btn');
+const aboutModal = document.getElementById('about-modal');
+const closeAboutBtn = document.getElementById('close-about-btn');
+const aboutContent = document.getElementById('about-content');
+
+
 let currentDifficulty = parseInt(localStorage.getItem('ochem_difficulty')) || 1;
 
 function initSettings() {
@@ -221,6 +228,60 @@ if (settingsModal) {
         }
     });
 }
+
+// ------ About Modal Logic ------
+async function loadIntro() {
+    try {
+        const response = await fetch('./intro.txt');
+        if (response.ok) {
+            const html = await response.text();
+            if (aboutContent) aboutContent.innerHTML = html;
+        }
+    } catch (e) {
+        console.error("Failed to load intro.txt", e);
+    }
+}
+
+function showAboutModal() {
+    if (aboutModal) {
+        aboutModal.style.display = 'flex';
+    }
+}
+
+function checkFirstVisit() {
+    const hasVisited = localStorage.getItem('ochem_visited');
+    if (!hasVisited) {
+        showAboutModal();
+        localStorage.setItem('ochem_visited', 'true');
+    }
+}
+
+if (aboutBtn) {
+    aboutBtn.addEventListener('click', () => {
+        showAboutModal();
+    });
+}
+
+if (closeAboutBtn) {
+    closeAboutBtn.addEventListener('click', () => {
+        aboutModal.style.display = 'none';
+    });
+}
+
+if (aboutModal) {
+    aboutModal.addEventListener('click', (e) => {
+        if (e.target === aboutModal) {
+            aboutModal.style.display = 'none';
+        }
+    });
+}
+
+// Load intro content immediately
+loadIntro();
+
+// Check for first visit auto-open
+checkFirstVisit();
+
 
 function updateSubmitDisabled() {
     submitBtn.disabled = isCanvasBlank || isSubmitting;
