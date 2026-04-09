@@ -294,17 +294,16 @@ class GeminiLiveAgent {
         }
     }
     sendSetup() {
-        // Official raw WebSocket protocol requires the first message to be a 'setup' object.
-        const configMessage = {
+        // Correcting structure based on Code 1007: Flattening fields under 'setup'
+        const setupMessage = {
             setup: {
-                config: {
-                    model: this.model,
-                    // Preview models often require AUDIO as the primary modality for live streams; 
-                    // TEXT transcription is typically enabled via 'outputTranscription' in results.
-                    responseModalities: ["AUDIO"], 
-                    systemInstruction: {
-                        parts: [{
-                            text: `You are an expert organic chemistry tutor. Your goal is to help students practice and master reaction mechanisms.
+                model: this.model,
+                generationConfig: {
+                    responseModalities: ["AUDIO"] 
+                },
+                systemInstruction: {
+                    parts: [{
+                        text: `You are an expert organic chemistry tutor. Your goal is to help students practice and master reaction mechanisms.
                             
 CORE RULES:
 1. QUESTION GENERATION: When asked for a new question, generate 1 single reaction in JSON format.
@@ -320,13 +319,12 @@ CORE RULES:
 }
 4. GRADING: When the student submits a drawing, evaluate it based on the current reaction. Output 'Correct' or 'Incorrect' (at the very start), followed by a subtle 10-word hint if incorrect.
 5. PERSONA: Be encouraging, concise (max 50 words), and focus on electron-pushing logic.`
-                        }]
-                    }
+                    }]
                 }
             }
         };
-        console.log("[DEBUG] Sending setup configuration...");
-        this.ws.send(JSON.stringify(configMessage));
+        console.log("[DEBUG] Sending flattened setup configuration...");
+        this.ws.send(JSON.stringify(setupMessage));
     }
 
     handleMessage(event) {
