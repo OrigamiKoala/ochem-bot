@@ -881,15 +881,21 @@ CRITICAL RULE: If Incorrect, give a subtle hint (max 10 words) that guides them 
         }
 
         const result = await response.json();
-        if (result.candidates && result.candidates[0].content.parts[0].text) {
-            const feedback = result.candidates[0].content.parts[0].text.trim();
+        const candidate = result.candidates?.[0];
+        const textPart = candidate?.content?.parts?.[0]?.text;
+
+        if (textPart) {
+            const feedback = textPart.trim();
             loadingText.innerText = feedback;
-            lastFeedback = feedback; // Store for Give Up
+            lastFeedback = feedback; 
             hasSubmitted = true;
 
-            if (feedback.toLowerCase().startsWith('correct')) {
+            // Robust matching: Ignore leading markdown (**, #, etc) and whitespace
+            const isCorrect = /^\W*correct/i.test(feedback);
+
+            if (isCorrect) {
                 loadingText.className = "success-text";
-                isShowingAnswer = true; // Transition "Give up" to "New"
+                isShowingAnswer = true; 
                 updateButtonState();
                 updateReportButton();
             } else {
@@ -897,6 +903,11 @@ CRITICAL RULE: If Incorrect, give a subtle hint (max 10 words) that guides them 
                 hasIncorrectSubmission = true;
                 updateReportButton();
             }
+        } else {
+            // Safety hit or empty response
+            console.warn("No text in Gemini response:", result);
+            loadingText.innerText = "The lab is a bit hazy. Try drawing slightly clearer?";
+            loadingText.className = "error-text";
         }
     } catch (e) {
         console.error("Submission error:", e);
