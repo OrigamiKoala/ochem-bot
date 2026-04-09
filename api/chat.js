@@ -23,7 +23,7 @@ export default async function handler(req, res) {
             });
         }
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemma-4-26b-it:generateContent?key=${API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/models/gemma-4-26b-it:generateContent?key=${API_KEY}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
