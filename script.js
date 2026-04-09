@@ -252,36 +252,40 @@ class GeminiLiveAgent {
     }
 
     async getToken() {
-        const apiUrl = '/api/chat';
-        const fallbackUrl = '/api/chat.js';
+        const apiUrl = `/api/chat?t=${Date.now()}`;
+        console.log(`[DEBUG] Current Location: ${window.location.href}`);
+        console.log(`[DEBUG] Attempting token fetch from: ${window.location.origin}${apiUrl}`);
         
-        console.log(`Attempting token fetch from: ${window.location.origin}${apiUrl}`);
-        
-        let response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'session_token' })
-        }).catch(err => {
-            console.error("Network error reaching /api/chat:", err);
-            throw new Error(`Could not reach ${apiUrl}. Environment: ${window.location.protocol}`);
-        });
-        
-        // Fallback logic for Vercel routing edge cases
-        if (response.status === 404) {
-            console.warn(`Primary route ${apiUrl} not found, trying fallback ${fallbackUrl}...`);
-            response = await fetch(fallbackUrl, {
+        let response;
+        try {
+            response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ type: 'session_token' })
-            }).catch(() => response); // Keep original 404 if fallback fails
+            });
+        } catch (err) {
+            console.error("[DEBUG] Network error during fetch:", err);
+            throw new Error(`Connection failed: Could not reach the backend proxy.`);
         }
         
-        if (response.status === 404) {
-            const isLocalFile = window.location.protocol === 'file:';
-            const msg = isLocalFile 
-                ? "Backend proxy (/api/chat) not found because you are opening index.html directly as a file. Relative paths only work on a server (e.g., 'vercel dev' or your deployed URL)."
-                : `Backend proxy (/api/chat) not found on the server (${window.location.origin}). Please ensure the 'api' folder is deployed correctly.`;
-            throw new Error(msg);
+        if (!response.ok) {
+            console.error(`[DEBUG] API Error: Status ${response.status} (${response.statusText})`);
+            if (response.status === 404) {
+                if (window.location.protocol === 'file:') {
+                    throw new Error("Local File Error: Relative paths like /api/chat only work on a server.");
+                }
+                throw new Error(`API Not Found (404). Please ensure the 'api' folder is deployed at ${window.location.origin}`);
+            }
+            
+            let errMessage = "Unknown server error";
+            try {
+                const errData = await response.json();
+                errMessage = errData.error || response.statusText || errMessage;
+            } catch (e) {
+                const text = await response.text().catch(() => "");
+                errMessage = text.slice(0, 100) || response.statusText || errMessage;
+            }
+            throw new Error(`Backend Error (${response.status}): ${errMessage}`);
         }
         
         if (!response.ok) {
