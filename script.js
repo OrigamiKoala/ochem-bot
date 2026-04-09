@@ -281,10 +281,10 @@ class GeminiLiveAgent {
                     console.error("WebSocket error:", e);
                     reject(e);
                 };
-                this.ws.onclose = () => {
+                this.ws.onclose = (event) => {
                     this.isConnected = false;
                     this.isSetup = false;
-                    console.log("Gemini Live Agent disconnected.");
+                    console.log(`Gemini Live Agent disconnected. Code: ${event.code}, Reason: ${event.reason || "No reason provided"}`);
                 };
                 this.ws.onmessage = (event) => this.handleMessage(event);
             });
@@ -294,14 +294,18 @@ class GeminiLiveAgent {
         }
     }
     sendSetup() {
+        // Official raw WebSocket protocol requires the first message to be a 'setup' object.
         const configMessage = {
-            config: {
-                model: this.model,
-                responseModalities: ["TEXT", "AUDIO"],
-                systemInstruction: {
-                    parts: [{
-                        text: `You are an expert organic chemistry tutor. Your goal is to help students practice and master reaction mechanisms.
-                        
+            setup: {
+                config: {
+                    model: this.model,
+                    // Preview models often require AUDIO as the primary modality for live streams; 
+                    // TEXT transcription is typically enabled via 'outputTranscription' in results.
+                    responseModalities: ["AUDIO"], 
+                    systemInstruction: {
+                        parts: [{
+                            text: `You are an expert organic chemistry tutor. Your goal is to help students practice and master reaction mechanisms.
+                            
 CORE RULES:
 1. QUESTION GENERATION: When asked for a new question, generate 1 single reaction in JSON format.
 2. ADAPTATION: If the student failed the last question, focus on a slightly simpler version of that concept. If they succeeded, increase difficulty.
@@ -316,10 +320,12 @@ CORE RULES:
 }
 4. GRADING: When the student submits a drawing, evaluate it based on the current reaction. Output 'Correct' or 'Incorrect' (at the very start), followed by a subtle 10-word hint if incorrect.
 5. PERSONA: Be encouraging, concise (max 50 words), and focus on electron-pushing logic.`
-                    }]
+                        }]
+                    }
                 }
             }
         };
+        console.log("[DEBUG] Sending setup configuration...");
         this.ws.send(JSON.stringify(configMessage));
     }
 
