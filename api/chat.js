@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     // Hierarchical model list (Always starts from the top)
     const MODELS = [
         "gemini-3.1-flash-lite-preview", // Primary / "Top" Bot
-        "gemini-3-flash",              // Fallback 1
+        "gemini-3-flash-preview",              // Fallback 1
         "gemini-2.5-flash"           // Fallback 2 (Highest availability)
     ];
 
