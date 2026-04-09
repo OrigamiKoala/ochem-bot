@@ -9,7 +9,11 @@ let isDrawing = false;
 
 // API key is handled securely on the backend in /api/chat.js
 let reactionQueue = [];
+let currentReaction = null;
 let isFetching = false;
+let isSubmitting = false;
+
+const submitBtn = document.getElementById('submit-btn');
 
 // Handle window resizing correctly to avoid stretching
 function resizeCanvas() {
@@ -244,6 +248,7 @@ function displayNextReaction() {
     }
 
     const nextReaction = reactionQueue.shift();
+    currentReaction = nextReaction;
     updateQueueCount();
     renderReaction(nextReaction);
 
@@ -263,4 +268,56 @@ function updateQueueCount() {
 generateBtn.addEventListener('click', (e) => {
     e.preventDefault();
     displayNextReaction();
+});
+
+// ------ Submit and Evaluate ------
+async function submitDrawing() {
+    if (!currentReaction || isSubmitting) return;
+    
+    const loadingText = document.getElementById('loading-text');
+    loadingText.innerText = "Evaluating...";
+    loadingText.className = ""; // Remove previous success/error colors
+    loadingText.style.display = 'block';
+    isSubmitting = true;
+
+    try {
+        // Capture canvas
+        const dataUrl = canvas.toDataURL('image/png');
+        const base64Image = dataUrl.split(',')[1];
+
+        const prompt = `Reaction: ${currentReaction.reactants} under conditions ${currentReaction.conditions}. \nAnalyze the user's drawing on the provided image. Does it correctly represent the major product(s) or the mechanism for this reaction? \nOutput EXACTLY 'Correct' or 'Incorrect' followed by a very short (10 words max) explanation.`;
+
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, image: base64Image })
+        });
+
+        if (!response.ok) {
+            throw new Error(`API error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (result.candidates && result.candidates[0].content.parts[0].text) {
+            const feedback = result.candidates[0].content.parts[0].text.trim();
+            loadingText.innerText = feedback;
+            
+            if (feedback.toLowerCase().startsWith('correct')) {
+                loadingText.className = "success-text";
+            } else {
+                loadingText.className = "error-text";
+            }
+        }
+    } catch (e) {
+        console.error("Submission error:", e);
+        loadingText.innerText = "Error evaluating drawing.";
+        loadingText.className = "error-text";
+    } finally {
+        isSubmitting = false;
+    }
+}
+
+submitBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    submitDrawing();
 });

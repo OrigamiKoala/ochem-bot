@@ -101,3 +101,11 @@ canvas {
     cursor: crosshair;
 }
 
+.success-text {
+    color: #27ae60 !important;
+}
+
+.error-text {
+    color: #e74c3c !important;
+}
+
