@@ -13,6 +13,11 @@ let currentReaction = null;
 let isFetching = false;
 let isSubmitting = false;
 
+// State for "Give Up" logic
+let hasSubmitted = false;
+let lastFeedback = "";
+let isShowingAnswer = false;
+
 const submitBtn = document.getElementById('submit-btn');
 
 // Handle window resizing correctly to avoid stretching
@@ -98,31 +103,58 @@ clearBtn.addEventListener('click', () => {
 });
 
 // ------ Render a Reaction ------
-function renderReaction(data) {
+function renderReaction(data, showAnswer = false) {
     const container = document.getElementById('reaction-container');
     const loadingText = document.getElementById('loading-text');
 
     // Immediate clear of all existing dynamic elements before starting the render
     container.querySelectorAll('canvas, .plus-sign, .reaction-arrow').forEach(el => el.remove());
-    loadingText.style.display = 'none';
+
+    // Only hide loading text if we're not using it to show feedback
+    if (!showAnswer) {
+        loadingText.style.display = 'none';
+        loadingText.className = "";
+    }
 
     if (!data || !data.reactants) {
         console.error("Invalid reaction data", data);
         return;
     }
 
-    let smiles = data.reactants.trim();
+    // Render Reactants
+    const reactantMolecules = data.reactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
+    renderMolecules(reactantMolecules, container);
 
-    // SmilesDrawer does not natively parse disconnected components separated by '.'
-    // We need to split the string and render each molecule to its own canvas
-    const molecules = smiles.split('.').map(s => s.trim()).filter(s => s.length > 0);
+    // Add reaction arrow with conditions
+    const arrowContainer = document.createElement('div');
+    arrowContainer.className = 'reaction-arrow';
+    arrowContainer.style.display = 'flex';
+    arrowContainer.style.alignItems = 'center';
+    arrowContainer.style.justifyContent = 'center';
+    arrowContainer.style.padding = '0 15px';
+    arrowContainer.style.color = '#333';
+    arrowContainer.style.fontSize = '1.8rem';
+    const conditions = data.conditions || '';
+    arrowContainer.innerText = `\\( \\ce{->[${conditions}]} \\)`;
+    container.appendChild(arrowContainer);
 
+    // Render Answer (if requested)
+    if (showAnswer && data.answer) {
+        const answerMolecules = data.answer.split('.').map(s => s.trim()).filter(s => s.length > 0);
+        renderMolecules(answerMolecules, container, "answer");
+    }
+
+    if (window.MathJax) {
+        MathJax.typesetPromise([arrowContainer]).catch(err => console.error('MathJax error:', err));
+    }
+}
+
+// Helper to render a group of molecules with '+' signs
+function renderMolecules(molecules, container, suffix = "") {
     molecules.forEach((mol, index) => {
-        // Create a dynamic canvas for each molecule
         const newCanvas = document.createElement('canvas');
-        newCanvas.id = `reaction-canvas-${index}`;
+        newCanvas.id = `canvas-${suffix}-${index}-${Date.now()}`; // Unique ID
 
-        // Add a '+' sign between molecules
         if (index > 0) {
             const plus = document.createElement('div');
             plus.innerText = '+';
@@ -134,40 +166,15 @@ function renderReaction(data) {
 
         container.appendChild(newCanvas);
 
-        let options = {
-            width: 120, // Reduced fixed width for tighter spacing
-            height: 120,
-        };
+        let options = { width: 120, height: 120 };
         let smilesDrawer = new SmilesDrawer.Drawer(options);
 
         SmilesDrawer.parse(mol, function (tree) {
             smilesDrawer.draw(tree, newCanvas.id, 'light', false);
         }, function (err) {
-            console.error("Smiles parsing error on component: ", mol, err);
-            loadingText.innerText = 'Syntax Error: "' + mol + '"';
-            loadingText.style.display = 'block';
+            console.error("Smiles parsing error: ", mol, err);
         });
     });
-
-    // Add reaction arrow with conditions
-    const arrowContainer = document.createElement('div');
-    arrowContainer.className = 'reaction-arrow';
-    arrowContainer.style.display = 'flex';
-    arrowContainer.style.alignItems = 'center';
-    arrowContainer.style.justifyContent = 'center';
-    arrowContainer.style.padding = '0 15px';
-    arrowContainer.style.color = '#333';
-    arrowContainer.style.fontSize = '1.8rem';
-
-    // Format for mhchem
-    const conditions = data.conditions || '';
-    arrowContainer.innerText = `\\( \\ce{->[${conditions}]} \\)`;
-
-    container.appendChild(arrowContainer);
-
-    if (window.MathJax) {
-        MathJax.typesetPromise([arrowContainer]).catch(err => console.error('MathJax error:', err));
-    }
 }
 
 // ------ Fetch Batch of Reactions ------
@@ -186,7 +193,7 @@ async function fetchBatchReactions() {
     }
 
     try {
-        const prompt = "Generate 5 different organic chemistry mechanism practice questions with just the reactants, plus reaction conditions/catalysts if applicable. Make sure the reactions are actually valid. \nCRITICAL RULES:\n1. NEVER explicitly write out hydrogens (NO 'H3', NO 'H2', NO 'CH3'). \n2. Bromoethane must be `CCBr`, NEVER `CH3CH2Br`.\n3. Acetone must be `CC(=O)C`, NEVER `CH3C(=O)CH3`.\n4. SMILES syntax (used in 'reactants') must NEVER contain underscores or subscripts (NO `Br_2`). Bromine is `BrBr`.\n5. LaTeX mhchem syntax (used in 'conditions') MUST use proper subscripts (e.g., `Br2`, `H2SO4`, `\\Delta`).\n\nOutput ONLY a valid JSON object with an array of 5 reactions in a markdown block exactly like this (NO OTHER TEXT). Make sure the 'conditions' field is formatted as a valid LaTeX mhchem string (e.g. H_2SO_4, \\Delta):\n```json\n{\n  \"reactions\": [\n    {\n      \"reactants\": \"CC(=O)C.C1=CC=CC=C1\",\n      \"conditions\": \"Br2, H2SO4\"\n    },\n    ...\n  ]\n}\n```";
+        const prompt = "Generate 5 different organic chemistry mechanism practice questions with just the reactants, plus reaction conditions/catalysts if applicable. Also provide the correct major product(s) as a SMILES string. \nCRITICAL RULES:\n1. NEVER explicitly write out hydrogens (NO 'H3', NO 'H2', NO 'CH3'). \n2. Bromoethane must be `CCBr`, NEVER `CH3CH2Br`.\n3. Acetone must be `CC(=O)C`, NEVER `CH3C(=O)CH3`.\n4. SMILES syntax (used in 'reactants' and 'answer') must NEVER contain underscores or subscripts (NO `Br_2`). Bromine is `BrBr`.\n5. LaTeX mhchem syntax (used in 'conditions') MUST use proper subscripts (e.g., `Br2`, `H2SO4`, `\\Delta`).\n\nOutput ONLY a valid JSON object with an array of 5 reactions in a markdown block exactly like this (NO OTHER TEXT). Make sure the 'conditions' field is formatted as a valid LaTeX mhchem string (e.g. H_2SO_4, \\Delta):\n```json\n{\n  \"reactions\": [\n    {\n      \"reactants\": \"CC(=O)C.C1=CC=CC=C1\",\n      \"conditions\": \"Br2, H2SO4\",\n      \"answer\": \"CC(O)(C)C1=CC=CC=C1\"\n    },\n    ...\n  ]\n}\n```";
 
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -246,7 +253,14 @@ function displayNextReaction() {
 
     const nextReaction = reactionQueue.shift();
     currentReaction = nextReaction;
+
+    // Reset state for new reaction
+    hasSubmitted = false;
+    lastFeedback = "";
+    isShowingAnswer = false;
+
     updateQueueCount();
+    updateButtonState();
     renderReaction(nextReaction);
 
     // If we're running low, fetch more in the background
@@ -257,20 +271,49 @@ function displayNextReaction() {
 
 // ------ Update Queue Indicator ------
 function updateQueueCount() {
-    const btn = document.getElementById('generate-btn');
-    // We no longer show the count to the user as requested.
-    // The button will simply say "Generate Reaction"
-    btn.innerText = "Generate Reaction";
+    // Hidden count per user request
+}
+
+function updateButtonState() {
+    if (!currentReaction) {
+        generateBtn.innerText = "New";
+    } else if (isShowingAnswer) {
+        generateBtn.innerText = "New";
+    } else {
+        generateBtn.innerText = "Give Up";
+    }
+}
+
+function handleGiveUp() {
+    if (!currentReaction) return;
+
+    isShowingAnswer = true;
+    const loadingText = document.getElementById('loading-text');
+
+    if (hasSubmitted && lastFeedback) {
+        loadingText.innerText = lastFeedback;
+        loadingText.style.display = 'block';
+        // Keep the styling (success/error) from the last submission
+    } else {
+        loadingText.style.display = 'none';
+    }
+
+    renderReaction(currentReaction, true);
+    updateButtonState();
 }
 generateBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    displayNextReaction();
+    if (!currentReaction || isShowingAnswer) {
+        displayNextReaction();
+    } else {
+        handleGiveUp();
+    }
 });
 
 // ------ Submit and Evaluate ------
 async function submitDrawing() {
     if (!currentReaction || isSubmitting) return;
-    
+
     const loadingText = document.getElementById('loading-text');
     loadingText.innerText = "Evaluating...";
     loadingText.className = ""; // Remove previous success/error colors
@@ -300,7 +343,9 @@ async function submitDrawing() {
         if (result.candidates && result.candidates[0].content.parts[0].text) {
             const feedback = result.candidates[0].content.parts[0].text.trim();
             loadingText.innerText = feedback;
-            
+            lastFeedback = feedback; // Store for Give Up
+            hasSubmitted = true;
+
             if (feedback.toLowerCase().startsWith('correct')) {
                 loadingText.className = "success-text";
             } else {
