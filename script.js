@@ -240,16 +240,15 @@ async function fetchBatchReactions() {
         if (result.candidates && result.candidates[0].content.parts[0].text) {
             let rawText = result.candidates[0].content.parts[0].text;
             try {
-                // In JSON mode, rawText should be pure JSON (no markdown backticks)
+                // In JSON mode, rawText should be pure JSON
                 let jsonText = rawText.trim();
-                
-                // Extra safety: Fix any single backslashes that leaked through
-                jsonText = jsonText.replace(/\\(?![bfnrtu"/\\])/g, '\\\\');
-                
                 const data = JSON.parse(jsonText);
 
-                if (data.reactions && Array.isArray(data.reactions)) {
-                    reactionQueue = [...reactionQueue, ...data.reactions];
+                // Support both {reactions: [...]} and direct [...]
+                const reactions = Array.isArray(data) ? data : data.reactions;
+
+                if (reactions && Array.isArray(reactions)) {
+                    reactionQueue = [...reactionQueue, ...reactions];
                     updateQueueCount();
                 }
             } catch (e) {
@@ -276,7 +275,7 @@ async function fetchBatchReactions() {
         }
 
         // If the queue was empty and we just got data, display the first one
-        if (reactionQueue.length > 0 && container.querySelectorAll('canvas').length === 0) {
+        if (reactionQueue.length > 0 && container.querySelectorAll('canvas, .reaction-arrow').length === 0) {
             displayNextReaction();
         }
     }
