@@ -300,7 +300,8 @@ class GeminiLiveAgent {
             setup: {
                 model: this.model,
                 generation_config: {
-                    response_modalities: ["TEXT"]
+                    // [STABILITY FIX] AUDIO is required for 3.1 Live stability; TEXT causes 1011 Internal Error.
+                    response_modalities: ["AUDIO"] 
                 },
                 system_instruction: {
                     parts: [{
@@ -318,7 +319,7 @@ Grade student drawings as 'Correct' or 'Incorrect' with a brief hint. Be concise
                 }
             }
         };
-        console.log("[DEBUG] Sending snake_case setup configuration (TEXT-mode)...");
+        console.log("[DEBUG] Sending stable snake_case setup configuration (AUDIO-mode)...");
         this.ws.send(JSON.stringify(setupMessage));
     }
 
