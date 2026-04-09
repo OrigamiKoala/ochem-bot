@@ -14,6 +14,7 @@ let reactionQueue = [];
 let currentReaction = null;
 let isFetching = false;
 let isSubmitting = false;
+let starterQuestionsBuffer = null;
 
 // State for "Give Up" logic
 let hasSubmitted = false;
@@ -549,6 +550,40 @@ function renderExplanationWithMolecules(text, container) {
     });
 }
 
+// ------ Starter Questions Selection ------
+async function getStarterQuestion(targetTopic, targetDifficulty) {
+    if (!starterQuestionsBuffer) {
+        try {
+            const response = await fetch('starter.json');
+            if (response.ok) {
+                const data = await response.json();
+                starterQuestionsBuffer = data.reactions || [];
+            }
+        } catch (e) {
+            console.error("Failed to load starter.json", e);
+            return null;
+        }
+    }
+
+    if (!starterQuestionsBuffer || starterQuestionsBuffer.length === 0) return null;
+
+    const diffMap = { 1: "beginner", 2: "intermediate", 3: "collegiate" };
+    const difficultyKey = diffMap[targetDifficulty];
+    // Handle spaces as underscores (e.g. "on rings" -> "on_rings")
+    const topicKey = targetTopic.replace(/\s+/g, '_');
+
+    // Case-insensitive/flexible match for the topic in the ID
+    const matches = starterQuestionsBuffer.filter(q => {
+        const idLower = q.id.toLowerCase();
+        return idLower.startsWith(difficultyKey) && idLower.includes(`_${topicKey.toLowerCase()}_`);
+    });
+
+    if (matches.length > 0) {
+        return matches[Math.floor(Math.random() * matches.length)];
+    }
+    return null;
+}
+
 // ------ Fetch Batch of Reactions ------
 async function fetchBatchReactions() {
     if (isFetching) return;
@@ -572,7 +607,23 @@ async function fetchBatchReactions() {
         };
 
         // Use user-selected topics
-        const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
+    const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
+
+    // Immediate gratification: If this is the first ever question request, try starter.json first
+    if (!currentReaction && reactionQueue.length === 0) {
+        const starter = await getStarterQuestion(topic, currentDifficulty);
+        if (starter) {
+            console.log("Loading starter question:", starter.id);
+            reactionQueue.push(starter);
+            // We need to release isFetching to allow displayNextReaction to call fetchBatchReactions again if it wants
+            // but actually displayNextReaction doesn't call it if something is in the queue.
+            // However, we want the Gemini fetch to CONTINUE in the background.
+            // So we display the starter and then PROCEED with the API call.
+            displayNextReaction();
+            // Important: We DON'T return here because we still want to fetch the rest of the batch from Gemini
+        }
+    }
+
         const prompt = `Generate 5 organic chemistry questions (Topic: ${topic}). Difficulty: ${difficultyMap[currentDifficulty]}. JSON only.
 
 Type Mix: randomly use "predict" (Predict product), "mechanism" (Draw arrow mechanism), or "stereo" (stereochemistry focus).
