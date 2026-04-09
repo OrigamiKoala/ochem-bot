@@ -39,9 +39,16 @@ const sendFollowupBtn = document.getElementById('send-followup-btn');
 const chatMessages = document.getElementById('chat-messages');
 const explanationDisplay = document.getElementById('explanation-display');
 const explanationContent = document.getElementById('explanation-text-content');
+const difficultySlider = document.getElementById('difficulty-slider');
+
+let currentDifficulty = parseInt(localStorage.getItem('ochem_difficulty')) || 1;
 
 function initSettings() {
-    if (!topicsListDiv) return;
+    if (!topicsListDiv || !difficultySlider) return;
+    
+    // Set slider value
+    difficultySlider.value = currentDifficulty;
+
     topicsListDiv.innerHTML = '';
     
     const allAvailableTopics = [...baseTopics, ...userCustomTopics];
@@ -72,6 +79,7 @@ function initSettings() {
         topicsListDiv.appendChild(item);
     });
 }
+
 function addCustomTopic() {
     const newTopic = customTopicInput.value.trim().toLowerCase();
     if (!newTopic) return;
@@ -114,6 +122,10 @@ if (saveSettingsBtn) {
         selectedTopics = Array.from(checkboxes)
             .filter(cb => cb.checked)
             .map(cb => cb.value);
+        
+        // Save difficulty
+        currentDifficulty = parseInt(difficultySlider.value);
+        localStorage.setItem('ochem_difficulty', currentDifficulty);
 
         // Default to all if none selected to prevent errors
         if (selectedTopics.length === 0) selectedTopics = [...baseTopics, ...userCustomTopics];
@@ -315,7 +327,10 @@ function renderReaction(data, showAnswer = false) {
     // Immediate clear
     moleculeDiv.innerHTML = '';
     explanationDisplay.style.display = 'none';
-    explanationContent.innerText = data.explanation || "No explanation preloaded.";
+    
+    // Reset/Parse explanation
+    renderExplanationWithMolecules(data.explanation || "No explanation preloaded.", explanationContent);
+    
     chatMessages.innerHTML = ''; // Reset chat history
 
     // Hide status text ONLY if we aren't displaying a persistent answer result
@@ -400,6 +415,46 @@ function renderMolecules(molecules, container, suffix = "") {
     });
 }
 
+// ------ Rendering Mechanistic Explanations ------
+function renderExplanationWithMolecules(text, container) {
+    if (!container) return;
+    container.innerHTML = '';
+    
+    // Match [[SMILES: SMILES_STRING]]
+    const parts = text.split(/(\[\[SMILES:.*?\]\])/g);
+    
+    parts.forEach(part => {
+        const match = part.match(/\[\[SMILES:(.*?)\]\]/);
+        if (match) {
+            const smiles = match[1].trim();
+            const wrapper = document.createElement('div');
+            wrapper.className = 'inline-molecule';
+            const canvas = document.createElement('canvas');
+            const uniqueId = `inline-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+            canvas.id = uniqueId;
+            wrapper.appendChild(canvas);
+            container.appendChild(wrapper);
+            
+            // Draw small molecule
+            const dpr = window.devicePixelRatio || 1;
+            const bSize = 120;
+            const size = bSize * dpr;
+            canvas.style.width = bSize + "px";
+            canvas.style.height = bSize + "px";
+            
+            const options = { width: size, height: size, bondThickness: 2, bondSpacing: 4, padding: 10 };
+            const sd = new SmilesDrawer.Drawer(options);
+            SmilesDrawer.parse(smiles, (tree) => {
+                sd.draw(tree, uniqueId, 'light', false);
+            }, (err) => console.error("Inline SMILES err:", err));
+        } else if (part.trim().length > 0) {
+            const span = document.createElement('span');
+            span.innerText = part;
+            container.appendChild(span);
+        }
+    });
+}
+
 // ------ Fetch Batch of Reactions ------
 async function fetchBatchReactions() {
     if (isFetching) return;
@@ -416,11 +471,18 @@ async function fetchBatchReactions() {
     }
 
     try {
+        const difficultyMap = {
+            1: "Beginner: standard functional transformations (S_N1, S_N2, E1, E2, simple additions). Single step preferred.",
+            2: "USNCO level: competitive chemistry. Regioselectivity, basic named reactions (Wittig, Robinson), some rearrangements. Can be 1-2 steps.",
+            3: "IChO/Advanced Collegiate: total synthesis segments, advanced stereocontrol, complex pericyclics, obscure reagents (e.g. DDQ, DCC, specialized organometallics). Can be 2-3 step sequences."
+        };
+
         // Use user-selected topics
         const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
-        const prompt = `Generate 5 organic chemistry questions (Topic: ${topic}). JSON only. Request ID: ${Date.now()}.
+        const prompt = `Generate 5 organic chemistry questions (Topic: ${topic}). Difficulty: ${difficultyMap[currentDifficulty]}. JSON only.
 
 Type Mix: randomly use "predict" (Predict product), "mechanism" (Draw arrow mechanism), or "stereo" (stereochemistry focus).
+Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 1.
 
 Structure:
 {
@@ -430,8 +492,8 @@ Structure:
       "reactants": "SMILES",
       "conditions": "LaTeX",
       "answer": "SMILES",
-      "instructions": "Specific task instruction",
-      "explanation": "Brief step-by-step mechanism/logic walkthrough"
+      "instructions": "Specific task",
+      "explanation": "Detailed mechanism. Use [[SMILES: SMILES_STRING]] to draw mechanistic intermediates within the text."
     }
   ]
 }

@@ -257,6 +257,49 @@ canvas {
     border-radius: 12px;
 }
 
+/* Difficulty Slider */
+#settings-difficulty-container {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+#settings-difficulty-container h3 {
+    font-size: 1rem;
+    margin-bottom: 12px;
+    color: #333;
+}
+
+.difficulty-slider-row {
+    padding: 0 5px;
+}
+
+#difficulty-slider {
+    width: 100%;
+    margin-bottom: 10px;
+    cursor: pointer;
+    accent-color: #5856d6;
+}
+
+.difficulty-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #8e8e93;
+    font-weight: 600;
+}
+
+/* Inline Molecule in Explanation */
+.inline-molecule {
+    display: block;
+    background: white;
+    border: 1px solid #f2f2f7;
+    border-radius: 12px;
+    margin: 10px 0;
+    padding: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
 #custom-topic-container {
     margin-top: 25px;
     padding-top: 20px;
