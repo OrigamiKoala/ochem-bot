@@ -20,6 +20,7 @@ let starterQuestionsBuffer = null;
 let hasSubmitted = false;
 let lastFeedback = "";
 let isShowingAnswer = false;
+let hasIncorrectSubmission = false;
 
 const submitBtn = document.getElementById('submit-btn');
 const reportBtn = document.getElementById('report-btn');
@@ -225,7 +226,7 @@ if (followupInput) {
 // ------ Report Error / I Was Right Logic ------
 function updateReportButton() {
     if (!reportBtn) return;
-    if (isShowingAnswer) {
+    if (isShowingAnswer || hasIncorrectSubmission) {
         reportBtn.innerText = "I was right";
     } else {
         reportBtn.innerText = "Report Error";
@@ -241,7 +242,15 @@ if (reportBtn) {
             explanationDisplay.style.display = 'block';
         }
 
-        const msg = isShowingAnswer ? "Reevaluate" : "Are you sure this reaction is possible?";
+        let msg;
+        if (isShowingAnswer) {
+            msg = "Reevaluate"; // Challenge the reaction data itself
+        } else if (hasIncorrectSubmission) {
+            msg = "regrade"; // Challenge the AI grading
+        } else {
+            msg = "Are you sure this reaction is possible?";
+        }
+        
         sendFollowupQuestion(msg);
     });
 }
@@ -758,6 +767,7 @@ function displayNextReaction() {
     hasSubmitted = false;
     lastFeedback = "";
     isShowingAnswer = false;
+    hasIncorrectSubmission = false;
     isCanvasBlank = true;
 
     // Clear the board for the new reaction
@@ -884,6 +894,8 @@ CRITICAL RULE: If Incorrect, give a subtle hint (max 10 words) that guides them 
                 updateReportButton();
             } else {
                 loadingText.className = "error-text";
+                hasIncorrectSubmission = true;
+                updateReportButton();
             }
         }
     } catch (e) {
