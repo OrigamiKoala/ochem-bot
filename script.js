@@ -299,7 +299,8 @@ class GeminiLiveAgent {
             setup: {
                 model: this.model,
                 generationConfig: {
-                    responseModalities: ["TEXT"] 
+                    // Reverting to AUDIO for connection stability; 1011 occurs if TEXT is requested as primary in setup.
+                    responseModalities: ["AUDIO"] 
                 },
                 systemInstruction: {
                     parts: [{
