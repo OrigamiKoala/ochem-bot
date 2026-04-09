@@ -15,7 +15,7 @@
             "reactants": "CC#C",
             "conditions": "1.\\\\ BH_3\\\\cdot THF, 2.\\\\ H_2O_2, NaOH",
             "answer": "CCC=O",
-            "instructions": "Provide the mechanistic rationale for the formation of the product.",
+            "instructions": "Provide the mechanism for the formation of the indicated product.",
             "explanation": "Hydroboration proceeds via a concerted syn-addition yielding a vinylborane intermediate [[SMILES: CC=C[B](C)C]]. Oxidation with alkaline hydrogen peroxide replaces the boron with a hydroxyl group, giving an enol [[SMILES: CC=CO]]. The enol rapidly tautomerizes under basic conditions to the thermodynamic aldehyde product, propanal."
         },
         {
@@ -24,7 +24,7 @@
             "reactants": "C=CC(=O)C",
             "conditions": "KCN, H_2O",
             "answer": "N#CCCC(=O)C",
-            "instructions": "Predict the major regiochemical product.",
+            "instructions": "Predict the major product.",
             "explanation": "The alpha,beta-unsaturated ketone undergoes conjugate (1,4) addition. Cyanide acts as a soft nucleophile, attacking the electrophilic beta-carbon to generate an enolate intermediate [[SMILES: N#CCC=C([O-])C]]. Subsequent protonation of the alpha-carbon gives 4-oxopentanenitrile."
         },
         {
@@ -33,7 +33,7 @@
             "reactants": "CCCBr",
             "conditions": "NaN_3, DMF",
             "answer": "CCCN=[N+]=[N-]",
-            "instructions": "Predict the major product of this reaction.",
+            "instructions": "Predict the major product.",
             "explanation": "The reaction involves a primary alkyl halide and a good nucleophile (azide) in a polar aprotic solvent (DMF). This strongly favors an S_N2 mechanism. Azide attacks the electrophilic carbon, displacing the bromide leaving group in a single concerted step."
         },
         {
@@ -51,7 +51,7 @@
             "reactants": "O=N(=O)C1=CC=C(F)C=C1",
             "conditions": "NaOCH_3, CH_3OH, \\\\Delta",
             "answer": "O=N(=O)C1=CC=C(OC)C=C1",
-            "instructions": "Detail the mechanism for this transformation.",
+            "instructions": "Draw the mechanism for this transformation.",
             "explanation": "Nucleophilic aromatic substitution (S_NAr) occurs because the ring is highly electron-deficient due to the para-nitro group. Methoxide attacks the fluorinated carbon, breaking aromaticity to form a resonance-stabilized Meisenheimer complex [[SMILES: O=N(=O)C1=CC=C(F)(OC)C=C1]]. The fluoride ion then leaves, restoring aromaticity."
         },
         {
@@ -78,7 +78,7 @@
             "reactants": "[H][C@@]1(C)[C@@H](Cl)CCCC1",
             "conditions": "NaOEt, EtOH, \\\\Delta",
             "answer": "CC1=CCCCC1",
-            "instructions": "Determine the major product considering stereochemical constraints.",
+            "instructions": "Determine the major product, considering stereochemistry.",
             "explanation": "The E2 mechanism requires an anti-periplanar arrangement of the leaving group and the beta-proton. In neomenthyl chloride, the chlorine and the adjacent anti-proton can achieve an axial-axial relationship in the chair conformation, allowing for the formation of the more stable Zaitsev product."
         },
         {
@@ -105,7 +105,7 @@
             "reactants": "C1=CN=CC=C1",
             "conditions": "NaNH_2, NH_3(l), \\\\Delta",
             "answer": "NC1=NC=CC=C1",
-            "instructions": "Identify the product and describe the reaction type.",
+            "instructions": "Draw the mechanism for this reaction.",
             "explanation": "The Chichibabin reaction is a nucleophilic aromatic substitution. The amide ion attacks the electron-deficient carbon adjacent to the nitrogen in pyridine. This forms a negatively charged Meisenheimer-type intermediate [[SMILES: [NH-]C1=NC=CC=C1]]. The subsequent loss of hydride (which reacts with the protonated product) restores aromaticity to yield 2-aminopyridine."
         },
         {
@@ -249,7 +249,7 @@
             "reactants": "CC(C)(C)C(C)Cl",
             "conditions": "H_2O, \\\\Delta",
             "answer": "CC(C)(O)C(C)C",
-            "instructions": "Provide the mechanistic rationale for the observed product.",
+            "instructions": "Draw the mechanism for this reaction.",
             "explanation": "Loss of the chloride leaving group generates a secondary carbocation [[SMILES: CC(C)(C)[CH+]C]]. To alleviate instability, a 1,2-methyl shift occurs, rearranging the skeleton to form a much more stable tertiary carbocation [[SMILES: CC(C)[C+](C(C)C)]]. Nucleophilic attack by water followed by deprotonation yields the rearranged tertiary alcohol."
         },
         {
@@ -285,7 +285,7 @@
             "reactants": "CC=C",
             "conditions": "HBr, ROOR, \\\\Delta",
             "answer": "CCCBr",
-            "instructions": "Predict the regiochemistry of the addition.",
+            "instructions": "Predict the major product of the addition.",
             "explanation": "In the presence of peroxides, the reaction proceeds via a radical chain mechanism rather than polar electrophilic addition. The peroxide radical abstracts a proton from HBr to form a bromine radical. The Br radical adds to the least substituted carbon of the alkene to generate the more stable secondary carbon radical [[SMILES: C[CH]CBr]], leading to the anti-Markovnikov product, 1-bromopropane."
         },
         {
@@ -294,7 +294,7 @@
             "reactants": "CC(O)CC",
             "conditions": "1.\\\\ NaH, CS_2, CH_3I \\\\ 2.\\\\ Bu_3SnH, AIBN, \\\\Delta",
             "answer": "CCCC",
-            "instructions": "Identify the process and the final product.",
+            "instructions": "Draw the mechanism for this reaction.",
             "explanation": "This is the Barton-McCombie deoxygenation. Step 1 converts the alcohol into a methyl xanthate ester [[SMILES: CC(OC(=S)SC)CC]]. Step 2 uses AIBN to initiate the tributyltin radical, which attacks the thiocarbonyl sulfur. This drives the homolytic cleavage of the strong C-O bond to form a secondary alkyl radical [[SMILES: C[CH]CC]], which abstracts a hydrogen from Bu3SnH to yield butane."
         },
         {
@@ -312,7 +312,7 @@
             "reactants": "C=C",
             "conditions": "CHCl_3, tBuOK",
             "answer": "ClC1(Cl)CC1",
-            "instructions": "Provide the mechanistic rationale.",
+            "instructions": "Draw the mechanism for this reaction.",
             "explanation": "The bulky strong base tert-butoxide undergoes alpha-elimination with chloroform. It abstracts the acidic proton to form a trichloromethanide anion [[SMILES: [C-](Cl)(Cl)Cl]], which loses a chloride ion to form the highly electrophilic, neutral dichlorocarbene [[SMILES: [C](Cl)Cl]]. The dichlorocarbene adds to the alkene in a concerted [2+1] cycloaddition to yield 1,1-dichlorocyclopropane."
         },
         {
@@ -339,7 +339,7 @@
             "reactants": "O=C1O[C@@H](C)C=C1",
             "conditions": "H_2, Pd/C",
             "answer": "O=C1O[C@@H](C)CC1",
-            "instructions": "Predict the stereochemical outcome.",
+            "instructions": "Predict the product, considering stereochemistry.",
             "explanation": "Catalytic hydrogenation is a syn-addition process occurring on the metal surface. In 5-methylfuran-2(5H)-one, the pre-existing stereocenter at the methyl group dictates the facial approach. To minimize steric clash, the hydrogen adds to the opposite, less hindered face, establishing stereochemistry."
         },
         {
@@ -348,7 +348,7 @@
             "reactants": "CC(C)(C)C(=O)C(C)C1=CC=CC=C1",
             "conditions": "1.\\\\ LiAlH_4 \\\\ 2.\\\\ H_2O",
             "answer": "CC(C)(C)[C@@H](O)[C@H](C)C1=CC=CC=C1",
-            "instructions": "Determine the major diastereomer formed using stereochemical models.",
+            "instructions": "Determine the major diastereomer formed, considering stereochemistry.",
             "explanation": "Reduction of the chiral ketone involves the Cram or Felkin-Anh model. The largest group (phenyl) on the alpha-carbon is positioned perpendicular to the carbonyl pi system. The nucleophile (hydride) attacks the carbonyl carbon at the Bürgi-Dunitz angle from the least sterically hindered face (anti to the bulky tert-butyl group), yielding the anti-diastereomer predominantly."
         },
         {
@@ -357,7 +357,7 @@
             "reactants": "CC(C)=C",
             "conditions": "H_2O, H_2SO_4",
             "answer": "CC(C)(O)C",
-            "instructions": "Predict the major regiochemical isomer.",
+            "instructions": "Predict the major product.",
             "explanation": "Acid-catalyzed hydration proceeds via Markovnikov's rule. The initial protonation of the alkene forms the more stable tertiary carbocation intermediate [[SMILES: CC(C)[C+]C]] rather than the primary carbocation. Water then attacks this tertiary center, leading exclusively to tert-butanol."
         },
         {
@@ -366,7 +366,7 @@
             "reactants": "CC1CO1",
             "conditions": "NaOCH_3, CH_3OH",
             "answer": "CC(O)COC",
-            "instructions": "Determine the regiochemical outcome of the epoxide opening.",
+            "instructions": "Determine the major product of the epoxide opening.",
             "explanation": "Under basic conditions, the opening of an asymmetrical epoxide is governed primarily by sterics. The methoxide nucleophile undergoes an S_N2-like attack at the less sterically hindered carbon atom (the CH2 group), displacing the oxygen to the more substituted carbon, yielding 1-methoxypropan-2-ol."
         },
         {
@@ -375,7 +375,7 @@
             "reactants": "CC(=O)C(C)C",
             "conditions": "1.\\\\ LDA, THF, -78^\\\\circ C \\\\ 2.\\\\ CH_3I",
             "answer": "CCC(=O)C(C)C",
-            "instructions": "Predict the product based on enolate regioselectivity.",
+            "instructions": "Predict the major product.",
             "explanation": "Lithium diisopropylamide (LDA) is a bulky, strong base. At extremely low temperatures (-78 C), the deprotonation is irreversible and kinetically controlled. LDA preferentially abstracts the less sterically hindered alpha-proton to form the kinetic enolate [[SMILES: C=C([O-])C(C)C]]. Subsequent S_N2 attack on methyl iodide yields the linearly substituted ketone, 2-methylpentan-3-one."
         }
     ]
