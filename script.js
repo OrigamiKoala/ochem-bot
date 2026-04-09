@@ -252,8 +252,7 @@ class GeminiLiveAgent {
     }
 
     async getToken() {
-        const apiUrl = `/api/chat?t=${Date.now()}`;
-        console.log(`[DEBUG] Current Location: ${window.location.href}`);
+        const apiUrl = `/api/token?t=${Date.now()}`;
         console.log(`[DEBUG] Attempting token fetch from: ${window.location.origin}${apiUrl}`);
         
         let response;
@@ -265,16 +264,16 @@ class GeminiLiveAgent {
             });
         } catch (err) {
             console.error("[DEBUG] Network error during fetch:", err);
-            throw new Error(`Connection failed: Could not reach the backend proxy.`);
+            throw new Error(`Connection failed: Could not reach the backend proxy at ${apiUrl}`);
         }
         
         if (!response.ok) {
-            console.error(`[DEBUG] API Error: Status ${response.status} (${response.statusText})`);
+            console.error(`[DEBUG] API Error: Status ${response.status} at ${apiUrl}`);
             if (response.status === 404) {
                 if (window.location.protocol === 'file:') {
-                    throw new Error("Local File Error: Relative paths like /api/chat only work on a server.");
+                    throw new Error("Local File Error: You must run this on a server (e.g. vercel dev).");
                 }
-                throw new Error(`API Not Found (404). Please ensure the 'api' folder is deployed at ${window.location.origin}`);
+                throw new Error(`API Not Found (404). Please ensure 'api/token.js' exists and the deployment is finished at ${window.location.origin}`);
             }
             
             let errMessage = "Unknown server error";
