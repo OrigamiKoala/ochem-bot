@@ -299,7 +299,7 @@ class GeminiLiveAgent {
             setup: {
                 model: this.model,
                 generationConfig: {
-                    responseModalities: ["AUDIO"] 
+                    responseModalities: ["TEXT"] 
                 },
                 systemInstruction: {
                     parts: [{
