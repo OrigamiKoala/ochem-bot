@@ -294,22 +294,17 @@ class GeminiLiveAgent {
         }
     }
     sendSetup() {
-        // Correcting structure based on Code 1007: Flattening fields under 'setup'
+        // Final Alignment: 'TEXT' modality as requested by user. 
+        // 1011 may have been a transient server error or instruction length issue.
         const setupMessage = {
             setup: {
                 model: this.model,
                 generationConfig: {
-                    // Reverting to AUDIO for connection stability; 1011 occurs if TEXT is requested as primary in setup.
-                    responseModalities: ["AUDIO"] 
+                    responseModalities: ["TEXT"] 
                 },
                 systemInstruction: {
                     parts: [{
-                        text: `You are an expert organic chemistry tutor. Your goal is to help students practice and master reaction mechanisms.
-                            
-CORE RULES:
-1. QUESTION GENERATION: When asked for a new question, generate 1 single reaction in JSON format.
-2. ADAPTATION: If the student failed the last question, focus on a slightly simpler version of that concept. If they succeeded, increase difficulty.
-3. OUTPUT FORMAT (Questions):
+                        text: `You are an organic chemistry tutor. When asked for a new question, generate 1 reaction in JSON format:
 {
   "qtype": "predict|mechanism|stereo",
   "reactants": "SMILES",
@@ -318,13 +313,12 @@ CORE RULES:
   "instructions": "Task description",
   "explanation": "Detailed mechanism with [[SMILES: ...]] placeholders."
 }
-4. GRADING: When the student submits a drawing, evaluate it based on the current reaction. Output 'Correct' or 'Incorrect' (at the very start), followed by a subtle 10-word hint if incorrect.
-5. PERSONA: Be encouraging, concise (max 50 words), and focus on electron-pushing logic.`
+Grade student drawings as 'Correct' or 'Incorrect' with a brief hint. Be concise.`
                     }]
                 }
             }
         };
-        console.log("[DEBUG] Sending flattened setup configuration...");
+        console.log("[DEBUG] Sending setup configuration (TEXT-mode)...");
         this.ws.send(JSON.stringify(setupMessage));
     }
 
