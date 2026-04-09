@@ -1,15 +1,41 @@
 // api/chat.js
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
 export default async function handler(req, res) {
     // 1. Only allow POST requests
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { prompt, image, responseMimeType, maxOutputTokens, temperature } = req.body;
+    const { prompt, image, responseMimeType, maxOutputTokens, temperature, type } = req.body;
     const API_KEY = process.env.GEMINI_API_KEY;
 
     if (!API_KEY) {
         return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
+    }
+
+    // New: Handle session token requests for the Gemini Live API (WebSocket)
+    if (type === 'session_token') {
+        try {
+            console.log("Generating ephemeral session token using SDK...");
+            const genAI = new GoogleGenerativeAI(API_KEY);
+            // In the 2026 SDK, ephemeral tokens are part of the authTokens service
+            const token = await genAI.authTokens.create({
+                config: {
+                    uses: 1,
+                    expireTime: new Date(Date.now() + 3600 * 1000).toISOString()
+                }
+            });
+
+            if (!token || !token.name) {
+                throw new Error("Invalid token response from SDK");
+            }
+
+            return res.status(200).json({ token: token.name });
+        } catch (err) {
+            console.error('SDK Token Proxy Error:', err);
+            return res.status(500).json({ error: 'Failed to generate session token via SDK' });
+        }
     }
 
     // Hierarchical model list (Always starts from the top)
