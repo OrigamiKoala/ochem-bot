@@ -166,7 +166,7 @@ function renderMolecules(molecules, container, suffix = "") {
 
         container.appendChild(newCanvas);
 
-        let options = { width: 120, height: 120 };
+        let options = { width: 70, height: 70 };
         let smilesDrawer = new SmilesDrawer.Drawer(options);
 
         SmilesDrawer.parse(mol, function (tree) {

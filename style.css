@@ -29,7 +29,7 @@ body {
     min-width: 300px;
     width: auto;
     max-width: 80vw;
-    min-height: 150px;
+    min-height: 110px;
     height: auto;
     background-color: #ffffff;
     display: flex;
@@ -44,13 +44,23 @@ body {
 }
 
 #loading-text {
-    width: 100%;
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    max-width: 80vw;
     text-align: center;
-    padding: 20px;
-    font-size: 1.2rem;
+    padding: 12px 24px;
+    font-size: 1.1rem;
     color: #333;
     line-height: 1.5;
     font-weight: 500;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 30px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 1000;
+    pointer-events: none; /* Let clicks pass through if needed */
 }
 
 #reaction-target {
@@ -70,8 +80,8 @@ body {
 
 #toolbar {
     position: absolute;
-    top: 15px;
-    right: 15px;
+    bottom: 25px;
+    right: 20px;
     z-index: 20;
 }
 
