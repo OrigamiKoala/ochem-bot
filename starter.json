@@ -274,7 +274,7 @@
             "qtype": "predict",
             "id": "beginner_radicals_1",
             "reactants": "CC=CC",
-            "conditions": "NBS, h\\\\nu, CCl_4",
+            "conditions": "NBS, hv, CCl_4",
             "answer": "CC=CC(Br)",
             "instructions": "Predict the product of the reaction.",
             "explanation": "N-Bromosuccinimide (NBS) provides a low, steady concentration of bromine radicals. Initiation by light splits Br2. The bromine radical abstracts an allylic hydrogen, forming a resonance-stabilized allylic radical [[SMILES: C=C[CH]C]]. This radical then reacts with Br2 to form 3-bromo-1-butene."
