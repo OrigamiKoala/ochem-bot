@@ -22,6 +22,72 @@ const submitBtn = document.getElementById('submit-btn');
 
 let isCanvasBlank = true;
 
+// ------ Settings & Topic Management ------
+const allTopics = ["addition", "substitution", "elimination", "on rings", "Grignard", "redox", "protecting groups", "cycloadditions", "electrocyclic", "rearrangements", "radicals", "carbenes", "stereochemistry"];
+let selectedTopics = JSON.parse(localStorage.getItem('ochem_selected_topics')) || [...allTopics];
+
+const settingsBtn = document.getElementById('settings-btn');
+const settingsModal = document.getElementById('settings-modal');
+const saveSettingsBtn = document.getElementById('save-settings-btn');
+const topicsListDiv = document.getElementById('topics-list');
+
+function initSettings() {
+    if (!topicsListDiv) return;
+    topicsListDiv.innerHTML = '';
+    allTopics.forEach(topic => {
+        const item = document.createElement('div');
+        item.className = 'topic-item';
+        const isChecked = selectedTopics.includes(topic);
+        item.innerHTML = `
+            <input type="checkbox" id="topic-${topic}" value="${topic}" ${isChecked ? 'checked' : ''}>
+            <label for="topic-${topic}">${topic.charAt(0).toUpperCase() + topic.slice(1)}</label>
+        `;
+        // Make the whole item clickable for easier tablet use
+        item.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
+                const cb = item.querySelector('input');
+                cb.checked = !cb.checked;
+            }
+        });
+        topicsListDiv.appendChild(item);
+    });
+}
+
+if (settingsBtn) {
+    settingsBtn.addEventListener('click', () => {
+        initSettings();
+        settingsModal.style.display = 'flex';
+    });
+}
+
+if (saveSettingsBtn) {
+    saveSettingsBtn.addEventListener('click', () => {
+        const checkboxes = topicsListDiv.querySelectorAll('input[type="checkbox"]');
+        selectedTopics = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.value);
+
+        // Default to all if none selected to prevent errors
+        if (selectedTopics.length === 0) selectedTopics = [...allTopics];
+
+        localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
+        settingsModal.style.display = 'none';
+
+        // Clear queue and fetch new ones immediately to reflect new settings
+        reactionQueue = [];
+        fetchBatchReactions();
+    });
+}
+
+// Close modal when clicking outside
+if (settingsModal) {
+    settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) {
+            settingsModal.style.display = 'none';
+        }
+    });
+}
+
 function updateSubmitDisabled() {
     submitBtn.disabled = isCanvasBlank || isSubmitting;
     submitBtn.style.opacity = submitBtn.disabled ? "0.5" : "1";
@@ -118,46 +184,47 @@ clearBtn.addEventListener('click', () => {
     updateSubmitDisabled();
 });
 
-// ------ Render a Reaction ------
+// // ------ Render a Reaction ------
 function renderReaction(data, showAnswer = false) {
-    const container = document.getElementById('reaction-container');
+    const instructionDiv = document.getElementById('question-instruction');
+    const moleculeDiv = document.getElementById('molecule-display');
     const loadingText = document.getElementById('loading-text');
 
-    // Immediate clear of all existing dynamic elements before starting the render
-    container.querySelectorAll('canvas, .plus-sign, .reaction-arrow').forEach(el => el.remove());
-    
+    if (!instructionDiv || !moleculeDiv) return;
+
+    // Immediate clear
+    moleculeDiv.innerHTML = '';
+
     // Hide status text ONLY if we aren't displaying a persistent answer result
     if (!showAnswer && loadingText.innerText !== "Generating..." && loadingText.innerText !== "Checking...") {
         loadingText.style.display = 'none';
         loadingText.className = "";
     }
 
-    if (!data || !data.reactants) {
-        console.error("Invalid reaction data", data);
-        return;
-    }
+    if (!data) return;
+
+    // Set Instruction
+    instructionDiv.innerText = data.instructions || "Predict the major product:";
 
     // Render Reactants
     const reactantMolecules = data.reactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
-    renderMolecules(reactantMolecules, container);
+    renderMolecules(reactantMolecules, moleculeDiv);
 
     // Add reaction arrow with conditions
     const arrowContainer = document.createElement('div');
     arrowContainer.className = 'reaction-arrow';
-    arrowContainer.style.display = 'flex';
-    arrowContainer.style.alignItems = 'center';
-    arrowContainer.style.justifyContent = 'center';
     arrowContainer.style.padding = '0 15px';
-    arrowContainer.style.color = '#333';
     arrowContainer.style.fontSize = '1.8rem';
     const conditions = data.conditions || '';
     arrowContainer.innerText = `\\( \\ce{->[${conditions}]} \\)`;
-    container.appendChild(arrowContainer);
+    moleculeDiv.appendChild(arrowContainer);
 
-    // Render Answer (if requested)
-    if (showAnswer && data.answer) {
-        const answerMolecules = data.answer.split('.').map(s => s.trim()).filter(s => s.length > 0);
-        renderMolecules(answerMolecules, container, "answer");
+    // If MECHANISM mode, show the final product as a target
+    if (data.qtype === 'mechanism' || showAnswer) {
+        if (data.answer) {
+            const answerMolecules = data.answer.split('.').map(s => s.trim()).filter(s => s.length > 0);
+            renderMolecules(answerMolecules, moleculeDiv, "answer");
+        }
     }
 
     if (window.MathJax) {
@@ -209,12 +276,33 @@ async function fetchBatchReactions() {
     }
 
     try {
-        const prompt = "Generate 3 organic chemistry questions in JSON format. \nRULES:\n1. SMILES: NO hydrogens (e.g. CCBr).\n2. LaTeX: Use DOUBLE backslashes (e.g. \\\\Delta).\n3. Structure: {\"reactions\": [{\"reactants\": \"...\", \"conditions\": \"...\", \"answer\": \"...\"}]}";
+        // Use user-selected topics
+        const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
+        const prompt = `Generate 10 organic chemistry questions (Topic: ${topic}). JSON only. Request ID: ${Date.now()}.
+
+Type Mix: randomly use "predict" (Predict product), "mechanism" (Draw arrow mechanism), or "stereo" (stereochemistry focus).
+
+Structure:
+{
+  "reactions": [
+    {
+      "qtype": "predict|mechanism|stereo",
+      "reactants": "SMILES",
+      "conditions": "LaTeX",
+      "answer": "SMILES",
+      "instructions": "e.g., 'Draw curved arrows' or 'Draw (S)-product'"
+    }
+  ]
+}
+
+RULES:
+1. SMILES: NO hydrogens.
+2. LaTeX: Use DOUBLE backslashes (e.g. \\\\Delta).`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
+            body: JSON.stringify({
                 prompt,
                 responseMimeType: 'application/json'
             })
@@ -223,13 +311,13 @@ async function fetchBatchReactions() {
         if (!response.ok) {
             const errorData = await response.json();
             console.error('Gemini API Error:', response.status, errorData);
-            
+
             if (response.status === 503 || response.status === 429) {
                 loadingText.innerText = "Looks like the bot's busy...Please try again in a moment.";
             } else {
                 loadingText.innerText = "Oops. Looks like the bot messed up!";
             }
-            
+
             loadingText.style.display = 'block';
             isFetching = false;
             return;
@@ -368,7 +456,12 @@ async function submitDrawing() {
         const dataUrl = canvas.toDataURL('image/png');
         const base64Image = dataUrl.split(',')[1];
 
-        const prompt = "Evaluate drawing for reaction: " + currentReaction.reactants + " [" + currentReaction.conditions + "] -> " + currentReaction.answer + ". Is it correct? Output 'Correct' or 'Incorrect' + brief explanation (max 10 words).";
+        const prompt = `Evaluate the user's drawing for this challenge:
+Task Type: ${currentReaction.qtype}
+Instructions: ${currentReaction.instructions}
+Reaction: ${currentReaction.reactants} [${currentReaction.conditions}] -> ${currentReaction.answer}
+
+Is the drawing correct? Output 'Correct' or 'Incorrect' + brief explanation (max 10 words).`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -379,7 +472,7 @@ async function submitDrawing() {
         if (!response.ok) {
             const errorData = await response.json();
             console.error('Submission Gemini API Error:', response.status, errorData);
-            
+
             if (response.status === 503 || response.status === 429) {
                 loadingText.innerText = "Looks like the bot's busy...Please try again in a moment.";
             } else {

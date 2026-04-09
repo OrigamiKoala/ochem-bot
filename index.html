@@ -27,18 +27,35 @@
 <body>
   <div id="app">
     <div id="reaction-container">
+      <div id="question-instruction"></div>
+      <div id="molecule-display"></div>
     </div>
     <div id="whiteboard-container">
       <div id="toolbar">
         <button type="button" id="generate-btn">New</button>
         <button type="button" id="submit-btn" style="background-color: #34c759;">Submit</button>
         <button type="button" id="clear-btn">Clear</button>
+        <button type="button" id="settings-btn" style="background-color: #5856d6;">Settings</button>
       </div>
       <canvas id="whiteboard"></canvas>
     </div>
   </div>
 
   <div id="loading-text" style="display: none;">Loading...</div>
+
+  <div id="settings-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h2>Practice Settings</h2>
+      <p>Select reaction types to focus on:</p>
+      <div id="topics-list">
+        <!-- Topics will be injected here by JS -->
+      </div>
+      <div class="modal-actions">
+        <button id="save-settings-btn">Save & Close</button>
+      </div>
+    </div>
+  </div>
+
   <script type="module" src="script.js"></script>
 </body>
 

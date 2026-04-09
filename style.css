@@ -26,21 +26,37 @@ body {
     position: absolute;
     top: 20px;
     left: 20px;
-    min-width: 300px;
+    min-width: 320px;
     width: auto;
     max-width: 80vw;
     min-height: 110px;
     height: auto;
     background-color: #ffffff;
     display: flex;
-    align-items: center;
+    flex-direction: column; /* Stack instruction over molecules */
+    align-items: flex-start;
     justify-content: center;
-    gap: 5px;
     border-radius: 12px;
     border: 1px solid #e0e0e0;
-    padding: 10px 15px;
+    padding: 15px 20px;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
     z-index: 10;
+}
+
+#question-instruction {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #5856d6; /* Purple theme for the task */
+    margin-bottom: 12px;
+    width: 100%;
+}
+
+#molecule-display {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    width: 100%;
 }
 
 #loading-text {
@@ -82,26 +98,31 @@ body {
     position: absolute;
     bottom: 25px;
     right: 20px;
+    display: flex;
+    gap: 12px;
     z-index: 20;
 }
 
 #toolbar button {
-    margin-left: 10px;
-    padding: 12px 24px;
-    font-size: 1.1rem;
+    padding: 12px 18px;
+    font-size: 1rem;
     font-weight: 500;
-    background-color: #007aff; /* iOS standard blue */
+    background-color: #007aff;
     color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 12px;
     cursor: pointer;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-    transition: background-color 0.2s;
-    /* Nice touch target size for iPad */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #toolbar button:active {
-    background-color: #005bb5;
+    transform: scale(0.95);
 }
 
 canvas {
@@ -119,3 +140,78 @@ canvas {
     color: #e74c3c !important;
 }
 
+/* Modal Styling */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: white;
+    padding: 40px;
+    border-radius: 24px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    color: #1c1c1e;
+}
+
+.modal-content h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+#topics-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    margin: 25px 0;
+}
+
+.topic-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 10px;
+    border-radius: 12px;
+    transition: background 0.2s;
+}
+
+.topic-item:hover {
+    background: #f2f2f7;
+}
+
+.topic-item input[type="checkbox"] {
+    width: 24px;
+    height: 24px;
+    cursor: pointer;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: center;
+    margin-top: 30px;
+}
+
+#save-settings-btn {
+    padding: 15px 40px;
+    background: #007aff;
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+}
