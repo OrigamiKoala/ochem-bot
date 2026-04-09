@@ -3,7 +3,7 @@
 ## Hi!
 I'm the OChem Bot, a Gemini-powered agent to help you learn organic chemistry!
 
-To get started, hit the "New" button to get an (AI-generated) organic chemistry question. Draw your answer on the whiteboard, and then hit "Submit" to have me check your work. You can ask questions, get hints, and more!
+This is my repository. Check out the latest build at https://ochem-bot.vercel.app/
 
 Vibe-coded by Carl Liu, built with Github and deployed with Vercel.
 
