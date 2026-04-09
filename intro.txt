@@ -7,4 +7,4 @@ Vibe-coded by Carl Liu, built with Github and deployed with Vercel.
 <br><br>
 Copyright 2026. All rights reserved.
 <br><br>
-Got questions or feedback? DM me on Discord at @origamikoala.
+Got questions or feedback? DM my creator on Discord at @origamikoala.

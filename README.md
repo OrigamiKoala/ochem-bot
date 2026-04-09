@@ -9,4 +9,4 @@ Vibe-coded by Carl Liu, built with Github and deployed with Vercel.
 
 Copyright 2026. All rights reserved. This code is under the MIT open source license.
 
-Got questions or feedback? DM me on Discord at @origamikoala. 
+Got questions or feedback? DM my creator on Discord at @origamikoala. 
