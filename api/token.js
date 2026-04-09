@@ -10,23 +10,37 @@ export default async function handler(req, res) {
     if (!API_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY missing' });
 
     try {
-        console.log("Requesting ephemeral session token (v1alpha)...");
-        // Documentation specifies v1alpha for access_token BidiGenerateContentConstrained
-        const url = `https://generativelanguage.googleapis.com/v1alpha/authTokens:generate?key=${API_KEY}`;
+        console.log("Requesting session token for gemini-3.1-flash-live-preview...");
+        // Documentation & Best Practice: For preview models, use the model-specific generateAuthToken path
+        const model = "gemini-3.1-flash-live-preview";
+        const url = `https://generativelanguage.googleapis.com/v1alpha/models/${model}:generateAuthToken?key=${API_KEY}`;
         
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                config: {
-                    uses: 1
-                }
-            })
+            body: JSON.stringify({}) // Some generateAuthToken endpoints prefer empty body
         });
 
         if (!response.ok) {
             const err = await response.json().catch(() => ({}));
             console.error("Google Auth Error:", response.status, err);
+            
+            // Fallback to global authTokens:generate if model-specific fails
+            if (response.status === 404) {
+                console.warn("Model-specific token failed, trying global v1alpha endpoint...");
+                const globalUrl = `https://generativelanguage.googleapis.com/v1alpha/authTokens:generate?key=${API_KEY}`;
+                const globalResp = await fetch(globalUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ config: { uses: 1 } })
+                });
+                
+                if (globalResp.ok) {
+                    const globalData = await globalResp.json();
+                    return res.status(200).json({ token: globalData.token || globalData.name });
+                }
+            }
+
             return res.status(response.status).json({ 
                 error: err.error?.message || "Google Auth Failure",
                 status: response.status 
