@@ -15,8 +15,8 @@ export default async function handler(req, res) {
     // Hierarchical model list (Always starts from the top)
     const MODELS = [
         "gemini-3.1-flash-lite-preview", // Primary / "Top" Bot
-        "gemini-1.5-flash",              // Fallback 1
-        "gemini-1.5-flash-8b"           // Fallback 2 (Highest availability)
+        "gemini-3-flash",              // Fallback 1
+        "gemini-2.5-flash"           // Fallback 2 (Highest availability)
     ];
 
     let lastError = null;
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
     for (const modelId of MODELS) {
         try {
             console.log(`Attempting request with model: ${modelId}`);
-            
+
             const parts = [{ text: prompt }];
             if (image) {
                 parts.push({
@@ -55,7 +55,7 @@ export default async function handler(req, res) {
                 const errorData = await response.json();
                 console.warn(`Model ${modelId} reached limit/busy (${response.status}). Falling back...`, errorData);
                 lastError = { status: response.status, data: errorData };
-                continue; 
+                continue;
             }
 
             // For other non-OK statuses, we assume it's a structural error and return immediately
