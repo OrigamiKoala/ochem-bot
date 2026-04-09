@@ -1,0 +1,12 @@
+{
+  "version": 2,
+  "functions": {
+    "api/*.js": {
+      "runtime": "nodejs20.x"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/token", "destination": "/api/token.js" },
+    { "source": "/api/chat", "destination": "/api/chat.js" }
+  ]
+}
