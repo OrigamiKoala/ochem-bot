@@ -448,7 +448,7 @@ function renderReaction(data, showAnswer = false) {
     arrowContainer.className = 'reaction-arrow';
     arrowContainer.style.padding = '0 15px';
     arrowContainer.style.fontSize = '1.8rem';
-    const conditions = data.conditions || '';
+    const conditions = (data.conditions || '').replace(/\\\\/g, '\\');
     arrowContainer.innerText = `\\( \\ce{->[${conditions}]} \\)`;
     moleculeDiv.appendChild(arrowContainer);
 
@@ -645,7 +645,7 @@ Structure:
 
 RULES:
 1. SMILES: NO hydrogens.
-2. LaTeX: Use DOUBLE backslashes (e.g. \\\\Delta).
+2. LaTeX: Use DOUBLE backslashes for commands (e.g. \\\\Delta).
 3. Make sure the reaction actually occurs to a significant extent.`;
 
         const response = await fetch('/api/chat', {
