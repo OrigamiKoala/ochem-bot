@@ -269,35 +269,18 @@ class GeminiLiveAgent {
         
         if (!response.ok) {
             console.error(`[DEBUG] API Error: Status ${response.status} at ${apiUrl}`);
+            let errMessage = "Unknown server error";
+            try {
+                const errData = await response.json();
+                errMessage = errData.error || response.statusText || errMessage;
+            } catch (e) {
+                const text = await response.text().catch(() => "");
+                errMessage = text.slice(0, 100) || response.statusText || errMessage;
+            }
+
             if (response.status === 404) {
-                if (window.location.protocol === 'file:') {
-                    throw new Error("Local File Error: You must run this on a server (e.g. vercel dev).");
-                }
-                throw new Error(`API Not Found (404). Please ensure 'api/token.js' exists and the deployment is finished at ${window.location.origin}`);
+                throw new Error(`API Not Found (404). Check Vercel Dashboard 'Functions' tab to see if 'api/token' is active.`);
             }
-            
-            let errMessage = "Unknown server error";
-            try {
-                const errData = await response.json();
-                errMessage = errData.error || response.statusText || errMessage;
-            } catch (e) {
-                const text = await response.text().catch(() => "");
-                errMessage = text.slice(0, 100) || response.statusText || errMessage;
-            }
-            throw new Error(`Backend Error (${response.status}): ${errMessage}`);
-        }
-        
-        if (!response.ok) {
-            let errMessage = "Unknown server error";
-            try {
-                const errData = await response.json();
-                errMessage = errData.error || response.statusText || errMessage;
-            } catch (e) {
-                // If it's not JSON, maybe it's HTML error output
-                const text = await response.text().catch(() => "");
-                errMessage = text.slice(0, 100) || response.statusText || errMessage;
-            }
-            console.error(`Backend Error (${response.status}): ${errMessage}`);
             throw new Error(`Backend Error (${response.status}): ${errMessage}`);
         }
         
@@ -310,8 +293,8 @@ class GeminiLiveAgent {
 
         try {
             this.token = await this.getToken();
-            // Use v1alpha and BidiGenerateContentConstrained for ephemeral tokens as per docs
-            const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained?access_token=${this.token}`;
+            // User requested v1beta protocol
+            const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?access_token=${this.token}`;
 
             this.ws = new WebSocket(url);
 
@@ -338,18 +321,15 @@ class GeminiLiveAgent {
             throw e;
         }
     }
-
     sendSetup() {
-        const setupMessage = {
-            setup: {
+        const configMessage = {
+            config: {
                 model: this.model,
-                generationConfig: {
-                    responseModalities: ["TEXT"]
-                },
+                responseModalities: ["TEXT", "AUDIO"],
                 systemInstruction: {
                     parts: [{
                         text: `You are an expert organic chemistry tutor. Your goal is to help students practice and master reaction mechanisms.
-
+                        
 CORE RULES:
 1. QUESTION GENERATION: When asked for a new question, generate 1 single reaction in JSON format.
 2. ADAPTATION: If the student failed the last question, focus on a slightly simpler version of that concept. If they succeeded, increase difficulty.
@@ -368,7 +348,7 @@ CORE RULES:
                 }
             }
         };
-        this.ws.send(JSON.stringify(setupMessage));
+        this.ws.send(JSON.stringify(configMessage));
     }
 
     handleMessage(event) {
@@ -380,9 +360,16 @@ CORE RULES:
             }
 
             if (data.serverContent && data.serverContent.modelTurn) {
-                const text = data.serverContent.modelTurn.parts[0].text;
-                if (this.pendingResolve) {
-                    this.pendingResolve(text);
+                // Harden: Loop through all parts as per user's "Receiving responses" screenshot
+                let combinedText = "";
+                for (const part of data.serverContent.modelTurn.parts || []) {
+                    if (part.text) {
+                        combinedText += part.text;
+                    }
+                }
+                
+                if (combinedText && this.pendingResolve) {
+                    this.pendingResolve(combinedText);
                     this.pendingResolve = null;
                 }
             }
@@ -392,26 +379,27 @@ CORE RULES:
     async sendTurn(prompt, base64Image) {
         if (!this.isConnected) await this.connect();
 
-        const parts = [{ text: prompt }];
-        if (base64Image) {
-            parts.push({
-                inlineData: {
-                    mimeType: "image/jpeg",
-                    data: base64Image
-                }
-            });
-        }
-
-        const message = {
-            clientContent: {
-                turns: [{ role: "user", parts: parts }],
-                turnComplete: true
+        // 1. Send text prompt via realtimeInput (per user's "Sending text" screenshot)
+        this.ws.send(JSON.stringify({
+            realtimeInput: {
+                text: prompt
             }
-        };
+        }));
+
+        // 2. If image present, send via realtimeInput video field (per user's "Sending video" screenshot)
+        if (base64Image) {
+            this.ws.send(JSON.stringify({
+                realtimeInput: {
+                    video: {
+                        data: base64Image,
+                        mimeType: "image/jpeg"
+                    }
+                }
+            }));
+        }
 
         return new Promise((resolve) => {
             this.pendingResolve = resolve;
-            this.ws.send(JSON.stringify(message));
         });
     }
 
