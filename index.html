@@ -1,43 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Organic Chemistry Mechanism Practice</title>
-    <link rel="stylesheet" href="style.css">
-    
-    <!-- Use SmilesDrawer for 2D molecular structures -->
-    <script src="https://unpkg.com/smiles-drawer@2.0.1/dist/smiles-drawer.min.js"></script>
 
-    <!-- MathJax for rendering LaTeX conditions -->
-    <script>
-      MathJax = {
-        tex: {
-          inlineMath: [['\\(', '\\)']],
-          displayMath: [['\\[', '\\]']],
-          packages: {'[+]': ['mhchem']}
-        },
-        loader: {load: ['[tex]/mhchem']}
-      };
-    </script>
-    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Organic Chemistry Mechanism Practice</title>
+  <link rel="stylesheet" href="style.css">
+
+  <!-- Use SmilesDrawer for 2D molecular structures -->
+  <script src="https://unpkg.com/smiles-drawer@2.0.1/dist/smiles-drawer.min.js"></script>
+
+  <!-- MathJax for rendering LaTeX conditions -->
+  <script>
+    MathJax = {
+      tex: {
+        inlineMath: [['\\(', '\\)']],
+        displayMath: [['\\[', '\\]']],
+        packages: { '[+]': ['mhchem'] }
+      },
+      loader: { load: ['[tex]/mhchem'] }
+    };
+  </script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
+
 <body>
-    <div id="app">
-        <div id="reaction-container">
-            <canvas id="reaction-canvas"></canvas>
-            <div id="loading-text" style="display: none;">Loading...</div>
-        </div>
-        <div id="whiteboard-container">
-            <div id="toolbar">
-                <button type="button" id="generate-btn">Generate Reaction</button>
-                <button type="button" id="submit-btn" style="background-color: #34c759;">Submit</button>
-                <button type="button" id="clear-btn">Clear Board</button>
-            </div>
-            <canvas id="whiteboard"></canvas>
-        </div>
+  <div id="app">
+    <div id="reaction-container">
+      <canvas id="reaction-canvas"></canvas>
+      <div id="loading-text" style="display: none;">Loading...</div>
     </div>
-    
-    <script type="module" src="script.js"></script>
+    <div id="whiteboard-container">
+      <div id="toolbar">
+        <button type="button" id="generate-btn">New</button>
+        <button type="button" id="submit-btn" style="background-color: #34c759;">Submit</button>
+        <button type="button" id="clear-btn">Clear</button>
+      </div>
+      <canvas id="whiteboard"></canvas>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
 </body>
+
 </html>
