@@ -23,7 +23,7 @@ const submitBtn = document.getElementById('submit-btn');
 let isCanvasBlank = true;
 
 // ------ Settings & Topic Management ------
-const allTopics = ["addition", "substitution", "elimination", "on rings", "Grignard", "redox", "protecting groups", "cycloadditions", "electrocyclic", "rearrangements", "radicals", "carbenes", "stereochemistry"];
+const allTopics = ["addition", "substitution", "elimination", "on rings", "Grignard", "redox", "protecting groups", "cycloadditions", "electrocyclic", "rearrangements", "radicals", "carbenes", "stereochemistry", "regioselectivity"];
 let selectedTopics = JSON.parse(localStorage.getItem('ochem_selected_topics')) || [...allTopics];
 
 const settingsBtn = document.getElementById('settings-btn');
@@ -249,8 +249,25 @@ function renderMolecules(molecules, container, suffix = "") {
 
         container.appendChild(newCanvas);
 
-        let options = { width: 70, height: 70 };
+        // iPad/Retina support: Scale resolution by device pixel ratio
+        const dpr = window.devicePixelRatio || 1;
+        const baseSize = 100; // Increased base size
+        const size = baseSize * dpr;
+
+        let options = {
+            width: size,
+            height: size,
+            bondThickness: 2,
+            bondSpacing: 4,
+            fontSizeLarge: 10,
+            padding: 10
+        };
+
         let smilesDrawer = new SmilesDrawer.Drawer(options);
+
+        // Adjust canvas display size
+        newCanvas.style.width = baseSize + "px";
+        newCanvas.style.height = baseSize + "px";
 
         SmilesDrawer.parse(mol, function (tree) {
             smilesDrawer.draw(tree, newCanvas.id, 'light', false);
