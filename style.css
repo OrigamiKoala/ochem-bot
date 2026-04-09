@@ -133,7 +133,10 @@ body {
     gap: 10px;
     width: 100%;
     overflow-x: auto; /* Allow scrolling if the equation is long */
+    touch-action: pan-x;
+    -webkit-overflow-scrolling: touch;
     padding-bottom: 5px; /* Space for scrollbar if needed */
+
 }
 
 #loading-text {
@@ -154,7 +157,19 @@ body {
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     z-index: 1000;
     pointer-events: none; /* Let clicks pass through if needed */
+    transition: bottom 0.3s ease;
 }
+
+@media (max-width: 600px) {
+    #loading-text {
+        bottom: 140px; /* Positioned above the toolbar button rows */
+        left: 50%;
+        transform: translateX(-50%);
+        width: 90%;
+        max-width: 400px;
+    }
+}
+
 
 #reaction-target {
     /* Make the LaTeX output reasonably large */

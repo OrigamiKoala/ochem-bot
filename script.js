@@ -370,9 +370,10 @@ function draw(e) {
 // Intercept global touch events to strictly prevent "pull to refresh" reloads
 document.body.addEventListener('touchmove', function (e) {
     // Allow touch scrolling on specific containers
-    if (e.target.closest('#about-content') || e.target.closest('#topics-list') || e.target.closest('#explanation-display')) {
+    if (e.target.closest('#about-content') || e.target.closest('#topics-list') || e.target.closest('#explanation-display') || e.target.closest('#molecule-display')) {
         return;
     }
+
     e.preventDefault();
 }, { passive: false });
 
