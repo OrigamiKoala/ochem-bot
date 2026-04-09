@@ -20,6 +20,15 @@ let isShowingAnswer = false;
 
 const submitBtn = document.getElementById('submit-btn');
 
+let isCanvasBlank = true;
+
+function updateSubmitDisabled() {
+    submitBtn.disabled = isCanvasBlank || isSubmitting;
+    submitBtn.style.opacity = submitBtn.disabled ? "0.5" : "1";
+    submitBtn.style.cursor = submitBtn.disabled ? "not-allowed" : "pointer";
+}
+updateSubmitDisabled(); // Initial state
+
 // Handle window resizing correctly to avoid stretching
 function resizeCanvas() {
     canvas.width = canvas.parentElement.clientWidth;
@@ -77,6 +86,11 @@ function draw(e) {
     if (!isDrawing) return;
     e.preventDefault();
 
+    if (isCanvasBlank) {
+        isCanvasBlank = false;
+        updateSubmitDisabled();
+    }
+
     const pos = getCoordinates(e);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
@@ -100,6 +114,8 @@ canvas.addEventListener('mouseout', stopDrawing);
 // ------ Toolbar Actions ------
 clearBtn.addEventListener('click', () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    isCanvasBlank = true;
+    updateSubmitDisabled();
 });
 
 // ------ Render a Reaction ------
@@ -109,9 +125,9 @@ function renderReaction(data, showAnswer = false) {
 
     // Immediate clear of all existing dynamic elements before starting the render
     container.querySelectorAll('canvas, .plus-sign, .reaction-arrow').forEach(el => el.remove());
-
-    // Only hide loading text if we're not using it to show feedback
-    if (!showAnswer) {
+    
+    // Hide status text ONLY if we aren't displaying a persistent answer result
+    if (!showAnswer && loadingText.innerText !== "Generating..." && loadingText.innerText !== "Checking...") {
         loadingText.style.display = 'none';
         loadingText.className = "";
     }
@@ -188,7 +204,7 @@ async function fetchBatchReactions() {
     // Only clear if the queue is empty (to signal a new fetch)
     if (reactionQueue.length === 0) {
         container.querySelectorAll('canvas, .plus-sign, .reaction-arrow').forEach(el => el.remove());
-        loadingText.innerText = "Fetching new batch...";
+        loadingText.innerText = "Generating...";
         loadingText.style.display = 'block';
     }
 
@@ -241,7 +257,16 @@ async function fetchBatchReactions() {
         loadingText.style.display = 'block';
     } finally {
         isFetching = false;
-        loadingText.style.display = 'none';
+        // Don't hide the text here if it's "Generating..." 
+        // because displayNextReaction/renderReaction will handle it
+        if (loadingText.innerText === "Generating...") {
+            // Keep it visible for a brief moment or until render handles it
+        } else {
+            // If it was an error message, keep it. Otherwise hide.
+            if (!loadingText.innerText.includes("Oops") && !loadingText.innerText.includes("busy")) {
+                loadingText.style.display = 'none';
+            }
+        }
 
         // If the queue was empty and we just got data, display the first one
         if (reactionQueue.length > 0 && container.querySelectorAll('canvas').length === 0) {
@@ -264,9 +289,14 @@ function displayNextReaction() {
     hasSubmitted = false;
     lastFeedback = "";
     isShowingAnswer = false;
+    isCanvasBlank = true;
+
+    // Clear the board for the new reaction
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     updateQueueCount();
     updateButtonState();
+    updateSubmitDisabled();
     renderReaction(nextReaction);
 
     // If we're running low, fetch more in the background
@@ -321,10 +351,11 @@ async function submitDrawing() {
     if (!currentReaction || isSubmitting) return;
 
     const loadingText = document.getElementById('loading-text');
-    loadingText.innerText = "Evaluating...";
+    loadingText.innerText = "Checking...";
     loadingText.className = ""; // Remove previous success/error colors
     loadingText.style.display = 'block';
     isSubmitting = true;
+    updateSubmitDisabled();
 
     try {
         // Capture canvas
@@ -372,6 +403,7 @@ async function submitDrawing() {
         loadingText.className = "error-text";
     } finally {
         isSubmitting = false;
+        updateSubmitDisabled();
     }
 }
 
