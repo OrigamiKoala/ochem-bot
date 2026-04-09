@@ -360,12 +360,19 @@ Grade student drawings as 'Correct' or 'Incorrect' with a brief hint. Be concise
     async sendTurn(prompt, base64Image) {
         if (!this.isConnected) await this.connect();
 
-        // 1. Send text prompt via realtimeInput (per user's "Sending text" screenshot)
-        this.ws.send(JSON.stringify({
-            realtimeInput: {
-                text: prompt
-            }
-        }));
+        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            const textMessage = {
+                realtimeInput: {
+                    text: prompt
+                }
+            };
+            this.ws.send(JSON.stringify(textMessage));
+            console.log('Text message sent:', prompt);
+        } else {
+            console.warn('WebSocket not open.');
+        }
+
+        // 2. If image present, send via realtimeInput video field (per user's "Sending video" screenshot)
 
         // 2. If image present, send via realtimeInput video field (per user's "Sending video" screenshot)
         if (base64Image) {
