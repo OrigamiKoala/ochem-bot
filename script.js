@@ -399,6 +399,8 @@ async function submitDrawing() {
 
             if (feedback.toLowerCase().startsWith('correct')) {
                 loadingText.className = "success-text";
+                isShowingAnswer = true; // Transition "Give up" to "New"
+                updateButtonState();
             } else {
                 loadingText.className = "error-text";
             }
