@@ -3,7 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "echo 'No build step needed for this static/API hybrid'",
+    "start": "node api/chat.js"
+  },
   "dependencies": {
-    "@google/generative-ai": "^0.3.0"
+    "@google/genai": "^0.1.0"
   }
 }
