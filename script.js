@@ -22,6 +22,7 @@ let lastFeedback = "";
 let isShowingAnswer = false;
 
 const submitBtn = document.getElementById('submit-btn');
+const reportBtn = document.getElementById('report-btn');
 
 let isCanvasBlank = true;
 
@@ -168,8 +169,8 @@ function addChatMessage(role, text) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 }
 
-async function sendFollowupQuestion() {
-    const question = followupInput.value.trim();
+async function sendFollowupQuestion(overrideText) {
+    const question = overrideText || followupInput.value.trim();
     if (!question || !currentReaction) return;
 
     addChatMessage('user', question);
@@ -218,6 +219,30 @@ if (sendFollowupBtn) {
 if (followupInput) {
     followupInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') sendFollowupQuestion();
+    });
+}
+
+// ------ Report Error / I Was Right Logic ------
+function updateReportButton() {
+    if (!reportBtn) return;
+    if (isShowingAnswer) {
+        reportBtn.innerText = "I was right";
+    } else {
+        reportBtn.innerText = "Report Error";
+    }
+}
+
+if (reportBtn) {
+    reportBtn.addEventListener('click', () => {
+        if (!currentReaction) return;
+        
+        // Ensure explanation display is visible so user sees the response
+        if (explanationDisplay) {
+            explanationDisplay.style.display = 'block';
+        }
+
+        const msg = isShowingAnswer ? "Reevaluate" : "Are you sure this reaction is possible?";
+        sendFollowupQuestion(msg);
     });
 }
 
@@ -741,6 +766,7 @@ function displayNextReaction() {
     updateQueueCount();
     updateButtonState();
     updateSubmitDisabled();
+    updateReportButton();
     renderReaction(nextReaction);
 
     // If we're running low, fetch more in the background
@@ -784,6 +810,7 @@ function handleGiveUp() {
 
     renderReaction(currentReaction, true);
     updateButtonState();
+    updateReportButton();
 }
 generateBtn.addEventListener('click', (e) => {
     e.preventDefault();
@@ -854,6 +881,7 @@ CRITICAL RULE: If Incorrect, give a subtle hint (max 10 words) that guides them 
                 loadingText.className = "success-text";
                 isShowingAnswer = true; // Transition "Give up" to "New"
                 updateButtonState();
+                updateReportButton();
             } else {
                 loadingText.className = "error-text";
             }
