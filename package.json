@@ -5,10 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vercel dev",
-    "build": "echo 'No build step needed for this static/API hybrid'",
+    "build": "echo 'No build step needed'",
     "start": "node api/chat.js"
-  },
-  "dependencies": {
-    "@google/genai": "^0.1.0"
   }
 }
