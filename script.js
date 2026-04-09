@@ -23,27 +23,42 @@ const submitBtn = document.getElementById('submit-btn');
 let isCanvasBlank = true;
 
 // ------ Settings & Topic Management ------
-const allTopics = ["addition", "substitution", "elimination", "on rings", "Grignard", "redox", "protecting groups", "cycloadditions", "electrocyclic", "rearrangements", "radicals", "carbenes", "stereochemistry", "regioselectivity"];
-let selectedTopics = JSON.parse(localStorage.getItem('ochem_selected_topics')) || [...allTopics];
+const baseTopics = ["addition", "substitution", "elimination", "on rings", "Grignard", "redox", "protecting groups", "cycloadditions", "electrocyclic", "rearrangements", "radicals", "carbenes", "stereochemistry", "regioselectivity"];
+let userCustomTopics = JSON.parse(localStorage.getItem('ochem_custom_topics')) || [];
+let selectedTopics = JSON.parse(localStorage.getItem('ochem_selected_topics')) || [...baseTopics, ...userCustomTopics];
 
 const settingsBtn = document.getElementById('settings-btn');
 const settingsModal = document.getElementById('settings-modal');
 const saveSettingsBtn = document.getElementById('save-settings-btn');
 const topicsListDiv = document.getElementById('topics-list');
+const addCustomTopicBtn = document.getElementById('add-custom-topic-btn');
+const customTopicInput = document.getElementById('custom-topic-input');
+const helpBtn = document.getElementById('help-btn');
 
 function initSettings() {
     if (!topicsListDiv) return;
     topicsListDiv.innerHTML = '';
-    allTopics.forEach(topic => {
+    
+    const allAvailableTopics = [...baseTopics, ...userCustomTopics];
+    
+    allAvailableTopics.forEach(topic => {
         const item = document.createElement('div');
         item.className = 'topic-item';
         const isChecked = selectedTopics.includes(topic);
+        const isCustom = userCustomTopics.includes(topic);
+        
         item.innerHTML = `
-            <input type="checkbox" id="topic-${topic}" value="${topic}" ${isChecked ? 'checked' : ''}>
-            <label for="topic-${topic}">${topic.charAt(0).toUpperCase() + topic.slice(1)}</label>
+            <input type="checkbox" id="topic-${topic.replace(/\s+/g, '-')}" value="${topic}" ${isChecked ? 'checked' : ''}>
+            <label for="topic-${topic.replace(/\s+/g, '-')}">${topic.charAt(0).toUpperCase() + topic.slice(1)}</label>
+            ${isCustom ? `<button class="remove-topic-btn" data-topic="${topic}">×</button>` : ''}
         `;
-        // Make the whole item clickable for easier tablet use
+
+        // Interaction logic
         item.addEventListener('click', (e) => {
+            if (e.target.className === 'remove-topic-btn') {
+                removeCustomTopic(e.target.dataset.topic);
+                return;
+            }
             if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'LABEL') {
                 const cb = item.querySelector('input');
                 cb.checked = !cb.checked;
@@ -51,6 +66,34 @@ function initSettings() {
         });
         topicsListDiv.appendChild(item);
     });
+}
+function addCustomTopic() {
+    const newTopic = customTopicInput.value.trim().toLowerCase();
+    if (!newTopic) return;
+    if (baseTopics.includes(newTopic) || userCustomTopics.includes(newTopic)) {
+        alert("Topic already exists!");
+        return;
+    }
+    
+    userCustomTopics.push(newTopic);
+    selectedTopics.push(newTopic); // Auto-select new topic
+    localStorage.setItem('ochem_custom_topics', JSON.stringify(userCustomTopics));
+    localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
+    
+    customTopicInput.value = '';
+    initSettings();
+}
+
+function removeCustomTopic(topicToRemove) {
+    userCustomTopics = userCustomTopics.filter(t => t !== topicToRemove);
+    selectedTopics = selectedTopics.filter(t => t !== topicToRemove);
+    localStorage.setItem('ochem_custom_topics', JSON.stringify(userCustomTopics));
+    localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
+    initSettings();
+}
+
+if (addCustomTopicBtn) {
+    addCustomTopicBtn.addEventListener('click', addCustomTopic);
 }
 
 if (settingsBtn) {
@@ -68,7 +111,7 @@ if (saveSettingsBtn) {
             .map(cb => cb.value);
 
         // Default to all if none selected to prevent errors
-        if (selectedTopics.length === 0) selectedTopics = [...allTopics];
+        if (selectedTopics.length === 0) selectedTopics = [...baseTopics, ...userCustomTopics];
 
         localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
         settingsModal.style.display = 'none';
@@ -76,6 +119,17 @@ if (saveSettingsBtn) {
         // Clear queue and fetch new ones immediately to reflect new settings
         reactionQueue = [];
         fetchBatchReactions();
+    });
+}
+
+// Help button toggle
+if (helpBtn) {
+    helpBtn.addEventListener('click', () => {
+        const explanationDiv = document.getElementById('explanation-display');
+        if (explanationDiv) {
+            const isHidden = explanationDiv.style.display === 'none';
+            explanationDiv.style.display = isHidden ? 'block' : 'none';
+        }
     });
 }
 
@@ -188,12 +242,15 @@ clearBtn.addEventListener('click', () => {
 function renderReaction(data, showAnswer = false) {
     const instructionDiv = document.getElementById('question-instruction');
     const moleculeDiv = document.getElementById('molecule-display');
+    const explanationDiv = document.getElementById('explanation-display');
     const loadingText = document.getElementById('loading-text');
 
-    if (!instructionDiv || !moleculeDiv) return;
+    if (!instructionDiv || !moleculeDiv || !explanationDiv) return;
 
     // Immediate clear
     moleculeDiv.innerHTML = '';
+    explanationDiv.style.display = 'none';
+    explanationDiv.innerText = data.explanation || "No explanation preloaded.";
 
     // Hide status text ONLY if we aren't displaying a persistent answer result
     if (!showAnswer && loadingText.innerText !== "Generating..." && loadingText.innerText !== "Checking...") {
@@ -307,7 +364,8 @@ Structure:
       "reactants": "SMILES",
       "conditions": "LaTeX",
       "answer": "SMILES",
-      "instructions": "e.g., 'Draw curved arrows' or 'Draw (S)-product'"
+      "instructions": "Specific task instruction",
+      "explanation": "Brief step-by-step mechanism/logic walkthrough"
     }
   ]
 }
@@ -436,13 +494,17 @@ function handleGiveUp() {
 
     isShowingAnswer = true;
     const loadingText = document.getElementById('loading-text');
+    const explanationDiv = document.getElementById('explanation-display');
 
     if (hasSubmitted && lastFeedback) {
         loadingText.innerText = lastFeedback;
         loadingText.style.display = 'block';
-        // Keep the styling (success/error) from the last submission
     } else {
         loadingText.style.display = 'none';
+    }
+
+    if (explanationDiv) {
+        explanationDiv.style.display = 'block';
     }
 
     renderReaction(currentReaction, true);
@@ -478,7 +540,8 @@ Task Type: ${currentReaction.qtype}
 Instructions: ${currentReaction.instructions}
 Reaction: ${currentReaction.reactants} [${currentReaction.conditions}] -> ${currentReaction.answer}
 
-Is the drawing correct? Output 'Correct' or 'Incorrect' + brief explanation (max 10 words).`;
+Is the drawing correct? Output 'Correct' or 'Incorrect'. 
+CRITICAL RULE: If Incorrect, give a subtle hint (max 10 words) that guides them without giving the answer away (no structure names or SMILES).`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',

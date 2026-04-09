@@ -29,12 +29,14 @@
     <div id="reaction-container">
       <div id="question-instruction"></div>
       <div id="molecule-display"></div>
+      <div id="explanation-display" style="display: none;"></div>
     </div>
     <div id="whiteboard-container">
       <div id="toolbar">
         <button type="button" id="generate-btn">New</button>
         <button type="button" id="submit-btn" style="background-color: #34c759;">Submit</button>
         <button type="button" id="clear-btn">Clear</button>
+        <button type="button" id="help-btn" style="background-color: #ff9500;">?</button>
         <button type="button" id="settings-btn" style="background-color: #5856d6;">Settings</button>
       </div>
       <canvas id="whiteboard"></canvas>
@@ -49,6 +51,13 @@
       <p>Select reaction types to focus on:</p>
       <div id="topics-list">
         <!-- Topics will be injected here by JS -->
+      </div>
+      <div id="custom-topic-container">
+        <h3>Add Custom Topic</h3>
+        <div class="custom-topic-input-row">
+          <input type="text" id="custom-topic-input" placeholder="e.g., Peptides, Alkaloids...">
+          <button id="add-custom-topic-btn">Add</button>
+        </div>
       </div>
       <div class="modal-actions">
         <button id="save-settings-btn">Save & Close</button>
