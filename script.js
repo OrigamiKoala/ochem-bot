@@ -300,7 +300,8 @@ class GeminiLiveAgent {
             setup: {
                 model: this.model,
                 generation_config: {
-                    response_modalities: ["TEXT"] 
+                    // Reverting to AUDIO: 1011 Internal Error confirms TEXT-only setup is not stabilized for 3.1 Live yet.
+                    response_modalities: ["AUDIO"] 
                 },
                 system_instruction: {
                     parts: [{
