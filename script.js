@@ -239,6 +239,11 @@ async function fetchBatchReactions() {
             try {
                 const blockMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/i);
                 let jsonText = blockMatch ? blockMatch[1].trim() : rawText.trim();
+                
+                // Sanitization: Common model error — single backslashes in JSON strings (e.g. \Delta)
+                // This replaces backslashes that aren't followed by a valid JSON escape character
+                jsonText = jsonText.replace(/\\(?![bfnrtu"/\\])/g, '\\\\');
+                
                 const data = JSON.parse(jsonText);
 
                 if (data.reactions && Array.isArray(data.reactions)) {
