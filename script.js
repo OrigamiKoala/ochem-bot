@@ -277,11 +277,7 @@ class GeminiLiveAgent {
                 const text = await response.text().catch(() => "");
                 errMessage = text.slice(0, 100) || response.statusText || errMessage;
             }
-
-            if (response.status === 404) {
-                throw new Error(`API Not Found (404). Check Vercel Dashboard 'Functions' tab to see if 'api/token' is active.`);
-            }
-            throw new Error(`Backend Error (${response.status}): ${errMessage}`);
+            throw new Error(`Connection failed: Error: API Not Found (404). Check Vercel Dashboard 'Functions' tab to see if 'api/token' is active. Backend message: ${errMessage}`);
         }
         
         const data = await response.json();
@@ -293,8 +289,8 @@ class GeminiLiveAgent {
 
         try {
             this.token = await this.getToken();
-            // User requested v1beta protocol
-            const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?access_token=${this.token}`;
+            // Official Documentation: For ephemeral tokens, use v1alpha BidiGenerateContentConstrained
+            const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained?access_token=${this.token}`;
 
             this.ws = new WebSocket(url);
 
