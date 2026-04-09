@@ -250,47 +250,23 @@ class GeminiLiveAgent {
         // Adaptive history (simplified)
         this.history = [];
     }
-
     async getToken() {
         const apiUrl = `/api/token?t=${Date.now()}`;
-        console.log(`[DEBUG] Attempting token fetch from: ${window.location.origin}${apiUrl}`);
+        console.log(`[DEBUG] Fetching key from: ${apiUrl}`);
         
-        let response;
-        try {
-            response = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ type: 'session_token' })
-            });
-        } catch (err) {
-            console.error("[DEBUG] Network error during fetch:", err);
-            throw new Error(`Connection failed: Could not reach the backend proxy at ${apiUrl}`);
-        }
-        
-        if (!response.ok) {
-            console.error(`[DEBUG] API Error: Status ${response.status} at ${apiUrl}`);
-            let errMessage = "Unknown server error";
-            try {
-                const errData = await response.json();
-                errMessage = errData.error || response.statusText || errMessage;
-            } catch (e) {
-                const text = await response.text().catch(() => "");
-                errMessage = text.slice(0, 100) || response.statusText || errMessage;
-            }
-            throw new Error(`Connection failed: Error: API Not Found (404). Check Vercel Dashboard 'Functions' tab to see if 'api/token' is active. Backend message: ${errMessage}`);
-        }
-        
+        const response = await fetch(apiUrl);
+        if (!response.ok) throw new Error("Could not fetch API credentials");
         const data = await response.json();
-        return data.token;
+        return data.key; // Returns the raw API key
     }
 
     async connect() {
         if (this.isConnected) return;
 
         try {
-            this.token = await this.getToken();
-            // Official Documentation: For ephemeral tokens, use v1alpha BidiGenerateContentConstrained
-            const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained?access_token=${this.token}`;
+            const key = await this.getToken();
+            // Official Direct Key Connection (v1beta)
+            const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${key}`;
 
             this.ws = new WebSocket(url);
 
