@@ -45,9 +45,9 @@ body {
 
 #loading-text {
     position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
+    bottom: 25px;
+    left: 25px;
+    transform: none;
     width: auto;
     max-width: 80vw;
     text-align: center;
