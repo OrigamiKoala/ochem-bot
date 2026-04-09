@@ -252,21 +252,35 @@ class GeminiLiveAgent {
     }
 
     async getToken() {
-        // More robust check: warn if no server or no API route
-        const response = await fetch('/api/chat', {
+        const apiUrl = '/api/chat';
+        const fallbackUrl = '/api/chat.js';
+        
+        console.log(`Attempting token fetch from: ${window.location.origin}${apiUrl}`);
+        
+        let response = await fetch(apiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: 'session_token' })
         }).catch(err => {
             console.error("Network error reaching /api/chat:", err);
-            throw new Error("Could not reach /api/chat. Are you running a local server with the backend proxy (e.g., 'vercel dev')?");
+            throw new Error(`Could not reach ${apiUrl}. Environment: ${window.location.protocol}`);
         });
+        
+        // Fallback logic for Vercel routing edge cases
+        if (response.status === 404) {
+            console.warn(`Primary route ${apiUrl} not found, trying fallback ${fallbackUrl}...`);
+            response = await fetch(fallbackUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'session_token' })
+            }).catch(() => response); // Keep original 404 if fallback fails
+        }
         
         if (response.status === 404) {
             const isLocalFile = window.location.protocol === 'file:';
             const msg = isLocalFile 
                 ? "Backend proxy (/api/chat) not found because you are opening index.html directly as a file. Relative paths only work on a server (e.g., 'vercel dev' or your deployed URL)."
-                : "Backend proxy (/api/chat) not found on the server. Please ensure the 'api' folder is deployed correctly.";
+                : `Backend proxy (/api/chat) not found on the server (${window.location.origin}). Please ensure the 'api' folder is deployed correctly.`;
             throw new Error(msg);
         }
         
