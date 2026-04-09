@@ -128,10 +128,12 @@ body {
 
 #molecule-display {
     display: flex;
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
     gap: 10px;
     width: 100%;
+    overflow-x: auto; /* Allow scrolling if the equation is long */
+    padding-bottom: 5px; /* Space for scrollbar if needed */
 }
 
 #loading-text {
