@@ -54,20 +54,20 @@ let currentDifficulty = parseInt(localStorage.getItem('ochem_difficulty')) || 1;
 
 function initSettings() {
     if (!topicsListDiv || !difficultySlider) return;
-    
+
     // Set slider value
     difficultySlider.value = currentDifficulty;
 
     topicsListDiv.innerHTML = '';
-    
+
     const allAvailableTopics = [...baseTopics, ...userCustomTopics];
-    
+
     allAvailableTopics.forEach(topic => {
         const item = document.createElement('div');
         item.className = 'topic-item';
         const isChecked = selectedTopics.includes(topic);
         const isCustom = userCustomTopics.includes(topic);
-        
+
         item.innerHTML = `
             <input type="checkbox" id="topic-${topic.replace(/\s+/g, '-')}" value="${topic}" ${isChecked ? 'checked' : ''}>
             <label for="topic-${topic.replace(/\s+/g, '-')}">${topic.charAt(0).toUpperCase() + topic.slice(1)}</label>
@@ -96,12 +96,12 @@ function addCustomTopic() {
         alert("Topic already exists!");
         return;
     }
-    
+
     userCustomTopics.push(newTopic);
     selectedTopics.push(newTopic); // Auto-select new topic
     localStorage.setItem('ochem_custom_topics', JSON.stringify(userCustomTopics));
     localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
-    
+
     customTopicInput.value = '';
     initSettings();
 }
@@ -131,7 +131,7 @@ if (saveSettingsBtn) {
         selectedTopics = Array.from(checkboxes)
             .filter(cb => cb.checked)
             .map(cb => cb.value);
-        
+
         // Save difficulty
         currentDifficulty = parseInt(difficultySlider.value);
         localStorage.setItem('ochem_difficulty', currentDifficulty);
@@ -173,7 +173,7 @@ async function sendFollowupQuestion() {
 
     addChatMessage('user', question);
     followupInput.value = '';
-    
+
     const botMsgDiv = document.createElement('div');
     botMsgDiv.className = 'chat-msg bot-msg';
     botMsgDiv.innerText = '...';
@@ -401,7 +401,7 @@ if (eraseBtn) {
     eraseBtn.addEventListener('click', () => {
         isEraser = !isEraser;
         eraseBtn.classList.toggle('active-tool', isEraser);
-        
+
         if (isEraser) {
             eraseBtn.innerText = "Pen";
         } else {
@@ -421,10 +421,10 @@ function renderReaction(data, showAnswer = false) {
     // Immediate clear
     moleculeDiv.innerHTML = '';
     explanationDisplay.style.display = 'none';
-    
+
     // Reset/Parse explanation
     renderExplanationWithMolecules(data.explanation || "No explanation preloaded.", explanationContent);
-    
+
     chatMessages.innerHTML = ''; // Reset chat history
 
     // Hide status text ONLY if we aren't displaying a persistent answer result
@@ -513,10 +513,10 @@ function renderMolecules(molecules, container, suffix = "") {
 function renderExplanationWithMolecules(text, container) {
     if (!container) return;
     container.innerHTML = '';
-    
+
     // Match [[SMILES: SMILES_STRING]]
     const parts = text.split(/(\[\[SMILES:.*?\]\])/g);
-    
+
     parts.forEach(part => {
         const match = part.match(/\[\[SMILES:(.*?)\]\]/);
         if (match) {
@@ -528,14 +528,14 @@ function renderExplanationWithMolecules(text, container) {
             canvas.id = uniqueId;
             wrapper.appendChild(canvas);
             container.appendChild(wrapper);
-            
+
             // Draw small molecule
             const dpr = window.devicePixelRatio || 1;
             const bSize = 120;
             const size = bSize * dpr;
             canvas.style.width = bSize + "px";
             canvas.style.height = bSize + "px";
-            
+
             const options = { width: size, height: size, bondThickness: 2, bondSpacing: 4, padding: 10 };
             const sd = new SmilesDrawer.Drawer(options);
             SmilesDrawer.parse(smiles, (tree) => {
@@ -594,7 +594,8 @@ Structure:
 
 RULES:
 1. SMILES: NO hydrogens.
-2. LaTeX: Use DOUBLE backslashes (e.g. \\\\Delta).`;
+2. LaTeX: Use DOUBLE backslashes (e.g. \\\\Delta).
+3. Make sure the reaction actually occurs to a significant extent.`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
