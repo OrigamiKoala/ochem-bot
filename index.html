@@ -29,7 +29,16 @@
     <div id="reaction-container">
       <div id="question-instruction"></div>
       <div id="molecule-display"></div>
-      <div id="explanation-display" style="display: none;"></div>
+      <div id="explanation-display" style="display: none;">
+        <div id="explanation-text-content"></div>
+        <div id="chat-interface">
+          <div id="chat-messages"></div>
+          <div class="chat-input-row">
+            <input type="text" id="followup-input" placeholder="Still confused? Ask Gemini...">
+            <button id="send-followup-btn">Send</button>
+          </div>
+        </div>
+      </div>
     </div>
     <div id="whiteboard-container">
       <div id="toolbar">

@@ -34,6 +34,11 @@ const topicsListDiv = document.getElementById('topics-list');
 const addCustomTopicBtn = document.getElementById('add-custom-topic-btn');
 const customTopicInput = document.getElementById('custom-topic-input');
 const helpBtn = document.getElementById('help-btn');
+const followupInput = document.getElementById('followup-input');
+const sendFollowupBtn = document.getElementById('send-followup-btn');
+const chatMessages = document.getElementById('chat-messages');
+const explanationDisplay = document.getElementById('explanation-display');
+const explanationContent = document.getElementById('explanation-text-content');
 
 function initSettings() {
     if (!topicsListDiv) return;
@@ -125,11 +130,72 @@ if (saveSettingsBtn) {
 // Help button toggle
 if (helpBtn) {
     helpBtn.addEventListener('click', () => {
-        const explanationDiv = document.getElementById('explanation-display');
-        if (explanationDiv) {
-            const isHidden = explanationDiv.style.display === 'none';
-            explanationDiv.style.display = isHidden ? 'block' : 'none';
+        if (explanationDisplay) {
+            const isHidden = explanationDisplay.style.display === 'none';
+            explanationDisplay.style.display = isHidden ? 'block' : 'none';
         }
+    });
+}
+
+// ------ AI Tutor Follow-up Chat ------
+function addChatMessage(role, text) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `chat-msg ${role === 'user' ? 'user-msg' : 'bot-msg'}`;
+    msgDiv.innerText = text;
+    chatMessages.appendChild(msgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+
+async function sendFollowupQuestion() {
+    const question = followupInput.value.trim();
+    if (!question || !currentReaction) return;
+
+    addChatMessage('user', question);
+    followupInput.value = '';
+    
+    const botMsgDiv = document.createElement('div');
+    botMsgDiv.className = 'chat-msg bot-msg';
+    botMsgDiv.innerText = '...';
+    chatMessages.appendChild(botMsgDiv);
+
+    try {
+        const prompt = `Context:
+Reactants: ${currentReaction.reactants}
+Conditions: ${currentReaction.conditions}
+Answer: ${currentReaction.answer}
+Explanation: ${currentReaction.explanation}
+
+Student Question: ${question}
+
+Instructions: You are an expert organic chemistry tutor. Answer the student's question concisely (max 50 words) based on the reaction context above. Focus on mechanistic logic and principles.`;
+
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
+        });
+
+        if (!response.ok) throw new Error("API error");
+
+        const result = await response.json();
+        if (result.candidates && result.candidates[0].content.parts[0].text) {
+            const botResponse = result.candidates[0].content.parts[0].text.trim();
+            botMsgDiv.innerText = botResponse;
+        } else {
+            botMsgDiv.innerText = "Sorry, I couldn't process that question.";
+        }
+    } catch (e) {
+        console.error("Chat error:", e);
+        botMsgDiv.innerText = "Oops, I'm having trouble connecting to the lab.";
+    }
+}
+
+if (sendFollowupBtn) {
+    sendFollowupBtn.addEventListener('click', sendFollowupQuestion);
+}
+if (followupInput) {
+    followupInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendFollowupQuestion();
     });
 }
 
@@ -242,15 +308,15 @@ clearBtn.addEventListener('click', () => {
 function renderReaction(data, showAnswer = false) {
     const instructionDiv = document.getElementById('question-instruction');
     const moleculeDiv = document.getElementById('molecule-display');
-    const explanationDiv = document.getElementById('explanation-display');
     const loadingText = document.getElementById('loading-text');
 
-    if (!instructionDiv || !moleculeDiv || !explanationDiv) return;
+    if (!instructionDiv || !moleculeDiv || !explanationDisplay || !explanationContent) return;
 
     // Immediate clear
     moleculeDiv.innerHTML = '';
-    explanationDiv.style.display = 'none';
-    explanationDiv.innerText = data.explanation || "No explanation preloaded.";
+    explanationDisplay.style.display = 'none';
+    explanationContent.innerText = data.explanation || "No explanation preloaded.";
+    chatMessages.innerHTML = ''; // Reset chat history
 
     // Hide status text ONLY if we aren't displaying a persistent answer result
     if (!showAnswer && loadingText.innerText !== "Generating..." && loadingText.innerText !== "Checking...") {

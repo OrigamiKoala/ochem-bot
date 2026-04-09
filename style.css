@@ -53,14 +53,77 @@ body {
 
 #explanation-display {
     margin-top: 15px;
-    padding-top: 15px;
+    padding: 15px;
     border-top: 1px dashed #c7c7cc;
     font-size: 0.95rem;
     color: #48484a;
     line-height: 1.4;
-    font-style: italic;
     width: 100%;
     display: none;
+    background: #fdfdfd;
+    border-radius: 12px;
+}
+
+#explanation-text-content {
+    font-style: italic;
+    margin-bottom: 15px;
+}
+
+#chat-interface {
+    border-top: 1px solid #ebebeb;
+    padding-top: 15px;
+}
+
+#chat-messages {
+    max-height: 150px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.chat-msg {
+    padding: 8px 12px;
+    border-radius: 12px;
+    max-width: 90%;
+}
+
+.user-msg {
+    align-self: flex-end;
+    background: #e1f5fe;
+    color: #01579b;
+}
+
+.bot-msg {
+    align-self: flex-start;
+    background: #f2f2f7;
+    color: #1c1c1e;
+}
+
+.chat-input-row {
+    display: flex;
+    gap: 8px;
+}
+
+#followup-input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #c7c7cc;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    outline: none;
+}
+
+#send-followup-btn {
+    padding: 8px 15px;
+    background: #007aff;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
 }
 
 #molecule-display {
