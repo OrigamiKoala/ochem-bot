@@ -302,9 +302,7 @@ class GeminiLiveAgent {
                 generationConfig: {
                     responseModalities: ["TEXT"] 
                 },
-                systemInstruction: {
-                    parts: [{
-                        text: `You are an organic chemistry tutor. When asked for a new question, generate 1 reaction in JSON format:
+                systemInstruction: `You are an organic chemistry tutor. When asked for a new question, generate 1 reaction in JSON format:
 {
   "qtype": "predict|mechanism|stereo",
   "reactants": "SMILES",
@@ -314,8 +312,6 @@ class GeminiLiveAgent {
   "explanation": "Detailed mechanism with [[SMILES: ...]] placeholders."
 }
 Grade student drawings as 'Correct' or 'Incorrect' with a brief hint. Be concise.`
-                    }]
-                }
             }
         };
         console.log("[DEBUG] Sending setup configuration (TEXT-mode)...");
