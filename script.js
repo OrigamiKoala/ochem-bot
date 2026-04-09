@@ -209,12 +209,15 @@ async function fetchBatchReactions() {
     }
 
     try {
-        const prompt = "Generate 5 different organic chemistry mechanism practice questions. \n\nFORMAT RULES:\n1. SMILES syntax (used in 'reactants' and 'answer') must NEVER contain hydrogens (NO 'H3', NO 'CH3'). Propane is `CCC`, Bromoethane is `CCBr`.\n2. LaTeX mhchem syntax (used in 'conditions') MUST use proper subscripts and DOUBLE backslashes for JSON compatibility (e.g., `Br_2`, `H_2SO_4`, `\\\\Delta`).\n\nOutput ONLY a valid JSON object in a markdown block:\n```json\n{\n  \"reactions\": [\n    {\n      \"reactants\": \"CC(=O)C.C1=CC=CC=C1\",\n      \"conditions\": \"Br_2, H_2SO_4\",\n      \"answer\": \"CC(O)(C)C1=CC=CC=C1\"\n    },\n    ...\n  ]\n}\n```";
+        const prompt = "Generate 5 organic chemistry questions in JSON format. \nRULES:\n1. SMILES: NO hydrogens (e.g. CCBr).\n2. LaTeX: Use DOUBLE backslashes (e.g. \\\\Delta).\n3. Structure: {\"reactions\": [{\"reactants\": \"...\", \"conditions\": \"...\", \"answer\": \"...\"}]}";
 
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
+            body: JSON.stringify({ 
+                prompt,
+                responseMimeType: 'application/json'
+            })
         });
 
         if (!response.ok) {
@@ -237,11 +240,10 @@ async function fetchBatchReactions() {
         if (result.candidates && result.candidates[0].content.parts[0].text) {
             let rawText = result.candidates[0].content.parts[0].text;
             try {
-                const blockMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/i);
-                let jsonText = blockMatch ? blockMatch[1].trim() : rawText.trim();
+                // In JSON mode, rawText should be pure JSON (no markdown backticks)
+                let jsonText = rawText.trim();
                 
-                // Sanitization: Common model error — single backslashes in JSON strings (e.g. \Delta)
-                // This replaces backslashes that aren't followed by a valid JSON escape character
+                // Extra safety: Fix any single backslashes that leaked through
                 jsonText = jsonText.replace(/\\(?![bfnrtu"/\\])/g, '\\\\');
                 
                 const data = JSON.parse(jsonText);
@@ -367,7 +369,7 @@ async function submitDrawing() {
         const dataUrl = canvas.toDataURL('image/png');
         const base64Image = dataUrl.split(',')[1];
 
-        const prompt = `Reaction: ${currentReaction.reactants} under conditions ${currentReaction.conditions}. \nAnalyze the user's drawing on the provided image. Does it correctly represent the major product(s) or the mechanism for this reaction? \nOutput EXACTLY 'Correct' or 'Incorrect' followed by a very short (10 words max) explanation.`;
+        const prompt = "Evaluate drawing for reaction: " + currentReaction.reactants + " [" + currentReaction.conditions + "] -> " + currentReaction.answer + ". Is it correct? Output 'Correct' or 'Incorrect' + brief explanation (max 10 words).";
 
         const response = await fetch('/api/chat', {
             method: 'POST',

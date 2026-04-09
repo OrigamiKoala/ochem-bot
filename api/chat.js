@@ -5,7 +5,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { prompt, image } = req.body;
+    const { prompt, image, responseMimeType } = req.body;
     const API_KEY = process.env.GEMINI_API_KEY;
 
     if (!API_KEY) {
@@ -27,7 +27,16 @@ export default async function handler(req, res) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                contents: [{ parts }]
+                contents: [{ parts }],
+                generationConfig: {
+                    maxOutputTokens: 600,
+                    temperature: 0.1,
+                    topP: 0.8,
+                    topK: 40,
+                    response_mime_type: responseMimeType || "text/plain"
+                },
+                // Minimize latent reasoning time for faster responses
+                thinking_level: "low"
             })
         });
 
