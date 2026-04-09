@@ -807,7 +807,7 @@ async function submitDrawing() {
 
     try {
         // Capture canvas
-        const dataUrl = canvas.toDataURL('image/png');
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
         const base64Image = dataUrl.split(',')[1];
 
         const prompt = `Evaluate the user's drawing for this challenge:
@@ -821,7 +821,12 @@ CRITICAL RULE: If Incorrect, give a subtle hint (max 10 words) that guides them 
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, image: base64Image })
+            body: JSON.stringify({ 
+                prompt, 
+                image: base64Image,
+                maxOutputTokens: 150,
+                temperature: 0.1
+            })
         });
 
         if (!response.ok) {
