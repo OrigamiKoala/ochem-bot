@@ -330,7 +330,7 @@
             "reactants": "[H][C@](C)(CC)Br",
             "conditions": "NaCN, DMSO",
             "answer": "[H][C@@](C)(CC)C#N",
-            "instructions": "Predict the absolute configuration of the product.",
+            "instructions": "Predict the product, considering stereochemistry.",
             "explanation": "The reaction involves a secondary alkyl halide and a strong nucleophile (cyanide) in a polar aprotic solvent, heavily favoring an S_N2 mechanism. S_N2 reactions proceed via a backside attack, resulting in complete inversion of stereochemistry. Thus, (R)-2-bromobutane is converted to (S)-2-methylbutanenitrile."
         },
         {
