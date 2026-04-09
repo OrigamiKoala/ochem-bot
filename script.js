@@ -646,7 +646,8 @@ Structure:
 RULES:
 1. SMILES: NO hydrogens.
 2. LaTeX: Use DOUBLE backslashes for commands (e.g. \\\\Delta).
-3. Make sure the reaction actually occurs to a significant extent.`;
+3. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas.
+4. Make sure the reaction actually occurs to a significant extent.`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
