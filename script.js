@@ -145,7 +145,7 @@ if (saveSettingsBtn) {
 
         // Clear queue and fetch new ones immediately to reflect new settings
         reactionQueue = [];
-        fetchBatchReactions();
+        fetchBatchReactions(true);
     });
 }
 
@@ -429,7 +429,7 @@ function renderReaction(data, showAnswer = false) {
     chatMessages.innerHTML = ''; // Reset chat history
 
     // Hide status text ONLY if we aren't displaying a persistent answer result
-    if (!showAnswer && loadingText.innerText !== "Generating..." && loadingText.innerText !== "Checking...") {
+    if (!showAnswer && loadingText.innerText !== "Checking...") {
         loadingText.style.display = 'none';
         loadingText.className = "";
     }
@@ -585,15 +585,15 @@ async function getStarterQuestion(targetTopic, targetDifficulty) {
 }
 
 // ------ Fetch Batch of Reactions ------
-async function fetchBatchReactions() {
+async function fetchBatchReactions(isExplicit = false) {
     if (isFetching) return;
     isFetching = true;
 
     const container = document.getElementById('reaction-container');
     const loadingText = document.getElementById('loading-text');
 
-    // Only clear if the queue is empty (to signal a new fetch)
-    if (reactionQueue.length === 0) {
+    // Only clear and show "Generating..." if this is an explicit user request and the queue is empty
+    if (isExplicit && reactionQueue.length === 0) {
         container.querySelectorAll('canvas, .plus-sign, .reaction-arrow').forEach(el => el.remove());
         loadingText.innerText = "Generating...";
         loadingText.style.display = 'block';
@@ -722,7 +722,7 @@ RULES:
 // ------ Manage Display Logic ------
 function displayNextReaction() {
     if (reactionQueue.length === 0) {
-        fetchBatchReactions();
+        fetchBatchReactions(true);
         return;
     }
 
@@ -745,7 +745,7 @@ function displayNextReaction() {
 
     // If we're running low, fetch more in the background
     if (reactionQueue.length <= 2) {
-        fetchBatchReactions();
+        fetchBatchReactions(false);
     }
 }
 
