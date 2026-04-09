@@ -204,7 +204,13 @@ async function fetchBatchReactions() {
         if (!response.ok) {
             const errorData = await response.json();
             console.error('Gemini API Error:', response.status, errorData);
-            loadingText.innerText = "Oops. Looks like the bot messed up!";
+            
+            if (response.status === 503 || response.status === 429) {
+                loadingText.innerText = "Looks like the bot's busy...Please try again in a moment.";
+            } else {
+                loadingText.innerText = "Oops. Looks like the bot messed up!";
+            }
+            
             loadingText.style.display = 'block';
             isFetching = false;
             return;
@@ -336,6 +342,14 @@ async function submitDrawing() {
         if (!response.ok) {
             const errorData = await response.json();
             console.error('Submission Gemini API Error:', response.status, errorData);
+            
+            if (response.status === 503 || response.status === 429) {
+                loadingText.innerText = "Looks like the bot's busy...Please try again in a moment.";
+            } else {
+                loadingText.innerText = "Oops. Looks like the bot messed up!";
+            }
+            loadingText.style.display = 'block';
+            loadingText.className = "error-text";
             throw new Error(`API error: ${response.status}`);
         }
 
