@@ -251,15 +251,24 @@ class GeminiLiveAgent {
     }
 
     async getToken() {
-        if (window.location.protocol === 'file:') {
-            throw new Error("Local File Error: The Live API requires a server (e.g. npx serve) to run the /api/chat proxy securely.");
-        }
+        // More robust check: warn if no server or no API route
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: 'session_token' })
+        }).catch(err => {
+            throw new Error("Could not reach /api/chat. Are you running a local server with the backend proxy (e.g., 'vercel dev')?");
         });
-        if (!response.ok) throw new Error("Failed to get session token");
+        
+        if (response.status === 404) {
+            throw new Error("Backend proxy (/api/chat) not found. This feature requires a Vercel-like environment.");
+        }
+        
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || "Failed to get session token from backend.");
+        }
+        
         const data = await response.json();
         return data.token;
     }

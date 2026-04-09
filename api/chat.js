@@ -1,5 +1,5 @@
 // api/chat.js
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 export default async function handler(req, res) {
     // 1. Only allow POST requests
@@ -17,10 +17,12 @@ export default async function handler(req, res) {
     // New: Handle session token requests for the Gemini Live API (WebSocket)
     if (type === 'session_token') {
         try {
-            console.log("Generating ephemeral session token using SDK...");
-            const genAI = new GoogleGenerativeAI(API_KEY);
-            // In the 2026 SDK, ephemeral tokens are part of the authTokens service
-            const token = await genAI.authTokens.create({
+            console.log("Generating ephemeral session token using modern SDK...");
+            const { GoogleGenAI } = await import("@google/genai");
+            const client = new GoogleGenAI({ apiKey: API_KEY });
+            
+            // In the 2026 SDK, ephemeral tokens are requested via authTokens.create
+            const token = await client.authTokens.create({
                 config: {
                     uses: 1,
                     expireTime: new Date(Date.now() + 3600 * 1000).toISOString()
@@ -28,13 +30,13 @@ export default async function handler(req, res) {
             });
 
             if (!token || !token.name) {
-                throw new Error("Invalid token response from SDK");
+                throw new Error("Invalid token response from Google SDK");
             }
 
             return res.status(200).json({ token: token.name });
         } catch (err) {
-            console.error('SDK Token Proxy Error:', err);
-            return res.status(500).json({ error: 'Failed to generate session token via SDK' });
+            console.error('SDK Token Error:', err);
+            return res.status(500).json({ error: err.message || 'Failed to generate session token via SDK' });
         }
     }
 
