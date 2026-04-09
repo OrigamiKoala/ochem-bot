@@ -295,7 +295,7 @@ async function fetchBatchReactions() {
     try {
         // Use user-selected topics
         const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
-        const prompt = `Generate 10 organic chemistry questions (Topic: ${topic}). JSON only. Request ID: ${Date.now()}.
+        const prompt = `Generate 5 organic chemistry questions (Topic: ${topic}). JSON only. Request ID: ${Date.now()}.
 
 Type Mix: randomly use "predict" (Predict product), "mechanism" (Draw arrow mechanism), or "stereo" (stereochemistry focus).
 
