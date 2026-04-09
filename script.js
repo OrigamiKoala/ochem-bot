@@ -3,9 +3,11 @@ console.log("hi!");
 const canvas = document.getElementById('whiteboard');
 const ctx = canvas.getContext('2d');
 const clearBtn = document.getElementById('clear-btn');
+const eraseBtn = document.getElementById('eraser-btn');
 const generateBtn = document.getElementById('generate-btn');
 
 let isDrawing = false;
+let isEraser = false;
 
 // API key is handled securely on the backend in /api/chat.js
 let reactionQueue = [];
@@ -266,6 +268,15 @@ function startDrawing(e) {
     e.preventDefault(); // Important to prevent default touch behaviors like scrolling
     isDrawing = true;
 
+    // Set brush mode
+    if (isEraser) {
+        ctx.globalCompositeOperation = 'destination-out';
+        ctx.lineWidth = 20; // Thicker for erasing
+    } else {
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.lineWidth = 3; // Standard for pen
+    }
+
     const pos = getCoordinates(e);
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
@@ -315,6 +326,19 @@ clearBtn.addEventListener('click', () => {
     isCanvasBlank = true;
     updateSubmitDisabled();
 });
+
+if (eraseBtn) {
+    eraseBtn.addEventListener('click', () => {
+        isEraser = !isEraser;
+        eraseBtn.classList.toggle('active-tool', isEraser);
+        
+        if (isEraser) {
+            eraseBtn.innerText = "Pen";
+        } else {
+            eraseBtn.innerText = "Eraser";
+        }
+    });
+}
 
 // // ------ Render a Reaction ------
 function renderReaction(data, showAnswer = false) {
