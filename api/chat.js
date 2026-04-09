@@ -1,5 +1,4 @@
 // api/chat.js
-import { GoogleGenAI } from "@google/genai";
 
 export default async function handler(req, res) {
     // 1. Only allow POST requests
@@ -17,26 +16,33 @@ export default async function handler(req, res) {
     // New: Handle session token requests for the Gemini Live API (WebSocket)
     if (type === 'session_token') {
         try {
-            console.log("Generating ephemeral session token using modern SDK...");
-            const { GoogleGenAI } = await import("@google/genai");
-            const client = new GoogleGenAI({ apiKey: API_KEY });
-            
-            // In the 2026 SDK, ephemeral tokens are requested via authTokens.create
-            const token = await client.authTokens.create({
-                config: {
-                    uses: 1,
-                    expireTime: new Date(Date.now() + 3600 * 1000).toISOString()
-                }
+            console.log("Generating ephemeral session token using REST...");
+            // Using the standard generative-language provisioning endpoint
+            const tokenResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/authTokens:generate?key=${API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    config: {
+                        uses: 1,
+                        expireTime: new Date(Date.now() + 3600 * 1000).toISOString()
+                    }
+                })
             });
 
-            if (!token || !token.name) {
-                throw new Error("Invalid token response from Google SDK");
+            if (!tokenResponse.ok) {
+                const errorData = await tokenResponse.json().catch(() => ({}));
+                console.error("Upstream Token Error:", errorData);
+                return res.status(tokenResponse.status).json({ 
+                    error: errorData.error?.message || `Google API returned ${tokenResponse.status}` 
+                });
             }
 
-            return res.status(200).json({ token: token.name });
+            const tokenData = await tokenResponse.json();
+            // The JSON response from Google typically has a 'token' or 'name' field
+            return res.status(200).json({ token: tokenData.token || tokenData.name });
         } catch (err) {
-            console.error('SDK Token Error:', err);
-            return res.status(500).json({ error: err.message || 'Failed to generate session token via SDK' });
+            console.error('REST Token Error:', err);
+            return res.status(500).json({ error: 'Failed to proxy session token request: ' + err.message });
         }
     }
 

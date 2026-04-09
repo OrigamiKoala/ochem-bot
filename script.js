@@ -10,6 +10,7 @@ let isDrawing = false;
 let isEraser = false;
 
 // API key is handled securely on the backend in /api/chat.js
+// Modern fetch is built-in to Node 18+ and Vercel runtimes. No SDK import needed for proxy logic.
 let reactionQueue = []; // Legacy - will be removed in favor of single-adaptive flow
 let currentReaction = null;
 let isFetching = false;
@@ -257,6 +258,7 @@ class GeminiLiveAgent {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ type: 'session_token' })
         }).catch(err => {
+            console.error("Network error reaching /api/chat:", err);
             throw new Error("Could not reach /api/chat. Are you running a local server with the backend proxy (e.g., 'vercel dev')?");
         });
         
@@ -265,8 +267,17 @@ class GeminiLiveAgent {
         }
         
         if (!response.ok) {
-            const errData = await response.json().catch(() => ({}));
-            throw new Error(errData.error || "Failed to get session token from backend.");
+            let errMessage = "Unknown server error";
+            try {
+                const errData = await response.json();
+                errMessage = errData.error || response.statusText || errMessage;
+            } catch (e) {
+                // If it's not JSON, maybe it's HTML error output
+                const text = await response.text().catch(() => "");
+                errMessage = text.slice(0, 100) || response.statusText || errMessage;
+            }
+            console.error(`Backend Error (${response.status}): ${errMessage}`);
+            throw new Error(`Backend Error (${response.status}): ${errMessage}`);
         }
         
         const data = await response.json();
@@ -278,7 +289,8 @@ class GeminiLiveAgent {
 
         try {
             this.token = await this.getToken();
-            const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${this.token}`;
+            // Use v1alpha and BidiGenerateContentConstrained for ephemeral tokens as per docs
+            const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained?access_token=${this.token}`;
 
             this.ws = new WebSocket(url);
 
@@ -289,7 +301,10 @@ class GeminiLiveAgent {
                     this.sendSetup();
                     resolve();
                 };
-                this.ws.onerror = (e) => reject(e);
+                this.ws.onerror = (e) => {
+                    console.error("WebSocket error:", e);
+                    reject(e);
+                };
                 this.ws.onclose = () => {
                     this.isConnected = false;
                     this.isSetup = false;
@@ -307,10 +322,10 @@ class GeminiLiveAgent {
         const setupMessage = {
             setup: {
                 model: this.model,
-                generation_config: {
-                    response_modalities: ["TEXT"]
+                generationConfig: {
+                    responseModalities: ["TEXT"]
                 },
-                system_instruction: {
+                systemInstruction: {
                     parts: [{
                         text: `You are an expert organic chemistry tutor. Your goal is to help students practice and master reaction mechanisms.
 
@@ -359,17 +374,17 @@ CORE RULES:
         const parts = [{ text: prompt }];
         if (base64Image) {
             parts.push({
-                inline_data: {
-                    mime_type: "image/jpeg",
+                inlineData: {
+                    mimeType: "image/jpeg",
                     data: base64Image
                 }
             });
         }
 
         const message = {
-            client_content: {
+            clientContent: {
                 turns: [{ role: "user", parts: parts }],
-                turn_complete: true
+                turnComplete: true
             }
         };
 
