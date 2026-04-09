@@ -253,7 +253,7 @@ class GeminiLiveAgent {
     async getToken() {
         const apiUrl = `/api/token?t=${Date.now()}`;
         console.log(`[DEBUG] Fetching key from: ${apiUrl}`);
-        
+
         const response = await fetch(apiUrl);
         if (!response.ok) throw new Error("Could not fetch API credentials");
         const data = await response.json();
@@ -300,8 +300,7 @@ class GeminiLiveAgent {
             setup: {
                 model: this.model,
                 generation_config: {
-                    // Reverting to AUDIO: 1011 Internal Error confirms TEXT-only setup is not stabilized for 3.1 Live yet.
-                    response_modalities: ["AUDIO"] 
+                    response_modalities: ["TEXT"]
                 },
                 system_instruction: {
                     parts: [{
@@ -360,7 +359,7 @@ Grade student drawings as 'Correct' or 'Incorrect' with a brief hint. Be concise
                 if (serverContent.outputTranscription?.text) {
                     combinedText += serverContent.outputTranscription.text;
                 }
-                
+
                 if (combinedText && this.pendingResolve) {
                     this.pendingResolve(combinedText);
                     this.pendingResolve = null;
@@ -413,7 +412,7 @@ Grade student drawings as 'Correct' or 'Incorrect' with a brief hint. Be concise
             const start = responseText.indexOf('{');
             const end = responseText.lastIndexOf('}');
             if (start === -1 || end === -1) throw new Error("No JSON found in response");
-            
+
             const jsonText = responseText.substring(start, end + 1);
             const data = JSON.parse(jsonText);
             return data;
