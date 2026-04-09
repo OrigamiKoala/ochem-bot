@@ -1,16 +1,32 @@
 // api/chat.js
 
 export default async function handler(req, res) {
-    // 1. Only allow POST requests
+    // 1. Diagnostics & CORS: Allow GET and OPTIONS to verify the route exists
+    if (req.method === 'GET' || req.method === 'OPTIONS') {
+        res.setHeader('Access-Control-Allow-Origin', '*');
+        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+        res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+        
+        if (req.method === 'OPTIONS') return res.status(200).end();
+        
+        return res.status(200).json({ 
+            status: 'online', 
+            message: 'Ochem Bot API is reachable. Please use POST for actual logic.',
+            timestamp: new Date().toISOString()
+        });
+    }
+
+    // 2. Only allow POST for logic
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { prompt, image, responseMimeType, maxOutputTokens, temperature, type } = req.body;
+    const body = req.body || {};
+    const { prompt, image, responseMimeType, maxOutputTokens, temperature, type } = body;
     const API_KEY = process.env.GEMINI_API_KEY;
 
     if (!API_KEY) {
-        return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
+        return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the Vercel server. Go to Project Settings > Environment Variables.' });
     }
 
     // New: Handle session token requests for the Gemini Live API (WebSocket)
