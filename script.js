@@ -10,7 +10,7 @@ let isDrawing = false;
 let isEraser = false;
 
 // API key is handled securely on the backend in /api/chat.js
-let reactionQueue = [];
+let reactionQueue = []; // Legacy - will be removed in favor of single-adaptive flow
 let currentReaction = null;
 let isFetching = false;
 let isSubmitting = false;
@@ -183,28 +183,9 @@ async function sendFollowupQuestion(overrideText) {
     chatMessages.appendChild(botMsgDiv);
 
     try {
-        const prompt = `Context:
-Reactants: ${currentReaction.reactants}
-Conditions: ${currentReaction.conditions}
-Answer: ${currentReaction.answer}
-Explanation: ${currentReaction.explanation}
-
-Student Question: ${question}
-
-Instructions: You are an expert organic chemistry tutor. Answer the student's question concisely (max 50 words) based on the reaction context above. Focus on mechanistic logic and principles.`;
-
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
-        });
-
-        if (!response.ok) throw new Error("API error");
-
-        const result = await response.json();
-        if (result.candidates && result.candidates[0].content.parts[0].text) {
-            const botResponse = result.candidates[0].content.parts[0].text.trim();
-            botMsgDiv.innerText = botResponse;
+        const botResponse = await liveAgent.sendTurn(question);
+        if (botResponse) {
+            botMsgDiv.innerText = botResponse.trim();
         } else {
             botMsgDiv.innerText = "Sorry, I couldn't process that question.";
         }
@@ -236,7 +217,7 @@ function updateReportButton() {
 if (reportBtn) {
     reportBtn.addEventListener('click', () => {
         if (!currentReaction) return;
-        
+
         // Ensure explanation display is visible so user sees the response
         if (explanationDisplay) {
             explanationDisplay.style.display = 'block';
@@ -250,10 +231,167 @@ if (reportBtn) {
         } else {
             msg = "Are you sure this reaction is possible?";
         }
-        
+
         sendFollowupQuestion(msg);
     });
 }
+
+// ------ Gemini Multimodal Live Agent (WebSocket) ------
+class GeminiLiveAgent {
+    constructor() {
+        this.ws = null;
+        this.isConnected = false;
+        this.token = null;
+        this.pendingResolve = null;
+        this.isSetup = false;
+        this.model = "models/gemini-3.1-flash-live-preview";
+
+        // Adaptive history (simplified)
+        this.history = [];
+    }
+
+    async getToken() {
+        if (window.location.protocol === 'file:') {
+            throw new Error("Local File Error: The Live API requires a server (e.g. npx serve) to run the /api/chat proxy securely.");
+        }
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'session_token' })
+        });
+        if (!response.ok) throw new Error("Failed to get session token");
+        const data = await response.json();
+        return data.token;
+    }
+
+    async connect() {
+        if (this.isConnected) return;
+
+        try {
+            this.token = await this.getToken();
+            const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${this.token}`;
+
+            this.ws = new WebSocket(url);
+
+            return new Promise((resolve, reject) => {
+                this.ws.onopen = () => {
+                    this.isConnected = true;
+                    console.log("Gemini Live Agent connected.");
+                    this.sendSetup();
+                    resolve();
+                };
+                this.ws.onerror = (e) => reject(e);
+                this.ws.onclose = () => {
+                    this.isConnected = false;
+                    this.isSetup = false;
+                    console.log("Gemini Live Agent disconnected.");
+                };
+                this.ws.onmessage = (event) => this.handleMessage(event);
+            });
+        } catch (e) {
+            console.error("Connection failed:", e);
+            throw e;
+        }
+    }
+
+    sendSetup() {
+        const setupMessage = {
+            setup: {
+                model: this.model,
+                generation_config: {
+                    response_modalities: ["TEXT"]
+                },
+                system_instruction: {
+                    parts: [{
+                        text: `You are an expert organic chemistry tutor. Your goal is to help students practice and master reaction mechanisms.
+
+CORE RULES:
+1. QUESTION GENERATION: When asked for a new question, generate 1 single reaction in JSON format.
+2. ADAPTATION: If the student failed the last question, focus on a slightly simpler version of that concept. If they succeeded, increase difficulty.
+3. OUTPUT FORMAT (Questions):
+{
+  "qtype": "predict|mechanism|stereo",
+  "reactants": "SMILES",
+  "conditions": "LaTeX",
+  "answer": "SMILES",
+  "instructions": "Task description",
+  "explanation": "Detailed mechanism with [[SMILES: ...]] placeholders."
+}
+4. GRADING: When the student submits a drawing, evaluate it based on the current reaction. Output 'Correct' or 'Incorrect' (at the very start), followed by a subtle 10-word hint if incorrect.
+5. PERSONA: Be encouraging, concise (max 50 words), and focus on electron-pushing logic.`
+                    }]
+                }
+            }
+        };
+        this.ws.send(JSON.stringify(setupMessage));
+    }
+
+    handleMessage(event) {
+        try {
+            const data = JSON.parse(event.data);
+            if (data.setupComplete) {
+                this.isSetup = true;
+                return;
+            }
+
+            if (data.serverContent && data.serverContent.modelTurn) {
+                const text = data.serverContent.modelTurn.parts[0].text;
+                if (this.pendingResolve) {
+                    this.pendingResolve(text);
+                    this.pendingResolve = null;
+                }
+            }
+        } catch (e) { console.error("Live message error:", e); }
+    }
+
+    async sendTurn(prompt, base64Image) {
+        if (!this.isConnected) await this.connect();
+
+        const parts = [{ text: prompt }];
+        if (base64Image) {
+            parts.push({
+                inline_data: {
+                    mime_type: "image/jpeg",
+                    data: base64Image
+                }
+            });
+        }
+
+        const message = {
+            client_content: {
+                turns: [{ role: "user", parts: parts }],
+                turn_complete: true
+            }
+        };
+
+        return new Promise((resolve) => {
+            this.pendingResolve = resolve;
+            this.ws.send(JSON.stringify(message));
+        });
+    }
+
+    async getNextQuestion(topic, difficulty) {
+        const perf = this.history.length > 0 ? this.history[this.history.length - 1] : "start";
+        const prompt = `Generate a new adaptive question. Topic: ${topic}. Difficulty: ${difficulty}. User's last performance: ${perf}. JSON ONLY.`;
+        const responseText = await this.sendTurn(prompt);
+
+        try {
+            // Robust JSON extraction: Find the first '{' and last '}'
+            const start = responseText.indexOf('{');
+            const end = responseText.lastIndexOf('}');
+            if (start === -1 || end === -1) throw new Error("No JSON found in response");
+            
+            const jsonText = responseText.substring(start, end + 1);
+            const data = JSON.parse(jsonText);
+            return data;
+        } catch (e) {
+            console.error("Failed to parse adaptive question:", e, responseText);
+            throw e;
+        }
+    }
+}
+
+const liveAgent = new GeminiLiveAgent();
 
 // Close modal when clicking outside
 if (settingsModal) {
@@ -618,7 +756,7 @@ async function getStarterQuestion(targetTopic, targetDifficulty) {
     return null;
 }
 
-// ------ Fetch Batch of Reactions ------
+//// ------ Fetch Batch of Reactions (ADAPTIVE LIVE VERSION) ------
 async function fetchBatchReactions(isExplicit = false) {
     if (isFetching) return;
     isFetching = true;
@@ -626,142 +764,34 @@ async function fetchBatchReactions(isExplicit = false) {
     const container = document.getElementById('reaction-container');
     const loadingText = document.getElementById('loading-text');
 
-    // Only clear and show "Generating..." if this is an explicit user request and the queue is empty
-    if (isExplicit && reactionQueue.length === 0) {
+    if (isExplicit) {
         container.querySelectorAll('canvas, .plus-sign, .reaction-arrow').forEach(el => el.remove());
-        loadingText.innerText = "Generating...";
+        loadingText.innerText = "Generating adaptive challenge...";
         loadingText.style.display = 'block';
     }
 
     try {
-        const difficultyMap = {
-            1: "Beginner: standard functional transformations (S_N1, S_N2, E1, E2, simple additions). Single step preferred.",
-            2: "USNCO level: competitive chemistry. Regioselectivity, basic named reactions (Wittig, Robinson), some rearrangements. Can be 1-2 steps.",
-            3: "IChO/Advanced Collegiate: total synthesis segments, advanced stereocontrol, complex pericyclics, obscure reagents (e.g. DDQ, DCC, specialized organometallics). Can be 2-3 step sequences."
-        };
+        const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
 
-        // Use user-selected topics
-    const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
+        // Use Live Agent to get the next adaptive question
+        const newReaction = await liveAgent.getNextQuestion(topic, currentDifficulty);
 
-    // Immediate gratification: If this is the first ever question request, try starter.json first
-    if (!currentReaction && reactionQueue.length === 0) {
-        const starter = await getStarterQuestion(topic, currentDifficulty);
-        if (starter) {
-            console.log("Loading starter question:", starter.id);
-            reactionQueue.push(starter);
-            // We need to release isFetching to allow displayNextReaction to call fetchBatchReactions again if it wants
-            // but actually displayNextReaction doesn't call it if something is in the queue.
-            // However, we want the Gemini fetch to CONTINUE in the background.
-            // So we display the starter and then PROCEED with the API call.
+        if (newReaction) {
+            currentReaction = newReaction;
             displayNextReaction();
-            // Important: We DON'T return here because we still want to fetch the rest of the batch from Gemini
-        }
-    }
-
-        const prompt = `Generate 5 organic chemistry questions (Topic: ${topic}). Difficulty: ${difficultyMap[currentDifficulty]}. JSON only.
-
-Type Mix: randomly use "predict" (Predict product), "mechanism" (Draw arrow mechanism), or "stereo" (stereochemistry focus).
-Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 1.
-
-Structure:
-{
-  "reactions": [
-    {
-      "qtype": "predict|mechanism|stereo",
-      "reactants": "SMILES",
-      "conditions": "LaTeX",
-      "answer": "SMILES",
-      "instructions": "Specific task",
-      "explanation": "Detailed mechanism. Use [[SMILES: SMILES_STRING]] to draw mechanistic intermediates within the text."
-    }
-  ]
-}
-
-RULES:
-1. SMILES: NO hydrogens.
-2. LaTeX: Use DOUBLE backslashes for commands (e.g. \\\\Delta).
-3. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas.
-4. Make sure the reaction actually occurs to a significant extent.`;
-
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                prompt,
-                responseMimeType: 'application/json'
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Gemini API Error:', response.status, errorData);
-
-            if (response.status === 503 || response.status === 429) {
-                loadingText.innerText = "Looks like the bot's busy...Please try again in a moment.";
-            } else {
-                loadingText.innerText = "Oops. Looks like the bot messed up!";
-            }
-
-            loadingText.style.display = 'block';
-            isFetching = false;
-            return;
-        }
-
-        const result = await response.json();
-
-        if (result.candidates && result.candidates[0].content.parts[0].text) {
-            let rawText = result.candidates[0].content.parts[0].text;
-            try {
-                // In JSON mode, rawText should be pure JSON
-                let jsonText = rawText.trim();
-                const data = JSON.parse(jsonText);
-
-                // Support both {reactions: [...]} and direct [...]
-                const reactions = Array.isArray(data) ? data : data.reactions;
-
-                if (reactions && Array.isArray(reactions)) {
-                    reactionQueue = [...reactionQueue, ...reactions];
-                    updateQueueCount();
-                }
-            } catch (e) {
-                console.error("JSON parse error", e, rawText);
-                loadingText.innerText = "Error parsing response.";
-                loadingText.style.display = 'block';
-            }
         }
     } catch (e) {
-        console.error("Fetch error:", e);
-        loadingText.innerText = "Oops. Looks like the bot messed up!";
+        console.error("Live Question Fetch error:", e);
+        loadingText.innerText = "Oops. The Live connection failed!";
         loadingText.style.display = 'block';
     } finally {
         isFetching = false;
-        // Don't hide the text here if it's "Generating..." 
-        // because displayNextReaction/renderReaction will handle it
-        if (loadingText.innerText === "Generating...") {
-            // Keep it visible for a brief moment or until render handles it
-        } else {
-            // If it was an error message, keep it. Otherwise hide.
-            if (!loadingText.innerText.includes("Oops") && !loadingText.innerText.includes("busy")) {
-                loadingText.style.display = 'none';
-            }
-        }
-
-        // If the queue was empty and we just got data, display the first one
-        if (reactionQueue.length > 0 && container.querySelectorAll('canvas, .reaction-arrow').length === 0) {
-            displayNextReaction();
-        }
     }
 }
 
 // ------ Manage Display Logic ------
 function displayNextReaction() {
-    if (reactionQueue.length === 0) {
-        fetchBatchReactions(true);
-        return;
-    }
-
-    const nextReaction = reactionQueue.shift();
-    currentReaction = nextReaction;
+    // Legacy queue logic removed for Adaptive Live flow
 
     // Reset state for new reaction
     hasSubmitted = false;
@@ -773,16 +803,10 @@ function displayNextReaction() {
     // Clear the board for the new reaction
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    updateQueueCount();
     updateButtonState();
     updateSubmitDisabled();
     updateReportButton();
-    renderReaction(nextReaction);
-
-    // If we're running low, fetch more in the background
-    if (reactionQueue.length <= 2) {
-        fetchBatchReactions(false);
-    }
+    renderReaction(currentReaction);
 }
 
 // ------ Update Queue Indicator ------
@@ -837,65 +861,30 @@ async function submitDrawing() {
 
     const loadingText = document.getElementById('loading-text');
     loadingText.innerText = "Checking...";
-    loadingText.className = ""; // Remove previous success/error colors
+    loadingText.className = "";
     loadingText.style.display = 'block';
     isSubmitting = true;
     updateSubmitDisabled();
 
     try {
-        // Capture canvas
         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
         const base64Image = dataUrl.split(',')[1];
 
-        const prompt = `Evaluate the user's drawing for this challenge:
-Task Type: ${currentReaction.qtype}
-Instructions: ${currentReaction.instructions}
-Reaction: ${currentReaction.reactants} [${currentReaction.conditions}] -> ${currentReaction.answer}
+        const prompt = "Evaluate my drawing.";
+        const feedback = await liveAgent.sendTurn(prompt, base64Image);
 
-Is the drawing correct? Output 'Correct' or 'Incorrect'. 
-CRITICAL RULE: If Incorrect, give a subtle hint (max 10 words) that guides them without giving the answer away (no structure names or SMILES).`;
-
-        const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ 
-                prompt, 
-                image: base64Image,
-                maxOutputTokens: 150,
-                temperature: 0.1
-            })
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('Submission Gemini API Error:', response.status, errorData);
-
-            if (response.status === 503 || response.status === 429) {
-                loadingText.innerText = "Looks like the bot's busy...Please try again in a moment.";
-            } else {
-                loadingText.innerText = "Oops. Looks like the bot messed up!";
-            }
-            loadingText.style.display = 'block';
-            loadingText.className = "error-text";
-            throw new Error(`API error: ${response.status}`);
-        }
-
-        const result = await response.json();
-        const candidate = result.candidates?.[0];
-        const textPart = candidate?.content?.parts?.[0]?.text;
-
-        if (textPart) {
-            const feedback = textPart.trim();
+        if (feedback) {
             loadingText.innerText = feedback;
-            lastFeedback = feedback; 
+            lastFeedback = feedback;
             hasSubmitted = true;
 
-            // Robust matching: Ignore leading markdown (**, #, etc) and whitespace
-            const isCorrect = /^\W*correct/i.test(feedback);
+            // Check for 'correct' anywhere in the first few words, ignoring markdown
+            const isCorrect = /\bcorrect\b/i.test(feedback) && !/\bincorrect\b/i.test(feedback);
+            liveAgent.history.push(isCorrect ? "correct" : "incorrect");
 
             if (isCorrect) {
                 loadingText.className = "success-text";
-                isShowingAnswer = true; 
+                isShowingAnswer = true;
                 updateButtonState();
                 updateReportButton();
             } else {
@@ -904,14 +893,12 @@ CRITICAL RULE: If Incorrect, give a subtle hint (max 10 words) that guides them 
                 updateReportButton();
             }
         } else {
-            // Safety hit or empty response
-            console.warn("No text in Gemini response:", result);
             loadingText.innerText = "The lab is a bit hazy. Try drawing slightly clearer?";
             loadingText.className = "error-text";
         }
     } catch (e) {
         console.error("Submission error:", e);
-        loadingText.innerText = "Oops. Looks like the bot messed up!";
+        loadingText.innerText = "Oops. Live session error!";
         loadingText.className = "error-text";
     } finally {
         isSubmitting = false;
@@ -923,3 +910,6 @@ submitBtn.addEventListener('click', (e) => {
     e.preventDefault();
     submitDrawing();
 });
+
+// Start the session with an initial adaptive question
+fetchBatchReactions(true);
