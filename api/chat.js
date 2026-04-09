@@ -34,9 +34,6 @@ export default async function handler(req, res) {
                     topP: 0.8,
                     topK: 40,
                     response_mime_type: responseMimeType || "text/plain",
-                    thinkingConfig: {
-                        thinkingLevel: "LOW"
-                    }
                 },
             })
         });
