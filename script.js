@@ -263,7 +263,11 @@ class GeminiLiveAgent {
         });
         
         if (response.status === 404) {
-            throw new Error("Backend proxy (/api/chat) not found. This feature requires a Vercel-like environment.");
+            const isLocalFile = window.location.protocol === 'file:';
+            const msg = isLocalFile 
+                ? "Backend proxy (/api/chat) not found because you are opening index.html directly as a file. Relative paths only work on a server (e.g., 'vercel dev' or your deployed URL)."
+                : "Backend proxy (/api/chat) not found on the server. Please ensure the 'api' folder is deployed correctly.";
+            throw new Error(msg);
         }
         
         if (!response.ok) {
