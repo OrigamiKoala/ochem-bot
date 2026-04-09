@@ -327,9 +327,19 @@ CORE RULES:
         this.ws.send(JSON.stringify(setupMessage));
     }
 
-    handleMessage(event) {
+    async handleMessage(event) {
         try {
-            const data = JSON.parse(event.data);
+            let text;
+            if (event.data instanceof Blob) {
+                text = await event.data.text();
+            } else if (typeof event.data === 'string') {
+                text = event.data;
+            } else {
+                console.warn("Received unexpected data type:", typeof event.data);
+                return;
+            }
+
+            const data = JSON.parse(text);
             if (data.setupComplete) {
                 this.isSetup = true;
                 return;
