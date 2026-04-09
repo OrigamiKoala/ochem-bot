@@ -294,15 +294,17 @@ class GeminiLiveAgent {
         }
     }
     sendSetup() {
-        // Final Alignment: 'TEXT' modality as requested by user. 
-        // 1011 may have been a transient server error or instruction length issue.
+        // Strict Snake-Case Realignment for v1beta Bidi stream.
+        // Server error 1007 confirmed system_instruction must be a structured Content object.
         const setupMessage = {
             setup: {
                 model: this.model,
-                generationConfig: {
-                    responseModalities: ["TEXT"] 
+                generation_config: {
+                    response_modalities: ["TEXT"] 
                 },
-                systemInstruction: `You are an organic chemistry tutor. When asked for a new question, generate 1 reaction in JSON format:
+                system_instruction: {
+                    parts: [{
+                        text: `You are an organic chemistry tutor. When asked for a new question, generate 1 reaction in JSON format:
 {
   "qtype": "predict|mechanism|stereo",
   "reactants": "SMILES",
@@ -312,9 +314,11 @@ class GeminiLiveAgent {
   "explanation": "Detailed mechanism with [[SMILES: ...]] placeholders."
 }
 Grade student drawings as 'Correct' or 'Incorrect' with a brief hint. Be concise.`
+                    }]
+                }
             }
         };
-        console.log("[DEBUG] Sending setup configuration (TEXT-mode)...");
+        console.log("[DEBUG] Sending snake_case setup configuration (TEXT-mode)...");
         this.ws.send(JSON.stringify(setupMessage));
     }
 
