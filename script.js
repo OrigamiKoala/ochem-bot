@@ -182,7 +182,7 @@ async function fetchBatchReactions() {
     }
 
     try {
-        const prompt = "Generate 5 different organic chemistry mechanism practice questions with just the reactants, plus reaction conditions/catalysts. Make sure the reactions are actually valid. \nCRITICAL RULES:\n1. NEVER explicitly write out hydrogens (NO 'H3', NO 'H2', NO 'CH3'). \n2. Bromoethane must be `CCBr`, NEVER `CH3CH2Br`.\n3. Acetone must be `CC(=O)C`, NEVER `CH3C(=O)CH3`.\n\nOutput ONLY a valid JSON object with an array of 5 reactions in a markdown block exactly like this (NO OTHER TEXT). Make sure the 'conditions' field is formatted as a valid LaTeX mhchem string (e.g. H_2SO_4, \\Delta):\n```json\n{\n  \"reactions\": [\n    {\n      \"reactants\": \"CC(=O)C.C1=CC=CC=C1\",\n      \"conditions\": \"H_2SO_4, \\\\Delta\"\n    },\n    ...\n  ]\n}\n```";
+        const prompt = "Generate 5 different organic chemistry mechanism practice questions with just the reactants, plus reaction conditions/catalysts if applicable. Make sure the reactions are actually valid. \nCRITICAL RULES:\n1. NEVER explicitly write out hydrogens (NO 'H3', NO 'H2', NO 'CH3'). \n2. Bromoethane must be `CCBr`, NEVER `CH3CH2Br`.\n3. Acetone must be `CC(=O)C`, NEVER `CH3C(=O)CH3`.\n4. SMILES syntax (used in 'reactants') must NEVER contain underscores or subscripts (NO `Br_2`). Bromine is `BrBr`.\n5. LaTeX mhchem syntax (used in 'conditions') MUST use proper subscripts (e.g., `Br2`, `H2SO4`, `\\Delta`).\n\nOutput ONLY a valid JSON object with an array of 5 reactions in a markdown block exactly like this (NO OTHER TEXT). Make sure the 'conditions' field is formatted as a valid LaTeX mhchem string (e.g. H_2SO_4, \\Delta):\n```json\n{\n  \"reactions\": [\n    {\n      \"reactants\": \"CC(=O)C.C1=CC=CC=C1\",\n      \"conditions\": \"Br2, H2SO4\"\n    },\n    ...\n  ]\n}\n```";
 
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -195,7 +195,7 @@ async function fetchBatchReactions() {
             const msg = (response.status === 429 || response.status === 503 || response.status === 500)
                 ? "Sorry, the bot is currently experiencing high demand. Please try again later."
                 : (errorData.error || `API returned ${response.status}`);
-            
+
             loadingText.innerText = msg;
             loadingText.style.display = 'block';
             isFetching = false;
@@ -210,7 +210,7 @@ async function fetchBatchReactions() {
                 const blockMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/i);
                 let jsonText = blockMatch ? blockMatch[1].trim() : rawText.trim();
                 const data = JSON.parse(jsonText);
-                
+
                 if (data.reactions && Array.isArray(data.reactions)) {
                     reactionQueue = [...reactionQueue, ...data.reactions];
                     updateQueueCount();
@@ -228,7 +228,7 @@ async function fetchBatchReactions() {
     } finally {
         isFetching = false;
         loadingText.style.display = 'none';
-        
+
         // If the queue was empty and we just got data, display the first one
         if (reactionQueue.length > 0 && container.querySelectorAll('canvas').length === 0) {
             displayNextReaction();
