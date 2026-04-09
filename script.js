@@ -335,18 +335,29 @@ Grade student drawings as 'Correct' or 'Incorrect' with a brief hint. Be concise
             }
 
             const data = JSON.parse(text);
+            console.log('Received:', data);
+
             if (data.setupComplete) {
                 this.isSetup = true;
                 return;
             }
 
-            if (data.serverContent && data.serverContent.modelTurn) {
-                // Harden: Loop through all parts as per user's "Receiving responses" screenshot
+            if (data.serverContent) {
+                const serverContent = data.serverContent;
                 let combinedText = "";
-                for (const part of data.serverContent.modelTurn.parts || []) {
-                    if (part.text) {
-                        combinedText += part.text;
+
+                // 1. Capture text from modelTurn parts (standard for TEXT modality)
+                if (serverContent.modelTurn?.parts) {
+                    for (const part of serverContent.modelTurn.parts) {
+                        if (part.text) {
+                            combinedText += part.text;
+                        }
                     }
+                }
+
+                // 2. Capture text from outputTranscription (fallback for AUDIO modality transcriptions)
+                if (serverContent.outputTranscription?.text) {
+                    combinedText += serverContent.outputTranscription.text;
                 }
                 
                 if (combinedText && this.pendingResolve) {
