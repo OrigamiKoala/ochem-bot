@@ -196,11 +196,8 @@ async function fetchBatchReactions() {
 
         if (!response.ok) {
             const errorData = await response.json();
-            const msg = (response.status === 429 || response.status === 503 || response.status === 500)
-                ? "Sorry, the bot is currently experiencing high demand. Please try again later."
-                : (errorData.error || `API returned ${response.status}`);
-
-            loadingText.innerText = msg;
+            console.error('Gemini API Error:', response.status, errorData);
+            loadingText.innerText = "Oops. Looks like the bot messed up!";
             loadingText.style.display = 'block';
             isFetching = false;
             return;
@@ -227,7 +224,7 @@ async function fetchBatchReactions() {
         }
     } catch (e) {
         console.error("Fetch error:", e);
-        loadingText.innerText = "Sorry, the bot is currently experiencing high demand. Please try again later.";
+        loadingText.innerText = "Oops. Looks like the bot messed up!";
         loadingText.style.display = 'block';
     } finally {
         isFetching = false;
@@ -294,6 +291,8 @@ async function submitDrawing() {
         });
 
         if (!response.ok) {
+            const errorData = await response.json();
+            console.error('Submission Gemini API Error:', response.status, errorData);
             throw new Error(`API error: ${response.status}`);
         }
 
@@ -310,7 +309,7 @@ async function submitDrawing() {
         }
     } catch (e) {
         console.error("Submission error:", e);
-        loadingText.innerText = "Error evaluating drawing.";
+        loadingText.innerText = "Oops. Looks like the bot messed up!";
         loadingText.className = "error-text";
     } finally {
         isSubmitting = false;

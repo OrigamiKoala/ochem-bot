@@ -32,9 +32,10 @@ export default async function handler(req, res) {
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Gemini API Error:', response.status, errorText);
-            return res.status(response.status).json({ error: 'Upstream API error', status: response.status });
+            const errorData = await response.json();
+            const errorMessage = errorData.error?.message || 'Unknown upstream API error';
+            console.error('Gemini API Error:', response.status, errorData);
+            return res.status(response.status).json({ error: errorMessage, status: response.status });
         }
 
         const data = await response.json();
