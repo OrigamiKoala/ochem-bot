@@ -29,7 +29,8 @@ body {
     min-width: 300px;
     width: auto;
     max-width: 80vw;
-    height: 150px;
+    min-height: 150px;
+    height: auto;
     background-color: #ffffff;
     display: flex;
     align-items: center;
@@ -40,6 +41,16 @@ body {
     padding: 10px 15px;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
     z-index: 10;
+}
+
+#loading-text {
+    width: 100%;
+    text-align: center;
+    padding: 20px;
+    font-size: 1.2rem;
+    color: #333;
+    line-height: 1.5;
+    font-weight: 500;
 }
 
 #reaction-target {

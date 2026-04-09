@@ -8,6 +8,8 @@ const generateBtn = document.getElementById('generate-btn');
 let isDrawing = false;
 
 // API key is handled securely on the backend in /api/chat.js
+let reactionQueue = [];
+let isFetching = false;
 
 // Handle window resizing correctly to avoid stretching
 function resizeCanvas() {
@@ -91,19 +93,96 @@ clearBtn.addEventListener('click', () => {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 });
 
-// ------ Fetch Practice Question ------
-async function fetchPracticeQuestion() {
+// ------ Render a Reaction ------
+function renderReaction(data) {
     const container = document.getElementById('reaction-container');
     const loadingText = document.getElementById('loading-text');
 
-    // Immediate clear of all existing dynamic elements before starting the fetch
+    // Immediate clear of all existing dynamic elements before starting the render
     container.querySelectorAll('canvas, .plus-sign, .reaction-arrow').forEach(el => el.remove());
-    loadingText.innerText = "Loading...";
-    loadingText.style.display = 'block';
+    loadingText.style.display = 'none';
+
+    if (!data || !data.reactants) {
+        console.error("Invalid reaction data", data);
+        return;
+    }
+
+    let smiles = data.reactants.trim();
+
+    // SmilesDrawer does not natively parse disconnected components separated by '.'
+    // We need to split the string and render each molecule to its own canvas
+    const molecules = smiles.split('.').map(s => s.trim()).filter(s => s.length > 0);
+
+    molecules.forEach((mol, index) => {
+        // Create a dynamic canvas for each molecule
+        const newCanvas = document.createElement('canvas');
+        newCanvas.id = `reaction-canvas-${index}`;
+
+        // Add a '+' sign between molecules
+        if (index > 0) {
+            const plus = document.createElement('div');
+            plus.innerText = '+';
+            plus.className = 'plus-sign';
+            plus.style.fontSize = '1.8rem';
+            plus.style.padding = '0 5px';
+            container.appendChild(plus);
+        }
+
+        container.appendChild(newCanvas);
+
+        let options = {
+            width: 120, // Reduced fixed width for tighter spacing
+            height: 120,
+        };
+        let smilesDrawer = new SmilesDrawer.Drawer(options);
+
+        SmilesDrawer.parse(mol, function (tree) {
+            smilesDrawer.draw(tree, newCanvas.id, 'light', false);
+        }, function (err) {
+            console.error("Smiles parsing error on component: ", mol, err);
+            loadingText.innerText = 'Syntax Error: "' + mol + '"';
+            loadingText.style.display = 'block';
+        });
+    });
+
+    // Add reaction arrow with conditions
+    const arrowContainer = document.createElement('div');
+    arrowContainer.className = 'reaction-arrow';
+    arrowContainer.style.display = 'flex';
+    arrowContainer.style.alignItems = 'center';
+    arrowContainer.style.justifyContent = 'center';
+    arrowContainer.style.padding = '0 15px';
+    arrowContainer.style.color = '#333';
+    arrowContainer.style.fontSize = '1.8rem';
+
+    // Format for mhchem
+    const conditions = data.conditions || '';
+    arrowContainer.innerText = `\\( \\ce{->[${conditions}]} \\)`;
+
+    container.appendChild(arrowContainer);
+
+    if (window.MathJax) {
+        MathJax.typesetPromise([arrowContainer]).catch(err => console.error('MathJax error:', err));
+    }
+}
+
+// ------ Fetch Batch of Reactions ------
+async function fetchBatchReactions() {
+    if (isFetching) return;
+    isFetching = true;
+
+    const container = document.getElementById('reaction-container');
+    const loadingText = document.getElementById('loading-text');
+
+    // Only clear if the queue is empty (to signal a new fetch)
+    if (reactionQueue.length === 0) {
+        container.querySelectorAll('canvas, .plus-sign, .reaction-arrow').forEach(el => el.remove());
+        loadingText.innerText = "Fetching new batch...";
+        loadingText.style.display = 'block';
+    }
 
     try {
-        // Call the backend API instead of using the SDK directly in the browser
-        const prompt = "Generate a single organic chemistry mechanism practice question with just the reactants, plus reaction conditions/catalysts. Make sure the reaction is actually valid. \nCRITICAL RULES:\n1. NEVER explicitly write out hydrogens (NO 'H3', NO 'H2', NO 'CH3'). \n2. Bromoethane must be `CCBr`, NEVER `CH3CH2Br`.\n3. Acetone must be `CC(=O)C`, NEVER `CH3C(=O)CH3`.\n\nOutput ONLY a valid JSON object in a yaml/markdown block exactly like this (NO OTHER TEXT). Make sure the 'conditions' field is formatted as a valid LaTeX mhchem string (e.g. H_2SO_4, \\Delta):\n```json\n{\n  \"reactants\": \"CC(=O)C.C1=CC=CC=C1\",\n  \"conditions\": \"H_2SO_4, \\\\Delta\"\n}\n```";
+        const prompt = "Generate 5 different organic chemistry mechanism practice questions with just the reactants, plus reaction conditions/catalysts. Make sure the reactions are actually valid. \nCRITICAL RULES:\n1. NEVER explicitly write out hydrogens (NO 'H3', NO 'H2', NO 'CH3'). \n2. Bromoethane must be `CCBr`, NEVER `CH3CH2Br`.\n3. Acetone must be `CC(=O)C`, NEVER `CH3C(=O)CH3`.\n\nOutput ONLY a valid JSON object with an array of 5 reactions in a markdown block exactly like this (NO OTHER TEXT). Make sure the 'conditions' field is formatted as a valid LaTeX mhchem string (e.g. H_2SO_4, \\Delta):\n```json\n{\n  \"reactions\": [\n    {\n      \"reactants\": \"CC(=O)C.C1=CC=CC=C1\",\n      \"conditions\": \"H_2SO_4, \\\\Delta\"\n    },\n    ...\n  ]\n}\n```";
 
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -113,112 +192,75 @@ async function fetchPracticeQuestion() {
 
         if (!response.ok) {
             const errorData = await response.json();
-            // Show high demand message for 429 (Too Many Requests), 503 (Service Unavailable), or 500 (Internal Server Error)
             const msg = (response.status === 429 || response.status === 503 || response.status === 500)
                 ? "Sorry, the bot is currently experiencing high demand. Please try again later."
                 : (errorData.error || `API returned ${response.status}`);
             
             loadingText.innerText = msg;
             loadingText.style.display = 'block';
+            isFetching = false;
             return;
         }
 
         const result = await response.json();
-        loadingText.style.display = 'none';
 
-        // Parse the text from the Gemini response structure
         if (result.candidates && result.candidates[0].content.parts[0].text) {
             let rawText = result.candidates[0].content.parts[0].text;
-            let data = { reactants: "", conditions: "" };
-
             try {
                 const blockMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/i);
                 let jsonText = blockMatch ? blockMatch[1].trim() : rawText.trim();
-                data = JSON.parse(jsonText);
+                const data = JSON.parse(jsonText);
+                
+                if (data.reactions && Array.isArray(data.reactions)) {
+                    reactionQueue = [...reactionQueue, ...data.reactions];
+                    updateQueueCount();
+                }
             } catch (e) {
                 console.error("JSON parse error", e, rawText);
                 loadingText.innerText = "Error parsing response.";
                 loadingText.style.display = 'block';
-                return;
             }
-
-            if (!data.reactants) {
-                loadingText.innerText = "Invalid response format.";
-                loadingText.style.display = 'block';
-                return;
-            }
-
-            let smiles = data.reactants.trim();
-
-            // SmilesDrawer does not natively parse disconnected components separated by '.'
-            // We need to split the string and render each molecule to its own canvas
-            const molecules = smiles.split('.').map(s => s.trim()).filter(s => s.length > 0);
-
-            // Elements are already cleared at the start of the function
-
-            molecules.forEach((mol, index) => {
-                // Create a dynamic canvas for each molecule
-                const newCanvas = document.createElement('canvas');
-                newCanvas.id = `reaction-canvas-${index}`;
-
-                // Add a '+' sign between molecules
-                if (index > 0) {
-                    const plus = document.createElement('div');
-                    plus.innerText = '+';
-                    plus.className = 'plus-sign';
-                    plus.style.fontSize = '1.8rem';
-                    plus.style.padding = '0 5px';
-                    container.appendChild(plus);
-                }
-
-                container.appendChild(newCanvas);
-
-                let options = {
-                    width: 120, // Reduced fixed width for tighter spacing
-                    height: 120,
-                };
-                let smilesDrawer = new SmilesDrawer.Drawer(options);
-
-                SmilesDrawer.parse(mol, function (tree) {
-                    smilesDrawer.draw(tree, newCanvas.id, 'light', false);
-                }, function (err) {
-                    console.error("Smiles parsing error on component: ", mol, err);
-                    loadingText.innerText = 'Syntax Error: "' + mol + '"';
-                    loadingText.style.display = 'block';
-                });
-            });
-
-            // Add reaction arrow with conditions
-            const arrowContainer = document.createElement('div');
-            arrowContainer.className = 'reaction-arrow';
-            arrowContainer.style.display = 'flex';
-            arrowContainer.style.alignItems = 'center';
-            arrowContainer.style.justifyContent = 'center';
-            arrowContainer.style.padding = '0 15px';
-            arrowContainer.style.color = '#333';
-            arrowContainer.style.fontSize = '1.8rem';
-
-            // Format for mhchem
-            const conditions = data.conditions || '';
-            arrowContainer.innerText = `\\( \\ce{->[${conditions}]} \\)`;
-
-            container.appendChild(arrowContainer);
-
-            if (window.MathJax) {
-                MathJax.typesetPromise([arrowContainer]).catch(err => console.error('MathJax error:', err));
-            }
-
-        } else {
-            loadingText.innerText = "Error loading reaction.";
-            loadingText.style.display = 'block';
         }
     } catch (e) {
         console.error("Fetch error:", e);
         loadingText.innerText = "Sorry, the bot is currently experiencing high demand. Please try again later.";
         loadingText.style.display = 'block';
+    } finally {
+        isFetching = false;
+        loadingText.style.display = 'none';
+        
+        // If the queue was empty and we just got data, display the first one
+        if (reactionQueue.length > 0 && container.querySelectorAll('canvas').length === 0) {
+            displayNextReaction();
+        }
     }
+}
+
+// ------ Manage Display Logic ------
+function displayNextReaction() {
+    if (reactionQueue.length === 0) {
+        fetchBatchReactions();
+        return;
+    }
+
+    const nextReaction = reactionQueue.shift();
+    updateQueueCount();
+    renderReaction(nextReaction);
+
+    // If we're running low, fetch more in the background
+    if (reactionQueue.length <= 1) {
+        fetchBatchReactions();
+    }
+}
+
+// ------ Update Queue Indicator ------
+function updateQueueCount() {
+    const btn = document.getElementById('generate-btn');
+    // We no longer show the count to the user as requested.
+    // The button will simply say "Generate Reaction"
+    btn.innerText = "Generate Reaction";
 }
 generateBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    fetchPracticeQuestion();
+    displayNextReaction();
 });
