@@ -22,7 +22,8 @@ export default async function handler(req, res) {
     }
 
     const body = req.body || {};
-    const { prompt, image, responseMimeType, maxOutputTokens, temperature, type } = body;
+    const { prompt, image, responseMimeType, temperature, type } = body;
+
     const API_KEY = process.env.GEMINI_API_KEY;
 
     if (!API_KEY) {
@@ -91,8 +92,8 @@ export default async function handler(req, res) {
                 body: JSON.stringify({
                     contents: [{ parts }],
                     generationConfig: {
-                        maxOutputTokens: maxOutputTokens || 2500,
                         temperature: temperature ?? 0.1,
+
                         topP: 0.8,
                         topK: 40,
                         response_mime_type: responseMimeType || "text/plain",
