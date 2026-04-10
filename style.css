@@ -551,17 +551,8 @@ canvas {
     overflow: hidden;
 }
 
-.smiles-label {
-    display: block;
-    font-size: 0.7rem;
-    color: #8e8e93;
-    margin-top: 4px;
-    font-family: 'SF Mono', 'Roboto Mono', monospace;
-    max-width: 150px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+
+
 
 
 

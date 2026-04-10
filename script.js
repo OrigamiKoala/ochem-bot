@@ -621,19 +621,15 @@ function renderRichText(text, container, isExplanation = false) {
 
             wrapper.className = isExplanation ? 'inline-molecule-explanation' : 'inline-molecule';
             
-            // For copy-pastability AND readability, add a label
-            if (isExplanation) {
-                const label = document.createElement('code');
-                label.className = 'smiles-label';
-                label.innerText = smiles;
-                wrapper.appendChild(label);
-            } else {
+            // For copy-pastability, we keep the sr-only-smiles span
+            if (!isExplanation) {
                 // Invisible copyable text for arrow context
                 const hiddenText = document.createElement('span');
                 hiddenText.className = 'sr-only-smiles';
                 hiddenText.innerText = `[[SMILES: ${smiles}]]`;
                 container.appendChild(hiddenText);
             }
+
 
             const canvas = document.createElement('canvas');
             canvas.className = 'molecule-canvas';
