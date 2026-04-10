@@ -456,7 +456,8 @@ function renderReaction(data, showAnswer = false) {
     }
 
     // Reset/Parse explanation
-    renderRichText(data.explanation || "No explanation preloaded.", explanationContent);
+    renderRichText(data.explanation || "No explanation preloaded.", explanationContent, true);
+
 
     // Hide status text ONLY if we aren't displaying a persistent answer result
     if (!showAnswer && loadingText && loadingText.innerText !== "Checking...") {
@@ -562,7 +563,7 @@ function renderMolecules(molecules, container, suffix = "") {
 }
 
 //// ------ Rendering Mechanistic Explanations & Rich Text ------
-function renderRichText(text, container) {
+function renderRichText(text, container, isExplanation = false) {
     if (!container) return;
     container.innerHTML = '';
 
@@ -573,17 +574,28 @@ function renderRichText(text, container) {
         const match = part.match(/\[\[SMILES:(.*?)\]\]/);
         if (match) {
             const smiles = match[1].trim();
+            
+            // For copy-pastability, keep the original tag in a hidden span
+            const hiddenText = document.createElement('span');
+            hiddenText.className = 'sr-only-smiles';
+            hiddenText.innerText = `[[SMILES: ${smiles}]]`;
+            container.appendChild(hiddenText);
+
             const wrapper = document.createElement('div');
-            wrapper.className = 'inline-molecule';
+            wrapper.className = isExplanation ? 'inline-molecule-explanation' : 'inline-molecule';
             const canvas = document.createElement('canvas');
             const uniqueId = `inline-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
             canvas.id = uniqueId;
             wrapper.appendChild(canvas);
+            
+            // Add a title for hover-copying or just reference
+            wrapper.title = smiles;
+            
             container.appendChild(wrapper);
 
             // Draw small molecule
             const dpr = window.devicePixelRatio || 1;
-            const bSize = 80; // Slightly smaller for arrow context
+            const bSize = isExplanation ? 120 : 80; 
             const size = bSize * dpr;
             canvas.style.width = bSize + "px";
             canvas.style.height = bSize + "px";
@@ -600,23 +612,25 @@ function renderRichText(text, container) {
         } else if (part.trim().length > 0) {
             const span = document.createElement('span');
             let content = part.trim();
-            // Wrap in LaTeX/mhchem if delimiters are missing and it looks like it needs them
-            if (!content.includes('\\(') && !content.includes('\\[')) {
-                // If it contains characters typically found in chemical formulas or LaTeX
+            
+            // Reagents/Conditions on arrow need auto-mhchem wrapping
+            // Explanation text should NOT be auto-wrapped as it breaks fonts and copy-paste
+            if (!isExplanation && !content.includes('\\(') && !content.includes('\\[')) {
                 if (/[_^{}\\]/.test(content) || content.length > 2) {
                     content = `\\( \\ce{${content}} \\)`;
                 }
             }
+            
             span.innerHTML = content.replace(/\n/g, '<br>');
             container.appendChild(span);
         }
-
     });
 
     if (window.MathJax) {
         MathJax.typesetPromise([container]).catch(err => console.error('MathJax error:', err));
     }
 }
+
 
 // ------ Starter Questions Selection ------
 async function getStarterQuestion(targetTopic, targetDifficulty) {
