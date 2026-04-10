@@ -59,6 +59,37 @@ const aboutContent = document.getElementById('about-content');
 let currentDifficulty = parseInt(localStorage.getItem('ochem_difficulty')) || 1;
 let isLearnMode = localStorage.getItem('ochem_learn_mode') === 'true';
 
+const messageContainer = document.getElementById('message-container');
+const loadingText = document.getElementById('loading-text');
+const shrinkBtn = document.getElementById('shrink-btn');
+const restoreBtn = document.getElementById('restore-btn');
+
+
+// Optimization: Shared SmilesDrawer instance
+const globalSDOptions = {
+    width: 200,
+    height: 200,
+    bondThickness: 2,
+    bondSpacing: 4,
+    fontSizeLarge: 10,
+    padding: 10
+};
+const globalSmilesDrawer = new SmilesDrawer.Drawer(globalSDOptions);
+
+function toggleMessage(show, text = "", isError = false) {
+    if (!messageContainer || !loadingText) return;
+    if (show) {
+        messageContainer.style.display = 'block';
+        loadingText.innerText = text;
+        loadingText.className = isError ? "error-text" : "";
+        const restoreBtn = document.getElementById('restore-btn');
+        if (restoreBtn) restoreBtn.style.display = 'none';
+    } else {
+        messageContainer.style.display = 'none';
+    }
+}
+
+
 
 function initSettings() {
     if (!topicsListDiv || !difficultySlider) return;
@@ -693,10 +724,10 @@ function renderReaction(data, showAnswer = false) {
 
     // Hide status text ONLY if we aren't displaying a persistent answer result
     if (!showAnswer && loadingText.innerText !== "Checking...") {
-        const messageContainer = document.getElementById('message-container');
-        if (messageContainer) messageContainer.style.display = 'none';
+        toggleMessage(false);
         loadingText.className = "";
     }
+
 
 
     if (!data) return;
@@ -749,31 +780,22 @@ function renderMolecules(molecules, container, suffix = "") {
 
         // iPad/Retina support: Scale resolution by device pixel ratio
         const dpr = window.devicePixelRatio || 1;
-        const baseSize = 100; // Increased base size
-        const size = baseSize * dpr;
-
-        let options = {
-            width: size,
-            height: size,
-            bondThickness: 2,
-            bondSpacing: 4,
-            fontSizeLarge: 10,
-            padding: 10
-        };
-
-        let smilesDrawer = new SmilesDrawer.Drawer(options);
+        const baseSize = 100;
 
         // Adjust canvas display size
         newCanvas.style.width = baseSize + "px";
         newCanvas.style.height = baseSize + "px";
+        newCanvas.width = baseSize * dpr;
+        newCanvas.height = baseSize * dpr;
 
         SmilesDrawer.parse(mol, function (tree) {
-            smilesDrawer.draw(tree, newCanvas.id, 'light', false);
+            globalSmilesDrawer.draw(tree, newCanvas.id, 'light', false);
         }, function (err) {
             console.error("Smiles parsing error: ", mol, err);
         });
     });
 }
+
 
 // ------ Rendering Mechanistic Explanations ------
 function renderExplanationWithMolecules(text, container) {
@@ -795,18 +817,18 @@ function renderExplanationWithMolecules(text, container) {
             wrapper.appendChild(canvas);
             container.appendChild(wrapper);
 
-            // Draw small molecule
+            // iPad/Retina support
             const dpr = window.devicePixelRatio || 1;
             const bSize = 120;
-            const size = bSize * dpr;
             canvas.style.width = bSize + "px";
             canvas.style.height = bSize + "px";
+            canvas.width = bSize * dpr;
+            canvas.height = bSize * dpr;
 
-            const options = { width: size, height: size, bondThickness: 2, bondSpacing: 4, padding: 10 };
-            const sd = new SmilesDrawer.Drawer(options);
             SmilesDrawer.parse(smiles, (tree) => {
-                sd.draw(tree, uniqueId, 'light', false);
+                globalSmilesDrawer.draw(tree, uniqueId, 'light', false);
             }, (err) => console.error("Inline SMILES err:", err));
+
         } else if (part.trim().length > 0) {
             const span = document.createElement('span');
             span.innerText = part;
@@ -861,9 +883,9 @@ async function fetchBatchReactions(isExplicit = false) {
         container.querySelectorAll('canvas, .plus-sign, .reaction-arrow').forEach(el => el.remove());
         const instructionDiv = document.getElementById('question-instruction');
         if (instructionDiv) instructionDiv.innerText = '';
-        loadingText.innerText = "Generating adaptive challenge...";
-        loadingText.style.display = 'block';
+        toggleMessage(true, "Generating adaptive challenge...");
     }
+
 
 
     try {
@@ -968,28 +990,41 @@ async function submitDrawing() {
     updateSubmitDisabled();
 
     try {
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        // OPTIMIZATION: Resize image to 768x768 for better vision model grounding.
+        const targetSize = 768;
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = targetSize;
+        tempCanvas.height = targetSize;
+        const tempCtx = tempCanvas.getContext('2d');
+        
+        // Fill white background
+        tempCtx.fillStyle = '#ffffff';
+        tempCtx.fillRect(0, 0, targetSize, targetSize);
+        
+        // Draw main canvas onto temp canvas (proportional fit)
+        const scale = Math.min(targetSize / canvas.width, targetSize / canvas.height);
+        const nw = canvas.width * scale;
+        const nh = canvas.height * scale;
+        tempCtx.drawImage(canvas, (targetSize - nw) / 2, (targetSize - nh) / 2, nw, nh);
+        
+        const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.8);
         const base64Image = dataUrl.split(',')[1];
 
         const diffLabel = { 1: "Beginner", 2: "USNCO (Intermediate)", 3: "Collegiate/IChO (Advanced)" }[currentDifficulty];
 
-        // CONTEXT INJECTION: Explicitly remind the AI of the reaction it is grading.
-        const context = `Context: Reactants: ${currentReaction.reactants}, Target Answer: ${currentReaction.answer}.`;
-
+        // CONTEXT INJECTION: Explicitly remind the AI of the reaction it is grading and force visual focus.
+        const context = `Context: Reactants: ${currentReaction.reactants}, Target Answer: ${currentReaction.answer}. Carefully analyze the Whiteboard Drawing for mechanistic arrows and lone pairs.`;
         
         const prompt = isLearnMode 
             ? `${context} Evaluate my drawing. Be extremely concise (max 2 sentences). Difficulty: ${diffLabel}. Suggest next step. DO NOT TELL ME WHAT TO DRAW.` 
             : `${context} Evaluate my drawing. Difficulty: ${diffLabel}. EXTREMELY CONCISE (max 1 sentence). DO NOT TELL ME WHAT TO DRAW.`;
 
+
         // Real-time streaming UI: show chunks as they arrive
-        const messageContainer = document.getElementById('message-container');
-        const restoreBtn = document.getElementById('restore-btn');
-        
-        messageContainer.style.display = 'block';
-        restoreBtn.style.display = 'none';
-        loadingText.innerText = ""; // Clear "Checking..."
+        toggleMessage(true, "");
         
         liveAgent.onChunk = (chunk) => {
+
             loadingText.innerText += chunk;
         };
 
@@ -1042,11 +1077,8 @@ submitBtn.addEventListener('click', (e) => {
 updateButtonState();
 
 // Message Shrink/Restore Handlers
-const messageContainer = document.getElementById('message-container');
-const shrinkBtn = document.getElementById('shrink-btn');
-const restoreBtn = document.getElementById('restore-btn');
-
 if (shrinkBtn) {
+
     shrinkBtn.addEventListener('click', () => {
         messageContainer.style.display = 'none';
         restoreBtn.style.display = 'block';
