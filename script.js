@@ -847,11 +847,12 @@ Structure:
 
 RULES:
 1. SMILES: NO hydrogens.
-2. LaTeX: Use DOUBLE backslashes for commands (e.g. \\\\Delta).
-3. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
-4. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas.
-5. Make sure the reaction actually occurs to a significant extent.
-6. Make sure the SMILES syntax is correct and proper.`;
+2. NO UNICODE: Never use unicode symbols (°, Δ, →, etc.). Use LaTeX instead.
+3. LaTeX in JSON: Every backslash in a LaTeX command MUST be escaped as \\\\ in the JSON string. Example: write \\\\circ not \\circ, write \\\\Delta not \\Delta.
+4. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
+5. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas.
+6. Make sure the reaction actually occurs to a significant extent.
+7. Make sure the SMILES syntax is correct and proper.`;
 
 
         const response = await fetch('/api/chat', {
@@ -888,9 +889,29 @@ RULES:
                 let jsonText = rawText.trim();
 
                 // Sanitize: Gemini often emits unescaped backslashes in LaTeX
-                // within JSON string values (e.g.  \circ, \Delta, \ce{}).
-                // Fix by escaping lone backslashes that aren't valid JSON escapes.
-                jsonText = jsonText.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+                // within JSON string values (e.g. \circ, \Delta, \ce{}).
+                // Walk the string and escape lone backslashes that aren't valid
+                // JSON escape sequences, without double-escaping valid ones.
+                jsonText = (function(s) {
+                    const validEscapes = new Set(['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']);
+                    let result = '';
+                    for (let i = 0; i < s.length; i++) {
+                        if (s[i] === '\\') {
+                            const next = s[i + 1];
+                            if (next && validEscapes.has(next)) {
+                                // Valid JSON escape — keep as-is
+                                result += s[i] + next;
+                                i++; // skip next char
+                            } else {
+                                // Lone backslash — escape it
+                                result += '\\\\';
+                            }
+                        } else {
+                            result += s[i];
+                        }
+                    }
+                    return result;
+                })(jsonText);
 
                 const data = JSON.parse(jsonText);
 
