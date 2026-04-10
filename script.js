@@ -47,8 +47,11 @@ const difficultySlider = document.getElementById('difficulty-slider');
 // Helper to sanitize SMILES syntax to prevent parser crashes
 function cleanSmiles(smiles) {
     if (!smiles) return null;
-    let s = smiles.replace(/^\[\[SMILES: (.*?)\]\]$/, '$1'); // Strip wrapping
-    s = s.replace(/\\/g, '\\\\'); // escape backslashes
+    let s = smiles.replace(/^\[\[SMILES: (.*?)\]\]$/, '$1').trim(); // Strip wrapping and trim
+    
+    // SMILES backslashes usually shouldn't be doubled if they come from JSON.parse
+    // However, if the API sends them escaped, we only want one level.
+    // Let's assume the string is raw SMILES.
     
     // Balance brackets
     const openBrackets = (s.match(/\[/g) || []).length;
@@ -56,11 +59,15 @@ function cleanSmiles(smiles) {
     if (openBrackets > closeBrackets) s += ']'.repeat(openBrackets - closeBrackets);
     if (closeBrackets > openBrackets) s = '['.repeat(closeBrackets - openBrackets) + s;
     
-    // Check for hanging operators
-    if (/[\-\+\=\#]$/.test(s)) return null;
+    // Check for hanging operators (this can happen during AI generation)
+    if (/[\-\+\=\#]$/.test(s)) {
+        // Only strip if it's not a charge at the end e.g. [O-]
+        if (!s.endsWith(']')) return null;
+    }
 
     return s;
 }
+
 
 // About Modal Elements
 const aboutBtn = document.getElementById('about-btn');
@@ -476,18 +483,19 @@ function renderReaction(data, showAnswer = false) {
     
     const arrowLine = document.createElement('div');
     arrowLine.className = 'arrow-line';
-    arrowLine.innerHTML = '\\( \\ce{->} \\)';
+    // Remove innerHTML MathJax for the line; we'll use CSS for a better stretching arrow
     
     const bottomRow = document.createElement('div');
     bottomRow.className = 'conditions-bottom';
     if (data.reagents) {
-        renderRichText((data.conditions || '').replace(/\\\\/g, '\\'), bottomRow);
+        renderRichText(data.conditions || '', bottomRow);
     }
     
     arrowContainer.appendChild(topRow);
     arrowContainer.appendChild(arrowLine);
     arrowContainer.appendChild(bottomRow);
     moleculeDiv.appendChild(arrowContainer);
+
 
 
     // If MECHANISM mode, show the final product as a target
@@ -589,9 +597,18 @@ function renderRichText(text, container) {
             }
         } else if (part.trim().length > 0) {
             const span = document.createElement('span');
-            span.innerHTML = part.replace(/\n/g, '<br>');
+            let content = part.trim();
+            // Wrap in LaTeX/mhchem if delimiters are missing and it looks like it needs them
+            if (!content.includes('\\(') && !content.includes('\\[')) {
+                // If it contains characters typically found in chemical formulas or LaTeX
+                if (/[_^{}\\]/.test(content) || content.length > 2) {
+                    content = `\\( \\ce{${content}} \\)`;
+                }
+            }
+            span.innerHTML = content.replace(/\n/g, '<br>');
             container.appendChild(span);
         }
+
     });
 
     if (window.MathJax) {
