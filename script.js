@@ -250,6 +250,18 @@ class GeminiLiveAgent {
         this.history = [];
         this.textBuffer = "";
         this.onChunk = null;
+        // Diagnostic tracking
+        this._connectedAt = null;
+        this._turnCount = 0;
+        this._messageCount = 0;
+        this._lastSentType = null;
+        this._lastSentAt = null;
+        this._setupPayload = null;
+    }
+
+    _log(...args) {
+        const elapsed = this._connectedAt ? `+${((Date.now() - this._connectedAt) / 1000).toFixed(1)}s` : '--';
+        console.log(`[LIVE ${elapsed}]`, ...args);
     }
 
     async getToken() {
@@ -264,25 +276,38 @@ class GeminiLiveAgent {
         try {
             const key = await this.getToken();
             const url = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${key}`;
+            this._log("Connecting to", url.replace(/key=.*/, "key=***"));
             this.ws = new WebSocket(url);
 
             return new Promise((resolve, reject) => {
                 this.ws.onopen = () => {
                     this.isConnected = true;
-                    console.log("Gemini Live Agent connected.");
+                    this._connectedAt = Date.now();
+                    this._turnCount = 0;
+                    this._messageCount = 0;
+                    this._log("WebSocket OPEN. Sending setup...");
                     this.sendSetup();
                     resolve();
                 };
-                this.ws.onerror = (e) => { console.error("WebSocket error:", e); reject(e); };
+                this.ws.onerror = (e) => {
+                    this._log("WebSocket ERROR:", e);
+                    reject(e);
+                };
                 this.ws.onclose = (event) => {
+                    const uptime = this._connectedAt ? ((Date.now() - this._connectedAt) / 1000).toFixed(1) + 's' : 'N/A';
+                    console.error(`[LIVE CLOSE] Code: ${event.code} | Reason: "${event.reason || 'none'}" | Clean: ${event.wasClean} | Uptime: ${uptime} | Turns: ${this._turnCount} | Messages: ${this._messageCount} | LastSent: ${this._lastSentType} at ${this._lastSentAt ? new Date(this._lastSentAt).toISOString() : 'never'} | SetupPayload:`, this._setupPayload);
                     this.isConnected = false;
                     this.isSetup = false;
-                    console.log(`Gemini Live Agent disconnected. Code: ${event.code}, Reason: ${event.reason || "N/A"}`);
+                    // Reject any pending promise so callers don't hang
+                    if (this.pendingResolve) {
+                        this.pendingResolve("");
+                        this.pendingResolve = null;
+                    }
                 };
                 this.ws.onmessage = (event) => this.handleMessage(event);
             });
         } catch (e) {
-            console.error("Connection failed:", e);
+            console.error("[LIVE] Connection failed:", e);
             throw e;
         }
     }
@@ -321,10 +346,15 @@ STRICT JSON RULES: You MUST double-escape all backslashes in LaTeX and SMILES. R
                 }
             }
         };
+        this._setupPayload = JSON.parse(JSON.stringify(setupMessage)); // snapshot for diagnostics
+        this._lastSentType = 'setup';
+        this._lastSentAt = Date.now();
+        this._log("Sending SETUP:", JSON.stringify(setupMessage).substring(0, 200) + '...');
         this.ws.send(JSON.stringify(setupMessage));
     }
 
     async handleMessage(event) {
+        this._messageCount++;
         try {
             let text;
             if (event.data instanceof Blob) {
@@ -332,6 +362,7 @@ STRICT JSON RULES: You MUST double-escape all backslashes in LaTeX and SMILES. R
             } else if (typeof event.data === 'string') {
                 text = event.data;
             } else {
+                this._log("Received non-text/non-blob message, ignoring. Type:", typeof event.data);
                 return;
             }
 
@@ -339,7 +370,13 @@ STRICT JSON RULES: You MUST double-escape all backslashes in LaTeX and SMILES. R
 
             if (data.setupComplete) {
                 this.isSetup = true;
+                this._log("Setup complete (msg #" + this._messageCount + ")");
                 return;
+            }
+
+            // Log any error or unexpected fields
+            if (data.error) {
+                console.error("[LIVE] Server error message:", JSON.stringify(data.error));
             }
 
             if (data.serverContent) {
@@ -357,23 +394,45 @@ STRICT JSON RULES: You MUST double-escape all backslashes in LaTeX and SMILES. R
 
                 // Check for turn completion
                 if ((sc.turnComplete || sc.modelTurn?.turnComplete) && this.pendingResolve) {
+                    this._log(`Turn complete (turn #${this._turnCount}, msg #${this._messageCount}). Buffer length: ${this.textBuffer.length}`);
                     const fullText = this.textBuffer;
                     this.textBuffer = "";
                     this.pendingResolve(fullText);
                     this.pendingResolve = null;
                 }
+
+                // Log goAway signals (session about to expire)
+                if (sc.goAway) {
+                    console.warn("[LIVE] GoAway received! Time left:", sc.goAway.timeLeftMs || 'unknown');
+                }
+
+                // Log interrupted signals
+                if (sc.interrupted) {
+                    this._log("Turn was interrupted by server.");
+                }
+            } else if (!data.setupComplete && !data.error) {
+                // Log any unexpected message structure
+                this._log("Unknown message structure:", JSON.stringify(data).substring(0, 300));
             }
         } catch (e) {
-            console.error("Live message error:", e);
+            console.error("[LIVE] Message parse error:", e, "Raw data length:", event.data?.length || event.data?.size);
         }
     }
 
     async sendTurn(prompt, base64Image) {
-        if (!this.isConnected) await this.connect();
+        if (!this.isConnected) {
+            this._log("Not connected, reconnecting...");
+            await this.connect();
+        }
 
         if (this.ws?.readyState === WebSocket.OPEN) {
+            this._turnCount++;
+
             // Send image via realtime_input (video frame)
             if (base64Image) {
+                this._lastSentType = 'realtime_input:video';
+                this._lastSentAt = Date.now();
+                this._log(`Sending image (turn #${this._turnCount}, ~${Math.round(base64Image.length / 1024)}KB)`);
                 this.ws.send(JSON.stringify({
                     realtime_input: {
                         video: { data: base64Image, mime_type: "image/jpeg" }
@@ -382,6 +441,9 @@ STRICT JSON RULES: You MUST double-escape all backslashes in LaTeX and SMILES. R
             }
 
             // Send text via client_content (structured turn)
+            this._lastSentType = 'client_content:text';
+            this._lastSentAt = Date.now();
+            this._log(`Sending text (turn #${this._turnCount}): "${prompt.substring(0, 80)}..."`);
             this.ws.send(JSON.stringify({
                 client_content: {
                     turns: [{ role: "user", parts: [{ text: prompt }] }],
@@ -389,7 +451,7 @@ STRICT JSON RULES: You MUST double-escape all backslashes in LaTeX and SMILES. R
                 }
             }));
         } else {
-            console.warn('WebSocket not open.');
+            console.warn(`[LIVE] WebSocket not open. readyState=${this.ws?.readyState}`);
         }
 
         return new Promise((resolve) => { this.pendingResolve = resolve; });
@@ -412,6 +474,7 @@ Focus on creating questions that highlight key mechanisms.
 Provide clear 'instructions' that hint at the pattern the student should look for without revealing the answer.
 JSON ONLY.`;
 
+        this._log(`getNextQuestion: topic="${topic}", difficulty="${diffLabel}", learnMode=${isLearnMode}`);
         const responseText = await this.sendTurn(prompt);
 
         try {
@@ -422,13 +485,14 @@ JSON ONLY.`;
             const jsonText = responseText.substring(start, end + 1);
             return JSON.parse(jsonText);
         } catch (e) {
-            console.error("Failed to parse adaptive question:", e, responseText);
+            console.error("[LIVE] Failed to parse question JSON:", e, "\nRaw response:", responseText);
             throw e;
         }
     }
 }
 
 const liveAgent = new GeminiLiveAgent();
+
 
 // =============================================
 // 8. CANVAS & DRAWING
