@@ -696,9 +696,11 @@ function renderReaction(data, showAnswer = false) {
 
     // Hide status text ONLY if we aren't displaying a persistent answer result
     if (!showAnswer && loadingText.innerText !== "Checking...") {
-        loadingText.style.display = 'none';
+        const messageContainer = document.getElementById('message-container');
+        if (messageContainer) messageContainer.style.display = 'none';
         loadingText.className = "";
     }
+
 
     if (!data) return;
 
@@ -974,20 +976,24 @@ async function submitDrawing() {
 
         const diffLabel = { 1: "Beginner", 2: "USNCO (Intermediate)", 3: "Collegiate/IChO (Advanced)" }[currentDifficulty];
 
-        // CONTEXT INJECTION: Explicitly remind the AI of the reaction it is grading.
-        const context = `Context: Reactants: ${currentReaction.reactants}, Target Answer: ${currentReaction.answer}.`;
+        // CONTEXT INJECTION: Explicitly remind the AI of the reaction it is grading.        const context = `Context: Reactants: ${currentReaction.reactants}, Target Answer: ${currentReaction.answer}.`;
         
         const prompt = isLearnMode 
-            ? `${context} Evaluate my drawing based on the guided step. Difficulty: ${diffLabel}. Provide a detailed pedagogical explanation. Suggest the next logical pattern. DO NOT TELL ME WHAT TO DRAW.` 
-            : `${context} Evaluate my drawing. Difficulty: ${diffLabel}. Be concise. provide a brief, subtle hint. DO NOT REVEAL THE ANSWER OR TELL ME WHAT TO DRAW.`;
-
-
+            ? `${context} Evaluate my drawing. Be extremely concise (max 2 sentences). Difficulty: ${diffLabel}. Suggest next step. DO NOT TELL ME WHAT TO DRAW.` 
+            : `${context} Evaluate my drawing. Difficulty: ${diffLabel}. EXTREMELY CONCISE (max 1 sentence). DO NOT TELL ME WHAT TO DRAW.`;
 
         // Real-time streaming UI: show chunks as they arrive
+        const messageContainer = document.getElementById('message-container');
+        const restoreBtn = document.getElementById('restore-btn');
+        
+        messageContainer.style.display = 'block';
+        restoreBtn.style.display = 'none';
         loadingText.innerText = ""; // Clear "Checking..."
+        
         liveAgent.onChunk = (chunk) => {
             loadingText.innerText += chunk;
         };
+
 
         const feedback = await liveAgent.sendTurn(prompt, base64Image);
 
@@ -1035,5 +1041,24 @@ submitBtn.addEventListener('click', (e) => {
 
 // Initial state: wait for user to click "New"
 updateButtonState();
+
+// Message Shrink/Restore Handlers
+const messageContainer = document.getElementById('message-container');
+const shrinkBtn = document.getElementById('shrink-btn');
+const restoreBtn = document.getElementById('restore-btn');
+
+if (shrinkBtn) {
+    shrinkBtn.addEventListener('click', () => {
+        messageContainer.style.display = 'none';
+        restoreBtn.style.display = 'block';
+    });
+}
+if (restoreBtn) {
+    restoreBtn.addEventListener('click', () => {
+        messageContainer.style.display = 'block';
+        restoreBtn.style.display = 'none';
+    });
+}
+
 
 
