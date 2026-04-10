@@ -48,7 +48,6 @@
       <div id="toolbar">
         <button type="button" id="generate-btn">New</button>
         <button type="button" id="submit-btn" style="background-color: #34c759;">Submit</button>
-        <button type="button" id="report-btn" style="background-color: #8e8e93;">Report Error</button>
         <button type="button" id="eraser-btn" style="background-color: #ff3b30;">Eraser</button>
         <button type="button" id="clear-btn">Clear</button>
         <button type="button" id="help-btn" style="background-color: #ff9500;">?</button>
@@ -58,26 +57,12 @@
     </div>
   </div>
 
-  <div id="message-container" style="display: none;">
-    <button id="shrink-btn" title="Shrink">&times;</button>
-    <div id="loading-text">Loading...</div>
-  </div>
-
-  <button id="restore-btn" title="Restore Feedback" style="display: none;">&#128172;</button>
-
+  <div id="loading-text" style="display: none;">Loading...</div>
 
   <div id="settings-modal" class="modal" style="display: none;">
     <div class="modal-content">
       <h2>Practice Settings</h2>
-      <div id="settings-learn-mode-container">
-        <label class="switch-row">
-          <span>Learn Mode (Guided Steps)</span>
-          <input type="checkbox" id="learn-mode-toggle">
-        </label>
-        <p class="settings-hint">When enabled, AI guides you through patterns step-by-step.</p>
-      </div>
       <div id="settings-difficulty-container">
-
         <h3>Practice Difficulty</h3>
         <div class="difficulty-slider-row">
           <input type="range" id="difficulty-slider" min="1" max="3" step="1" value="1">

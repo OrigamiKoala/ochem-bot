@@ -1,66 +1,15 @@
 // api/chat.js
 export default async function handler(req, res) {
-    // Add CORS
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-    // 1. Diagnostics & CORS: Allow GET and OPTIONS to verify the route exists
-    if (req.method === 'GET' || req.method === 'OPTIONS') {
-        if (req.method === 'OPTIONS') return res.status(200).end();
-        
-        return res.status(200).json({ 
-            status: 'online', 
-            message: 'Ochem Bot API is reachable. Please use POST for actual logic.',
-            timestamp: new Date().toISOString()
-        });
-    }
-
-    // 2. Only allow POST for logic
+    // 1. Only allow POST requests
     if (req.method !== 'POST') {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const body = req.body || {};
-    const { prompt, image, responseMimeType, temperature, type } = body;
-
+    const { prompt, image, responseMimeType } = req.body;
     const API_KEY = process.env.GEMINI_API_KEY;
 
     if (!API_KEY) {
-        return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the Vercel server. Go to Project Settings > Environment Variables.' });
-    }
-
-    // New: Handle session token requests for the Gemini Live API (WebSocket)
-    if (type === 'session_token') {
-        try {
-            console.log("Generating ephemeral session token using REST...");
-            // Using the standard generative-language provisioning endpoint
-            const tokenResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/authTokens:generate?key=${API_KEY}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    config: {
-                        uses: 1,
-                        expireTime: new Date(Date.now() + 3600 * 1000).toISOString()
-                    }
-                })
-            });
-
-            if (!tokenResponse.ok) {
-                const errorData = await tokenResponse.json().catch(() => ({}));
-                console.error("Upstream Token Error:", errorData);
-                return res.status(tokenResponse.status).json({ 
-                    error: errorData.error?.message || `Google API returned ${tokenResponse.status}` 
-                });
-            }
-
-            const tokenData = await tokenResponse.json();
-            // The JSON response from Google typically has a 'token' or 'name' field
-            return res.status(200).json({ token: tokenData.token || tokenData.name });
-        } catch (err) {
-            console.error('REST Token Error:', err);
-            return res.status(500).json({ error: 'Failed to proxy session token request: ' + err.message });
-        }
+        return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
     }
 
     // Hierarchical model list (Always starts from the top)
@@ -92,8 +41,8 @@ export default async function handler(req, res) {
                 body: JSON.stringify({
                     contents: [{ parts }],
                     generationConfig: {
-                        temperature: temperature ?? 0.1,
-
+                        maxOutputTokens: 2500,
+                        temperature: 0.1,
                         topP: 0.8,
                         topK: 40,
                         response_mime_type: responseMimeType || "text/plain",
