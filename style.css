@@ -254,8 +254,16 @@ body {
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 4px;
 }
+
+.reagent-separator {
+    margin: 0 4px;
+    font-size: 1.1rem;
+    color: #8e8e93;
+    font-weight: 400;
+}
+
 
 
 .reagents-top {

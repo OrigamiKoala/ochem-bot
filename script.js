@@ -607,15 +607,14 @@ function renderRichText(text, container, isExplanation = false) {
                 }
             }
 
-            // Horizontal separation for reagents
-            if (!isExplanation && container.children.length > 0 && part.trim() === "") {
+            // Horizontal separation for reagents (add + sign between multiple molecules)
+            if (!isExplanation && container.children.length > 0) {
                  const plus = document.createElement('span');
                  plus.innerText = "+";
-                 plus.style.margin = "0 8px";
-                 plus.style.fontSize = "1.2rem";
-                 plus.style.color = "#8e8e93";
+                 plus.className = "reagent-separator";
                  container.appendChild(plus);
             }
+
 
             const wrapper = document.createElement('div');
 
@@ -853,21 +852,22 @@ RULES:
 
     } finally {
         isFetching = false;
-        // Don't hide the text here if it's "Generating..." 
-        // because displayNextReaction/renderReaction will handle it
-        if (loadingText.innerText === "Generating...") {
-            // Keep it visible for a brief moment or until render handles it
-        } else {
-            // If it was an error message, keep it. Otherwise hide.
-            if (!loadingText.innerText.includes("Oops") && !loadingText.innerText.includes("busy")) {
-                document.getElementById('message-container').style.display = 'none';
-            }
-
+        
+        // If the user was waiting for this specific batch (queue was empty),
+        // display the first reaction from the new batch.
+        if (requestedDirectly && reactionQueue.length > 0) {
+            displayNextReaction();
+        } else if (reactionQueue.length > 0 && !currentReaction) {
+            // Initial load scenario
+            displayNextReaction();
         }
 
-        // If the queue was empty and we just got data, display the first one only if no reaction is currently loaded
-        if (reactionQueue.length > 0 && !currentReaction) {
-            displayNextReaction();
+        // Auto-hide the loading screen if it's not showing a persistent result
+        if (loadingText.innerText === "Generating..." || loadingText.innerText === "Checking...") {
+            // These states are handled by renderReaction/grading
+        } else if (!loadingText.innerText.includes("Oops") && !loadingText.innerText.includes("busy")) {
+            // Hide container if no error/busy message is present
+            // document.getElementById('message-container').style.display = 'none';
         }
     }
 }
