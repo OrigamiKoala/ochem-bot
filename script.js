@@ -46,6 +46,8 @@ let currentReaction = null;
 let isFetching = false;
 let isSubmitting = false;
 let starterQuestionsBuffer = null;
+let questionQueue = [];  // Pre-fetched questions for instant display
+let isRefilling = false; // Background refill lock
 let hasSubmitted = false;
 let lastFeedback = "";
 let isShowingAnswer = false;
@@ -387,29 +389,27 @@ STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., us
         return new Promise((resolve) => { this.pendingResolve = resolve; });
     }
 
-    async getNextQuestion(topic, difficulty) {
+    async getNextQuestions(topic, difficulty, count = 5) {
         const perf = this.history.length > 0 ? this.history[this.history.length - 1] : "start";
         const diffLabel = DIFF_LABELS[difficulty];
 
         const prompt = isLearnMode
-            ? `You are an organic chemistry tutor. Generate 1 reaction question as JSON.
-Topic: ${topic}. Difficulty: ${diffLabel}.
-LEARN MODE: Focus on teaching a specific pattern. Provide 'instructions' that guide thinking via subtle hints. Do NOT ask for the final product immediately if multi-step.
-JSON schema: {"qtype":"predict|mechanism|stereo","reactants":"SMILES","conditions":"LaTeX","answer":"SMILES","instructions":"string","explanation":"string with [[SMILES: ...]] placeholders"}`
-            : `You are an organic chemistry tutor. Generate 1 reaction question as JSON.
-Topic: ${topic}. Difficulty: ${diffLabel}. User's last performance: ${perf}.
-Focus on key mechanisms. Provide 'instructions' that hint at the pattern without revealing the answer.
-JSON schema: {"qtype":"predict|mechanism|stereo","reactants":"SMILES","conditions":"LaTeX","answer":"SMILES","instructions":"string","explanation":"string with [[SMILES: ...]] placeholders"}`;
+            ? `You are an organic chemistry tutor. Generate ${count} DIFFERENT reaction questions as a JSON ARRAY.
+Topics to pick from: ${selectedTopics.join(', ')}. Difficulty: ${diffLabel}.
+LEARN MODE: Focus on teaching specific patterns. Provide 'instructions' that guide thinking via subtle hints.
+Return a JSON array of objects, each with: {"qtype":"predict|mechanism|stereo","reactants":"SMILES","conditions":"LaTeX","answer":"SMILES","instructions":"string","explanation":"string with [[SMILES: ...]] placeholders"}`
+            : `You are an organic chemistry tutor. Generate ${count} DIFFERENT reaction questions as a JSON ARRAY.
+Topics to pick from: ${selectedTopics.join(', ')}. Difficulty: ${diffLabel}. User's last performance: ${perf}.
+Focus on key mechanisms. Provide 'instructions' that hint at patterns without revealing the answer.
+Return a JSON array of objects, each with: {"qtype":"predict|mechanism|stereo","reactants":"SMILES","conditions":"LaTeX","answer":"SMILES","instructions":"string","explanation":"string with [[SMILES: ...]] placeholders"}`;
 
-        // HYBRID APPROACH: Use REST API for question generation (guaranteed valid JSON).
-        // The Live WebSocket is reserved for interactive feedback and chat.
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 prompt,
                 responseMimeType: 'application/json',
-                temperature: 0.8
+                temperature: 0.9
             })
         });
 
@@ -422,7 +422,9 @@ JSON schema: {"qtype":"predict|mechanism|stereo","reactants":"SMILES","condition
         const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
         if (!text) throw new Error("No text in REST response");
 
-        return JSON.parse(text);
+        const parsed = JSON.parse(text);
+        // Handle both array and single-object responses
+        return Array.isArray(parsed) ? parsed : [parsed];
     }
 
 }
@@ -658,6 +660,22 @@ function displayNextReaction() {
     renderReaction(currentReaction);
 }
 
+/** Background refill: fetches 3 questions and adds them to the queue */
+async function refillQueue() {
+    if (isRefilling) return;
+    isRefilling = true;
+    try {
+        const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
+        const questions = await liveAgent.getNextQuestions(topic, currentDifficulty);
+        questionQueue.push(...questions);
+        console.log(`Queue refilled: ${questionQueue.length} questions ready`);
+    } catch (e) {
+        console.error("Background refill error:", e);
+    } finally {
+        isRefilling = false;
+    }
+}
+
 async function fetchBatchReactions(isExplicit = false) {
     if (isFetching) return;
     isFetching = true;
@@ -665,20 +683,38 @@ async function fetchBatchReactions(isExplicit = false) {
     if (isExplicit) {
         reactionContainer.querySelectorAll('canvas, .plus-sign, .reaction-arrow').forEach(el => el.remove());
         if (instructionDiv) instructionDiv.innerText = '';
-        toggleMessage(true, "Generating adaptive challenge...");
     }
 
     try {
-        const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
-        liveAgent.onChunk = null; // Suppress JSON streaming to UI
-        const newReaction = await liveAgent.getNextQuestion(topic, currentDifficulty);
-        if (newReaction) {
-            currentReaction = newReaction;
+        // INSTANT: Serve from queue if available
+        if (questionQueue.length > 0) {
+            currentReaction = questionQueue.shift();
             displayNextReaction();
+        } else {
+            // Queue empty — show a starter from user's selected topics instantly, then fetch
+            toggleMessage(true, "Generating adaptive challenge...");
+            const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
+            const starter = await getStarterQuestion(topic, currentDifficulty);
+            if (starter) {
+                currentReaction = starter;
+                displayNextReaction();
+            }
+            // Fetch fresh batch and display the first one
+            const questions = await liveAgent.getNextQuestions(topic, currentDifficulty);
+            if (questions.length > 0) {
+                currentReaction = questions.shift();
+                questionQueue.push(...questions); // Queue the rest
+                displayNextReaction();
+            }
+        }
+
+        // Trigger background refill when queue is low
+        if (questionQueue.length <= 1) {
+            refillQueue();
         }
     } catch (e) {
-        console.error("Live Question Fetch error:", e);
-        toggleMessage(true, "Oops. The Live connection failed!", "error-text");
+        console.error("Question Fetch error:", e);
+        toggleMessage(true, "Oops. Connection failed!", "error-text");
     } finally {
         isFetching = false;
     }
@@ -845,6 +881,7 @@ if (saveSettingsBtn) {
         if (selectedTopics.length === 0) selectedTopics = [...baseTopics, ...userCustomTopics];
         localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
         settingsModal.style.display = 'none';
+        questionQueue = []; // Flush stale questions for new settings
         fetchBatchReactions(true);
     });
 }
