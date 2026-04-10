@@ -99,6 +99,34 @@ function getCoordinates(event) {
     };
 }
 
+/**
+ * Generates a 512x512 downscaled JPEG for Gemini to minimize latency.
+ */
+function getOptimizedImageB64() {
+    const size = 512;
+    const offscreen = document.createElement('canvas');
+    offscreen.width = size;
+    offscreen.height = size;
+    const ctx = offscreen.getContext('2d');
+    
+    // Fill background (JPEG doesn't support transparency well in some viewers, and white is standard for OChem)
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, size, size);
+    
+    // Calculate scaling to fit into 512-margin
+    const margin = 20;
+    const usableSize = size - (margin * 2);
+    const scale = Math.min(usableSize / canvas.width, usableSize / canvas.height);
+    
+    const x = (size / 2) - (canvas.width * scale / 2);
+    const y = (size / 2) - (canvas.height * scale / 2);
+    
+    ctx.drawImage(canvas, x, y, canvas.width * scale, canvas.height * scale);
+    
+    // Return base64 without the prefix
+    return offscreen.toDataURL('image/jpeg', 0.5).split(',')[1];
+}
+
 function resizeCanvas() {
     canvas.width = canvas.parentElement.clientWidth;
     canvas.height = canvas.parentElement.clientHeight;
@@ -118,7 +146,7 @@ function updateButtonState() {
     if (!reportBtn) return;
     if (isShowingAnswer) {
         reportBtn.innerText = "I was right";
-        reportBtn.style.backgroundColor = "#5856d6"; // Purple for appeal
+        reportBtn.style.backgroundColor = "#1a1a1a"; 
     } else {
         reportBtn.innerText = "Report Error";
         reportBtn.style.backgroundColor = "#8e8e93"; // Gray for skip
@@ -267,18 +295,6 @@ function renderRichText(text, container, isExplanation = false) {
             const wrapper = document.createElement('div');
             wrapper.className = isExplanation ? 'inline-molecule-explanation' : 'inline-molecule';
             
-            if (isExplanation) {
-                const label = document.createElement('code');
-                label.className = 'smiles-label';
-                label.innerText = smiles;
-                wrapper.appendChild(label);
-            } else {
-                const hiddenText = document.createElement('span');
-                hiddenText.className = 'sr-only-smiles';
-                hiddenText.innerText = `[[SMILES: ${smiles}]]`;
-                container.appendChild(hiddenText);
-            }
-
             const canvas = document.createElement('canvas');
             canvas.className = 'molecule-canvas';
             wrapper.appendChild(canvas);
@@ -445,8 +461,7 @@ async function submitDrawing() {
     document.getElementById('message-container').style.display = 'block';
 
     try {
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        const base64Image = dataUrl.split(',')[1];
+        const base64Image = getOptimizedImageB64();
 
         const prompt = `Evaluate the user's drawing for this challenge:
 Task Type: ${currentReaction.qtype}
@@ -500,8 +515,7 @@ async function reevaluateDrawing() {
     if (reportBtn) reportBtn.innerText = "Processing...";
 
     try {
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-        const base64Image = dataUrl.split(',')[1];
+        const base64Image = getOptimizedImageB64();
 
         const prompt = `The user is appealing your previous 'Incorrect' verdict.
 Correct Answer: ${currentReaction.answer}

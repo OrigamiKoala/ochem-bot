@@ -43,10 +43,7 @@ body {
     z-index: 10;
 }
 
-#question-instruction {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #5856d6; /* Purple theme for the task */
+    color: #1a1a1a; 
     margin-bottom: 12px;
     width: 100%;
 }
@@ -54,7 +51,7 @@ body {
 #explanation-display {
     margin-top: 15px;
     padding: 15px;
-    border-top: 1px dashed #c7c7cc;
+    border-top: 1px solid #eee;
     font-size: 0.95rem;
     color: #48484a;
     line-height: 1.4;
@@ -522,14 +519,11 @@ canvas {
 }
 
 .inline-molecule-explanation {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    margin: 2px 4px;
-    padding: 2px;
+    display: inline-block;
     vertical-align: middle;
-    max-width: 200px;
-    overflow: hidden;
+    margin: 0 4px;
+    padding: 0;
+    max-width: 250px;
 }
 
 
