@@ -333,7 +333,10 @@ class GeminiLiveAgent {
   "instructions": "Task description",
   "explanation": "Detailed mechanism with [[SMILES: ...]] placeholders."
 }
-Grade student drawings accurately. Provide pedagogical feedback that explains chemical reasoning when requested. When providing hints for incorrect drawings, focus on the underlying patterns (e.g., nucleophilic attack, carbocation stability) without giving away the final answer.`
+Grade student drawings accurately. 
+CRITICAL RULE: NEVER tell the user exactly what to draw or reveal the final answer. 
+You are a tutor, not a solution key. Provide pedagogical feedback that explains chemical reasoning. When providing hints, focus on the underlying patterns (e.g., nucleophilic attack, carbocation stability) to guide the student's thinking process.`
+
 
 
                     }]
@@ -435,21 +438,23 @@ Grade student drawings accurately. Provide pedagogical feedback that explains ch
 
     async getNextQuestion(topic, difficulty) {
         const perf = this.history.length > 0 ? this.history[this.history.length - 1] : "start";
+        const diffLabel = { 1: "Beginner", 2: "USNCO (Intermediate)", 3: "Collegiate/IChO (Advanced)" }[difficulty];
         
         let prompt;
         if (isLearnMode) {
-            prompt = `Generate a new GUIDED learning question. Topic: ${topic}. Difficulty: ${difficulty}. 
+            prompt = `Generate a new GUIDED learning question. Topic: ${topic}. Difficulty: ${diffLabel}. 
             LEARN MODE RULES:
             1. Focus on teaching a specific pattern (e.g. nucleophile/electrophile identification, resonance, or a specific step).
             2. Do NOT ask for the final product immediately if it's a multi-step reaction.
-            3. Provide 'instructions' that guide the user's thinking process.
+            3. Provide 'instructions' that guide the user's thinking process via subtle hints.
             4. JSON ONLY.`;
         } else {
-            prompt = `Generate a new adaptive question. Topic: ${topic}. Difficulty: ${difficulty}. User's last performance: ${perf}.
+            prompt = `Generate a new adaptive question. Topic: ${topic}. Difficulty: ${diffLabel}. User's last performance: ${perf}.
             Focus on creating questions that highlight key mechanisms.
-            Provide clear 'instructions' that hint at the pattern the student should look for.
+            Provide clear 'instructions' that hint at the pattern the student should look for without revealing the answer.
             JSON ONLY.`;
         }
+
 
 
         const responseText = await this.sendTurn(prompt);
@@ -857,16 +862,11 @@ async function fetchBatchReactions(isExplicit = false) {
         const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
 
         // Use Live Agent to get the next adaptive question
-        // Stream instructions if they arrive in chunks
-        liveAgent.onChunk = (chunk) => {
-            if (!currentReaction) {
-                loadingText.innerText = "Generating: " + chunk;
-            } else {
-                loadingText.innerText += chunk;
-            }
-        };
+        // Stream instructions - Suppress JSON chunks from the main UI
+        liveAgent.onChunk = null; 
 
         const newReaction = await liveAgent.getNextQuestion(topic, currentDifficulty);
+
 
         if (newReaction) {
             currentReaction = newReaction;
@@ -963,9 +963,12 @@ async function submitDrawing() {
         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
         const base64Image = dataUrl.split(',')[1];
 
+        const diffLabel = { 1: "Beginner", 2: "USNCO (Intermediate)", 3: "Collegiate/IChO (Advanced)" }[currentDifficulty];
+
         const prompt = isLearnMode 
-            ? "Evaluate my drawing based on the guided step. Provide a detailed pedagogical explanation of why it is correct or incorrect, and suggest the next logical pattern to look for." 
-            : "Evaluate my drawing. Be concise. If incorrect, provide a brief hint targeting the pattern without giving away the final answer.";
+            ? `Evaluate my drawing based on the guided step. Difficulty: ${diffLabel}. Provide a detailed pedagogical explanation of why it is correct or incorrect. Suggest the next logical pattern to look for. REMINDER: DO NOT TELL ME WHAT TO DRAW.` 
+            : `Evaluate my drawing. Difficulty: ${diffLabel}. Be concise. provide a brief, subtle hint targeting the pattern. DO NOT REVEAL THE ANSWER OR TELL ME WHAT TO DRAW.`;
+
 
         // Real-time streaming UI: show chunks as they arrive
         loadingText.innerText = ""; // Clear "Checking..."
@@ -1007,7 +1010,9 @@ async function submitDrawing() {
     } finally {
         isSubmitting = false;
         updateSubmitDisabled();
+        liveAgent.onChunk = null; // Reset callback
     }
+
 }
 
 submitBtn.addEventListener('click', (e) => {
