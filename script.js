@@ -37,6 +37,8 @@ let isShowingAnswer = false;
 const submitBtn = document.getElementById('submit-btn');
 
 let isCanvasBlank = true;
+let isLearnMode = localStorage.getItem('ochem_learn_mode') === 'true';
+const learnModeToggle = document.getElementById('learn-mode-toggle');
 
 // ------ Settings & Topic Management ------
 const baseTopics = ["addition", "substitution", "elimination", "on rings", "Grignard", "redox", "protecting groups", "cycloadditions", "electrocyclic", "rearrangements", "radicals", "carbenes", "stereochemistry", "regioselectivity"];
@@ -144,7 +146,14 @@ function addCustomTopic() {
     localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
 
     customTopicInput.value = '';
+    
+    // Set learn mode toggle
+    if (learnModeToggle) {
+        learnModeToggle.checked = isLearnMode;
+    }
+
     initSettings();
+
 }
 
 function removeCustomTopic(topicToRemove) {
@@ -177,7 +186,14 @@ if (saveSettingsBtn) {
         currentDifficulty = parseInt(difficultySlider.value);
         localStorage.setItem('ochem_difficulty', currentDifficulty);
 
+        // Save learn mode
+        if (learnModeToggle) {
+            isLearnMode = learnModeToggle.checked;
+            localStorage.setItem('ochem_learn_mode', isLearnMode);
+        }
+
         // Default to all if none selected to prevent errors
+
         if (selectedTopics.length === 0) selectedTopics = [...baseTopics, ...userCustomTopics];
 
         localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
@@ -999,10 +1015,22 @@ async function submitDrawing() {
 
         const base64Image = offscreen.toDataURL('image/png').split(',')[1];
 
+        // Evaluation strategy depends on Mode
+        let promptSnippet = "";
+        if (isLearnMode) {
+            promptSnippet = `Act as a supportive organic chemistry tutor. 
+1. If 'Incorrect', identify the specific chemical error (e.g., regio/stereo, steric clash, valency, or incorrect mechanism step) and explain the principle/rule being violated (e.g. Markovnikov, Anti-Zaitsev). 
+2. Be encouraging. 
+3. DO NOT give the answer or SMILES/structure names.`;
+        } else {
+            promptSnippet = `Drawing correct? Output 'Correct' or 'Incorrect' (with subtle 10-word hint if wrong).`;
+        }
+
         const prompt = `Evaluate drawing.
 Task: ${currentReaction.qtype}
 Target: ${currentReaction.reactants} [${currentReaction.reagents || currentReaction.conditions}] -> ${currentReaction.answer}
-Drawing correct? Output 'Correct' or 'Incorrect' (with subtle 10-word hint if wrong).`;
+${promptSnippet}`;
+
 
         const response = await fetch('/api/chat', {
             method: 'POST',
