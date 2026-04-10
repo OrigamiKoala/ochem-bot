@@ -640,8 +640,9 @@ function renderRichText(text, container, isExplanation = false) {
     if (!container) return;
     container.innerHTML = '';
 
-    // Match [[SMILES: SMILES_STRING]] possibly with spaces between brackets [[SMILES: ... ] ]
-    const parts = text.split(/(\[\[SMILES:[\s\S]*?\]\s*\]\s*\]*)/g);
+    // Standardize regex for SMILES tags: case-insensitive, ignores extra spaces
+    const parts = text.split(/(\[\[\s*SMILES:\s*[\s\S]*?\]\s*\])/gi);
+
 
 
 
@@ -1046,9 +1047,10 @@ async function submitDrawing() {
 
         // Use a temporary offscreen canvas for downscaling
         const offscreen = document.createElement('canvas');
-        const scale = 0.6;
+        const scale = 0.8; // Increased resolution for better AI accuracy
         offscreen.width = canvas.width * scale;
         offscreen.height = canvas.height * scale;
+
         const octx = offscreen.getContext('2d');
 
         // Draw whitespace background
