@@ -14,9 +14,8 @@ export default async function handler(req, res) {
 
     // Hierarchical model list (Always starts from the top)
     const MODELS = [
-        "gemini-2.0-flash",           // Ultra-fast next-gen
-        "gemini-1.5-flash",           // Reliable fast tier
-        "gemini-1.5-flash-8b"         // Lightest fallback
+        "gemini-3.1-flash-lite-preview",           // Ultra-fast next-gen
+        "gemini-3-flash-preview",           // Reliable fast tier
     ];
 
     let lastError = null;
