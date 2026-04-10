@@ -577,12 +577,16 @@ function renderRichText(text, container, isExplanation = false) {
     if (!container) return;
     container.innerHTML = '';
 
-    // Match [[SMILES: SMILES_STRING]] possibly with stray trailing brackets
-    const parts = text.split(/(\[\[SMILES:[\s\S]*?\]\]+)/g);
+    // Match [[SMILES: SMILES_STRING]] possibly with spaces between brackets [[SMILES: ... ] ]
+    const parts = text.split(/(\[\[SMILES:[\s\S]*?\]\s*\]\s*\]*)/g);
+
+
 
 
     parts.forEach(part => {
-        const match = part.match(/\[\[SMILES:([\s\S]*?)\]\]+/);
+        const match = part.match(/\[\[SMILES:([\s\S]*?)\]\s*\]\s*\]*/);
+
+
         if (match) {
             let smiles = match[1].trim();
             // Handle cases where the AI might have outputted [[SMILES: ...]]] (extra ] at end)
@@ -640,10 +644,20 @@ function renderRichText(text, container, isExplanation = false) {
             let content = part.trim();
             
             // Reagents/Conditions on arrow need auto-mhchem wrapping
-            // Explanation text should NOT be auto-wrapped as it breaks fonts and copy-paste
+            // Explanation text: 
+            // 1. Don't auto-wrap everything (breaks fonts)
+            // 2. DO wrap LaTeX commands (starting with \) so they render
             if (!isExplanation && !content.includes('\\(') && !content.includes('\\[')) {
                 if (/[_^{}\\]/.test(content) || content.length > 2) {
                     content = `\\( \\ce{${content}} \\)`;
+                }
+            } else if (isExplanation) {
+                // Auto-wrap LaTeX commands in explanations if they aren't already wrapped
+                if (!content.includes('\\(') && !content.includes('\\[')) {
+                    // Match \command or things that look like LaTeX
+                    if (/\\[a-zA-Z]+/.test(content)) {
+                        content = content.replace(/(\\[a-zA-Z]+(?:\{.*?\})?)/g, '\\( $1 \\)');
+                    }
                 }
             }
             

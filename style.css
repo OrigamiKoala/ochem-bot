@@ -530,12 +530,13 @@ canvas {
     align-items: center;
     background: white;
     border: 1px solid #f2f2f7;
-    border-radius: 12px;
-    margin: 5px 10px;
-    padding: 12px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    border-radius: 8px;
+    margin: 2px 4px;
+    padding: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     vertical-align: middle;
-    max-width: fit-content;
+    max-width: 200px;
+    overflow: hidden;
 }
 
 .smiles-label {
