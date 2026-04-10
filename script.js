@@ -48,6 +48,10 @@ let selectedTopics = JSON.parse(localStorage.getItem('ochem_selected_topics')) |
 const settingsBtn = document.getElementById('settings-btn');
 const settingsModal = document.getElementById('settings-modal');
 const saveSettingsBtn = document.getElementById('save-settings-btn');
+const messageCloseBtn = document.getElementById('message-close-btn');
+const messageRestoreBtn = document.getElementById('message-restore-btn');
+const messageContainer = document.getElementById('message-container');
+
 const topicsListDiv = document.getElementById('topics-list');
 const addCustomTopicBtn = document.getElementById('add-custom-topic-btn');
 const customTopicInput = document.getElementById('custom-topic-input');
@@ -132,7 +136,36 @@ function initSettings() {
     });
 }
 
+// ------ Message UI Logic ------
+if (messageCloseBtn) {
+    messageCloseBtn.addEventListener('click', () => {
+        messageContainer.style.display = 'none';
+        messageRestoreBtn.style.display = 'flex';
+    });
+}
+
+if (messageRestoreBtn) {
+    messageRestoreBtn.addEventListener('click', () => {
+        messageContainer.style.display = 'block';
+        messageRestoreBtn.style.display = 'none';
+    });
+}
+
+function showMessage(text, className = "") {
+    const loadingText = document.getElementById('loading-text');
+    if (!loadingText) return;
+    loadingText.innerText = text;
+    loadingText.className = className;
+    messageContainer.style.display = 'block';
+    messageRestoreBtn.style.display = 'none';
+}
+
+function hideMessage() {
+    messageContainer.style.display = 'none';
+}
+
 function addCustomTopic() {
+
     const newTopic = customTopicInput.value.trim().toLowerCase();
     if (!newTopic) return;
     if (baseTopics.includes(newTopic) || userCustomTopics.includes(newTopic)) {
@@ -1058,9 +1091,10 @@ ${promptSnippet}`;
         const result = await response.json();
         if (result.candidates && result.candidates[0].content.parts[0].text) {
             const feedback = result.candidates[0].content.parts[0].text.trim();
-            loadingText.innerText = feedback;
+            showMessage(feedback);
             lastFeedback = feedback; // Store for Give Up
             hasSubmitted = true;
+
 
             if (feedback.toLowerCase().startsWith('correct')) {
                 loadingText.className = "success-text";
@@ -1083,7 +1117,11 @@ ${promptSnippet}`;
                     reportBtn.innerText = "I was right";
                     reportBtn.style.backgroundColor = "#ff9500"; // Orange to indicate appeal
                 }
+                // Ensure message is visible if it was manually closed
+                messageContainer.style.display = 'block';
+                messageRestoreBtn.style.display = 'none';
             }
+
 
         }
     } catch (e) {
