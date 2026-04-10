@@ -235,6 +235,49 @@ body {
     color: #333;
 }
 
+.reaction-arrow-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin: 0 15px;
+    min-width: 80px;
+}
+
+.reagents-top, .conditions-bottom {
+    font-size: 0.9rem;
+    color: #48484a;
+    text-align: center;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.reagents-top {
+    margin-bottom: 2px;
+}
+
+.conditions-bottom {
+    margin-top: 2px;
+}
+
+.arrow-line {
+    font-size: 1.8rem;
+    line-height: 1;
+    margin: 2px 0;
+}
+
+.reaction-arrow-container canvas {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+}
+
+
 #whiteboard-container {
     flex: 1;
     position: relative;
@@ -437,14 +480,16 @@ canvas {
 /* Inline Molecule in Explanation */
 
 .inline-molecule {
-    display: block;
+    display: inline-flex;
     background: white;
     border: 1px solid #f2f2f7;
-    border-radius: 12px;
-    margin: 10px 0;
-    padding: 10px;
+    border-radius: 8px;
+    margin: 2px;
+    padding: 4px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    vertical-align: middle;
 }
+
 
 #custom-topic-container {
     margin-top: 25px;

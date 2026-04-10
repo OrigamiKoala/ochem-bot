@@ -44,6 +44,24 @@ const explanationDisplay = document.getElementById('explanation-display');
 const explanationContent = document.getElementById('explanation-text-content');
 const difficultySlider = document.getElementById('difficulty-slider');
 
+// Helper to sanitize SMILES syntax to prevent parser crashes
+function cleanSmiles(smiles) {
+    if (!smiles) return null;
+    let s = smiles.replace(/^\[\[SMILES: (.*?)\]\]$/, '$1'); // Strip wrapping
+    s = s.replace(/\\/g, '\\\\'); // escape backslashes
+    
+    // Balance brackets
+    const openBrackets = (s.match(/\[/g) || []).length;
+    const closeBrackets = (s.match(/\]/g) || []).length;
+    if (openBrackets > closeBrackets) s += ']'.repeat(openBrackets - closeBrackets);
+    if (closeBrackets > openBrackets) s = '['.repeat(closeBrackets - openBrackets) + s;
+    
+    // Check for hanging operators
+    if (/[\-\+\=\#]$/.test(s)) return null;
+
+    return s;
+}
+
 // About Modal Elements
 const aboutBtn = document.getElementById('about-btn');
 const aboutModal = document.getElementById('about-modal');
@@ -421,18 +439,21 @@ function renderReaction(data, showAnswer = false) {
 
     // Immediate clear
     moleculeDiv.innerHTML = '';
-    explanationDisplay.style.display = 'none';
+    
+    // Only hide explanation if we aren't explicitly showing the answer
+    if (!showAnswer) {
+        explanationDisplay.style.display = 'none';
+        chatMessages.innerHTML = ''; // Reset chat history
+    }
 
     // Reset/Parse explanation
-    renderExplanationWithMolecules(data.explanation || "No explanation preloaded.", explanationContent);
-
-    chatMessages.innerHTML = ''; // Reset chat history
+    renderRichText(data.explanation || "No explanation preloaded.", explanationContent);
 
     // Hide status text ONLY if we aren't displaying a persistent answer result
-    if (!showAnswer && loadingText.innerText !== "Checking...") {
-        loadingText.style.display = 'none';
-        loadingText.className = "";
+    if (!showAnswer && loadingText && loadingText.innerText !== "Checking...") {
+        document.getElementById('message-container').style.display = 'none';
     }
+
 
     if (!data) return;
 
@@ -443,14 +464,31 @@ function renderReaction(data, showAnswer = false) {
     const reactantMolecules = data.reactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
     renderMolecules(reactantMolecules, moleculeDiv);
 
-    // Add reaction arrow with conditions
+    // Render Arrow with Reagents and Conditions
     const arrowContainer = document.createElement('div');
-    arrowContainer.className = 'reaction-arrow';
-    arrowContainer.style.padding = '0 15px';
-    arrowContainer.style.fontSize = '1.8rem';
-    const conditions = (data.conditions || '').replace(/\\\\/g, '\\');
-    arrowContainer.innerText = `\\( \\ce{->[${conditions}]} \\)`;
+    arrowContainer.className = 'reaction-arrow-container';
+    
+    const topRow = document.createElement('div');
+    topRow.className = 'reagents-top';
+    // Backwards compatibility for older starter.json / stored reactions
+    const reagentsText = data.reagents || data.conditions || '';
+    renderRichText(reagentsText.replace(/\\\\/g, '\\'), topRow);
+    
+    const arrowLine = document.createElement('div');
+    arrowLine.className = 'arrow-line';
+    arrowLine.innerHTML = '\\( \\ce{->} \\)';
+    
+    const bottomRow = document.createElement('div');
+    bottomRow.className = 'conditions-bottom';
+    if (data.reagents) {
+        renderRichText((data.conditions || '').replace(/\\\\/g, '\\'), bottomRow);
+    }
+    
+    arrowContainer.appendChild(topRow);
+    arrowContainer.appendChild(arrowLine);
+    arrowContainer.appendChild(bottomRow);
     moleculeDiv.appendChild(arrowContainer);
+
 
     // If MECHANISM mode, show the final product as a target
     if (data.qtype === 'mechanism' || showAnswer) {
@@ -502,16 +540,19 @@ function renderMolecules(molecules, container, suffix = "") {
         newCanvas.style.width = baseSize + "px";
         newCanvas.style.height = baseSize + "px";
 
-        SmilesDrawer.parse(mol, function (tree) {
+        const cleanedMol = cleanSmiles(mol);
+        if (!cleanedMol) return;
+
+        SmilesDrawer.parse(cleanedMol, function (tree) {
             smilesDrawer.draw(tree, newCanvas.id, 'light', false);
         }, function (err) {
-            console.error("Smiles parsing error: ", mol, err);
+            console.error("Smiles parsing error: ", cleanedMol, err);
         });
     });
 }
 
-// ------ Rendering Mechanistic Explanations ------
-function renderExplanationWithMolecules(text, container) {
+//// ------ Rendering Mechanistic Explanations & Rich Text ------
+function renderRichText(text, container) {
     if (!container) return;
     container.innerHTML = '';
 
@@ -532,22 +573,30 @@ function renderExplanationWithMolecules(text, container) {
 
             // Draw small molecule
             const dpr = window.devicePixelRatio || 1;
-            const bSize = 120;
+            const bSize = 80; // Slightly smaller for arrow context
             const size = bSize * dpr;
             canvas.style.width = bSize + "px";
             canvas.style.height = bSize + "px";
 
-            const options = { width: size, height: size, bondThickness: 2, bondSpacing: 4, padding: 10 };
+            const options = { width: size, height: size, bondThickness: 2, bondSpacing: 4, padding: 5 };
             const sd = new SmilesDrawer.Drawer(options);
-            SmilesDrawer.parse(smiles, (tree) => {
-                sd.draw(tree, uniqueId, 'light', false);
-            }, (err) => console.error("Inline SMILES err:", err));
+            
+            const cleanedMol = cleanSmiles(smiles);
+            if (cleanedMol) {
+                SmilesDrawer.parse(cleanedMol, (tree) => {
+                    sd.draw(tree, uniqueId, 'light', false);
+                }, (err) => console.error("Rich SMILES err:", err));
+            }
         } else if (part.trim().length > 0) {
             const span = document.createElement('span');
-            span.innerText = part;
+            span.innerHTML = part.replace(/\n/g, '<br>');
             container.appendChild(span);
         }
     });
+
+    if (window.MathJax) {
+        MathJax.typesetPromise([container]).catch(err => console.error('MathJax error:', err));
+    }
 }
 
 // ------ Starter Questions Selection ------
@@ -596,8 +645,9 @@ async function fetchBatchReactions(isExplicit = false) {
     if (isExplicit && reactionQueue.length === 0) {
         container.querySelectorAll('canvas, .plus-sign, .reaction-arrow').forEach(el => el.remove());
         loadingText.innerText = "Generating...";
-        loadingText.style.display = 'block';
+        document.getElementById('message-container').style.display = 'block';
     }
+
 
     try {
         const difficultyMap = {
@@ -635,7 +685,8 @@ Structure:
     {
       "qtype": "predict|mechanism|stereo",
       "reactants": "SMILES",
-      "conditions": "LaTeX",
+      "reagents": "Organic reagents in [[SMILES: ...]] and others in LaTeX. Top of arrow.",
+      "conditions": "Solvents, temperature, time, etc. in LaTeX. Bottom of arrow.",
       "answer": "SMILES",
       "instructions": "Specific task",
       "explanation": "Detailed mechanism. Use [[SMILES: SMILES_STRING]] to draw mechanistic intermediates within the text."
@@ -646,9 +697,11 @@ Structure:
 RULES:
 1. SMILES: NO hydrogens.
 2. LaTeX: Use DOUBLE backslashes for commands (e.g. \\\\Delta).
-3. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas.
-4. Make sure the reaction actually occurs to a significant extent.
-5. Make sure the SMILES syntax is correct and proper.`;
+3. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
+4. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas.
+5. Make sure the reaction actually occurs to a significant extent.
+6. Make sure the SMILES syntax is correct and proper.`;
+
 
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -669,7 +722,8 @@ RULES:
                 loadingText.innerText = "Oops. Looks like the bot messed up!";
             }
 
-            loadingText.style.display = 'block';
+            document.getElementById('message-container').style.display = 'block';
+
             isFetching = false;
             return;
         }
@@ -693,13 +747,15 @@ RULES:
             } catch (e) {
                 console.error("JSON parse error", e, rawText);
                 loadingText.innerText = "Error parsing response.";
-                loadingText.style.display = 'block';
+                document.getElementById('message-container').style.display = 'block';
+
             }
         }
     } catch (e) {
         console.error("Fetch error:", e);
         loadingText.innerText = "Oops. Looks like the bot messed up!";
-        loadingText.style.display = 'block';
+        document.getElementById('message-container').style.display = 'block';
+
     } finally {
         isFetching = false;
         // Don't hide the text here if it's "Generating..." 
@@ -709,12 +765,13 @@ RULES:
         } else {
             // If it was an error message, keep it. Otherwise hide.
             if (!loadingText.innerText.includes("Oops") && !loadingText.innerText.includes("busy")) {
-                loadingText.style.display = 'none';
+                document.getElementById('message-container').style.display = 'none';
             }
+
         }
 
-        // If the queue was empty and we just got data, display the first one
-        if (reactionQueue.length > 0 && container.querySelectorAll('canvas, .reaction-arrow').length === 0) {
+        // If the queue was empty and we just got data, display the first one only if no reaction is currently loaded
+        if (reactionQueue.length > 0 && !currentReaction) {
             displayNextReaction();
         }
     }
@@ -774,10 +831,11 @@ function handleGiveUp() {
 
     if (hasSubmitted && lastFeedback) {
         loadingText.innerText = lastFeedback;
-        loadingText.style.display = 'block';
+        document.getElementById('message-container').style.display = 'block';
     } else {
-        loadingText.style.display = 'none';
+        document.getElementById('message-container').style.display = 'none';
     }
+
 
     if (explanationDiv) {
         explanationDiv.style.display = 'block';
@@ -802,7 +860,8 @@ async function submitDrawing() {
     const loadingText = document.getElementById('loading-text');
     loadingText.innerText = "Checking...";
     loadingText.className = ""; // Remove previous success/error colors
-    loadingText.style.display = 'block';
+    document.getElementById('message-container').style.display = 'block';
+
     isSubmitting = true;
     updateSubmitDisabled();
 
@@ -834,7 +893,8 @@ CRITICAL RULE: If Incorrect, give a subtle hint (max 10 words) that guides them 
             } else {
                 loadingText.innerText = "Oops. Looks like the bot messed up!";
             }
-            loadingText.style.display = 'block';
+            document.getElementById('message-container').style.display = 'block';
+
             loadingText.className = "error-text";
             throw new Error(`API error: ${response.status}`);
         }
@@ -850,6 +910,12 @@ CRITICAL RULE: If Incorrect, give a subtle hint (max 10 words) that guides them 
                 loadingText.className = "success-text";
                 isShowingAnswer = true; // Transition "Give up" to "New"
                 updateButtonState();
+                
+                // Show the actual answer so the user can see it!
+                if (explanationDisplay) {
+                    explanationDisplay.style.display = 'block';
+                }
+                renderReaction(currentReaction, true);
             } else {
                 loadingText.className = "error-text";
             }
