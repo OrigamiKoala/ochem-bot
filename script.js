@@ -15,6 +15,7 @@ let currentReaction = null;
 let isFetching = false;
 let isSubmitting = false;
 let starterQuestionsBuffer = null;
+let isInitialLoad = true;
 
 // Monochrome theme for colorless SMILES
 const monochromeTheme = {
@@ -232,8 +233,8 @@ if (saveSettingsBtn) {
         localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
         settingsModal.style.display = 'none';
 
-        // Clear queue and fetch new ones immediately to reflect new settings
-        reactionQueue = [];
+        // Clear current state and fetch new ones immediately to reflect new settings
+        resetQuestionUI();
         fetchBatchReactions(true);
     });
 }
@@ -811,20 +812,18 @@ async function fetchBatchReactions(isExplicit = false) {
         // Use user-selected topics
         const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
 
-        // Immediate gratification: If this is the first ever question request, try starter.json first
-        if (!currentReaction && reactionQueue.length === 0) {
+        // Immediate gratification: If this is the VERY first ever question request, try starter.json first
+        if (isInitialLoad && !currentReaction && reactionQueue.length === 0) {
             const starter = await getStarterQuestion(topic, currentDifficulty);
+            isInitialLoad = false; // Only try once
             if (starter) {
                 console.log("Loading starter question:", starter.id);
                 reactionQueue.push(starter);
-                // We need to release isFetching to allow displayNextReaction to call fetchBatchReactions again if it wants
-                // but actually displayNextReaction doesn't call it if something is in the queue.
-                // However, we want the Gemini fetch to CONTINUE in the background.
-                // So we display the starter and then PROCEED with the API call.
                 displayNextReaction();
                 // Important: We DON'T return here because we still want to fetch the rest of the batch from Gemini
             }
         }
+        isInitialLoad = false; // Ensure it's false even if starter fetch failed
 
         const prompt = `Generate 5 organic chemistry questions (Topic: ${topic}). Difficulty: ${difficultyMap[currentDifficulty]}. JSON only.
 
@@ -913,7 +912,7 @@ RULES:
 
         // If the user was waiting for this specific batch (queue was empty),
         // display the first reaction from the new batch.
-        if (requestedDirectly && reactionQueue.length > 0) {
+        if (isExplicit && reactionQueue.length > 0) {
             displayNextReaction();
         } else if (reactionQueue.length > 0 && !currentReaction) {
             // Initial load scenario
@@ -927,6 +926,33 @@ RULES:
             // Hide container if no error/busy message is present
             // document.getElementById('message-container').style.display = 'none';
         }
+    }
+}
+
+// ------ Reset UI for new questions ------
+function resetQuestionUI() {
+    currentReaction = null;
+    reactionQueue = [];
+    const instructionDiv = document.getElementById('question-instruction');
+    const moleculeDiv = document.getElementById('molecule-display');
+    const loadingText = document.getElementById('loading-text');
+
+    if (instructionDiv) instructionDiv.innerText = '';
+    if (moleculeDiv) moleculeDiv.innerHTML = '';
+    if (explanationDisplay) explanationDisplay.style.display = 'none';
+    if (chatMessages) chatMessages.innerHTML = '';
+    
+    // Clear whiteboard
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    isCanvasBlank = true;
+    updateSubmitDisabled();
+    updateButtonState();
+
+    // Show generating state in message container
+    if (loadingText) {
+        loadingText.innerText = "Generating...";
+        loadingText.className = "";
+        document.getElementById('message-container').style.display = 'block';
     }
 }
 
@@ -1224,4 +1250,7 @@ if (reportBtn) {
         }
     });
 }
+
+// Initial load
+fetchBatchReactions(true);
 
