@@ -836,8 +836,8 @@ Structure:
     {
       "qtype": "predict|mechanism|stereo",
       "reactants": "SMILES",
-      "reagents": "Organic reagents in [[SMILES: ...]] and others in LaTeX. Top of arrow.",
-      "conditions": "Solvents, temperature, time, etc. in LaTeX. Bottom of arrow.",
+      "reagents": "Organic reagents in [[SMILES: ...]] and others in plain text. Top of arrow.",
+      "conditions": "Solvents, temperature, time, etc. in plain text. Bottom of arrow.",
       "answer": "SMILES",
       "instructions": "Specific task",
       "explanation": "Detailed mechanism. Use [[SMILES: SMILES_STRING]] to draw mechanistic intermediates within the text."
@@ -847,12 +847,16 @@ Structure:
 
 RULES:
 1. SMILES: NO hydrogens.
-2. NO UNICODE: Never use unicode symbols (°, Δ, →, etc.). Use LaTeX instead.
-3. LaTeX in JSON: Every backslash in a LaTeX command MUST be escaped as \\\\ in the JSON string. Example: write \\\\circ not \\circ, write \\\\Delta not \\Delta.
-4. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
-5. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas.
-6. Make sure the reaction actually occurs to a significant extent.
-7. Make sure the SMILES syntax is correct and proper.`;
+2. NO BACKSLASHES: NEVER use backslash commands (\\Delta, \\circ, \\text, etc.) anywhere in JSON. They break parsing.
+3. SPECIAL SYMBOLS — use these exact placeholder tokens instead:
+   - {DELTA} for the heat/reflux triangle symbol
+   - {deg} for the degree sign (e.g. "0 {deg}C", "-78 {deg}C")
+   - {hv} for photochemical light (h nu)
+4. Write solvents and reagent names as plain text: "EtOH", "THF", "CH2Cl2". Do NOT wrap them in \\text{}.
+5. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
+6. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas. NO backslashes.
+7. Make sure the reaction actually occurs to a significant extent.
+8. Make sure the SMILES syntax is correct and proper.`;
 
 
         const response = await fetch('/api/chat', {
@@ -885,38 +889,31 @@ RULES:
         if (result.candidates && result.candidates[0].content.parts[0].text) {
             let rawText = result.candidates[0].content.parts[0].text;
             try {
-                // In JSON mode, rawText should be pure JSON
-                let jsonText = rawText.trim();
+                // In JSON mode, rawText should be pure JSON.
+                // No sanitizer needed — the prompt forbids backslashes entirely
+                // and uses placeholder tokens ({DELTA}, {deg}, {hv}) instead.
+                const data = JSON.parse(rawText.trim());
 
-                // Sanitize: Gemini often emits unescaped backslashes in LaTeX
-                // within JSON string values (e.g. \circ, \Delta, \ce{}).
-                // Walk the string and escape lone backslashes that aren't valid
-                // JSON escape sequences, without double-escaping valid ones.
-                jsonText = (function(s) {
-                    const validEscapes = new Set(['"', '\\', '/', 'b', 'f', 'n', 'r', 't', 'u']);
-                    let result = '';
-                    for (let i = 0; i < s.length; i++) {
-                        if (s[i] === '\\') {
-                            const next = s[i + 1];
-                            if (next && validEscapes.has(next)) {
-                                // Valid JSON escape — keep as-is
-                                result += s[i] + next;
-                                i++; // skip next char
-                            } else {
-                                // Lone backslash — escape it
-                                result += '\\\\';
-                            }
-                        } else {
-                            result += s[i];
-                        }
+                // Convert placeholder tokens to LaTeX in all string fields
+                function applyLatexTokens(obj) {
+                    if (typeof obj === 'string') {
+                        return obj
+                            .replace(/\{DELTA\}/g, '\\Delta')
+                            .replace(/\{deg\}/g, '^{\\circ}')
+                            .replace(/\{hv\}/g, 'h\\nu');
                     }
-                    return result;
-                })(jsonText);
-
-                const data = JSON.parse(jsonText);
+                    if (Array.isArray(obj)) return obj.map(applyLatexTokens);
+                    if (obj && typeof obj === 'object') {
+                        const out = {};
+                        for (const k in obj) out[k] = applyLatexTokens(obj[k]);
+                        return out;
+                    }
+                    return obj;
+                }
+                const processedData = applyLatexTokens(data);
 
                 // Support both {reactions: [...]} and direct [...]
-                const reactions = Array.isArray(data) ? data : data.reactions;
+                const reactions = Array.isArray(processedData) ? processedData : processedData.reactions;
 
                 if (reactions && Array.isArray(reactions)) {
                     reactionQueue = [...reactionQueue, ...reactions];
