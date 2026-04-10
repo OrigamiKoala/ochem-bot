@@ -408,27 +408,30 @@ You are a tutor, not a solution key. Provide pedagogical feedback that explains 
         if (!this.isConnected) await this.connect();
 
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            // OPTIMIZATION: Send a non-blocking 'Burst' of frames to ground 
-            // the visual scene, followed immediately by the text prompt.
+            // ATOMIC TURN: Use client_content to send prompt and media together.
+            // This ensures they are processed in a single logical turn, fixing 'blindness'.
+            const parts = [{ text: prompt }];
             if (base64Image) {
-                this.ws.send(JSON.stringify({
-                    realtimeInput: {
-                        video: {
-                            data: base64Image,
-                            mimeType: "image/jpeg"
-                        }
+                parts.push({
+                    inline_data: {
+                        mime_type: "image/jpeg",
+                        data: base64Image
                     }
-                }));
+                });
             }
 
-
-            const textMessage = {
-                realtimeInput: {
-                    text: prompt
+            const turnMessage = {
+                client_content: {
+                    turns: [{
+                        role: "user",
+                        parts: parts
+                    }],
+                    turn_complete: true
                 }
             };
-            this.ws.send(JSON.stringify(textMessage));
-            console.log('Text message sent immediately:', prompt);
+            
+            this.ws.send(JSON.stringify(turnMessage));
+            console.log('Atomic client_content turn sent:', prompt);
         } else {
             console.warn('WebSocket not open.');
         }
@@ -437,6 +440,7 @@ You are a tutor, not a solution key. Provide pedagogical feedback that explains 
             this.pendingResolve = resolve;
         });
     }
+
 
 
 
@@ -970,9 +974,13 @@ async function submitDrawing() {
 
         const diffLabel = { 1: "Beginner", 2: "USNCO (Intermediate)", 3: "Collegiate/IChO (Advanced)" }[currentDifficulty];
 
+        // CONTEXT INJECTION: Explicitly remind the AI of the reaction it is grading.
+        const context = `Context: Reactants: ${currentReaction.reactants}, Target Answer: ${currentReaction.answer}.`;
+        
         const prompt = isLearnMode 
-            ? `Evaluate my drawing based on the guided step. Difficulty: ${diffLabel}. Provide a detailed pedagogical explanation of why it is correct or incorrect. Suggest the next logical pattern to look for. REMINDER: DO NOT TELL ME WHAT TO DRAW.` 
-            : `Evaluate my drawing. Difficulty: ${diffLabel}. Be concise. provide a brief, subtle hint targeting the pattern. DO NOT REVEAL THE ANSWER OR TELL ME WHAT TO DRAW.`;
+            ? `${context} Evaluate my drawing based on the guided step. Difficulty: ${diffLabel}. Provide a detailed pedagogical explanation. Suggest the next logical pattern. DO NOT TELL ME WHAT TO DRAW.` 
+            : `${context} Evaluate my drawing. Difficulty: ${diffLabel}. Be concise. provide a brief, subtle hint. DO NOT REVEAL THE ANSWER OR TELL ME WHAT TO DRAW.`;
+
 
 
         // Real-time streaming UI: show chunks as they arrive
