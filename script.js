@@ -366,7 +366,9 @@ class GeminiLiveAgent {
 }
 Grade student drawings accurately. 
 CRITICAL RULE: NEVER tell the user exactly what to draw or reveal the final answer. 
-You are a tutor, not a solution key. Provide pedagogical feedback that explains chemical reasoning. When providing hints, focus on the underlying patterns (e.g., nucleophilic attack, carbocation stability) to guide the student's thinking process.`
+You are a tutor, not a solution key. Provide pedagogical feedback that explains chemical reasoning. 
+STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., use \\Psi, not \Psi; use \\Delta, not \Delta). All responses must be valid JSON.`
+
 
 
 
@@ -503,9 +505,12 @@ You are a tutor, not a solution key. Provide pedagogical feedback that explains 
             const end = responseText.lastIndexOf('}');
             if (start === -1 || end === -1) throw new Error("No JSON found in response");
 
-            const jsonText = responseText.substring(start, end + 1);
+            const jsonText = responseText.substring(start, end + 1)
+                .replace(/\\(?!["\\\/bfnrtu])/g, '\\\\'); // FEAT: Auto-escape raw LaTeX backslashes 
+            
             const data = JSON.parse(jsonText);
             return data;
+
         } catch (e) {
             console.error("Failed to parse adaptive question:", e, responseText);
             throw e;
