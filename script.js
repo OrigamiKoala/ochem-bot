@@ -460,9 +460,18 @@ function renderReaction(data, showAnswer = false) {
 
 
     // Hide status text ONLY if we aren't displaying a persistent answer result
-    if (!showAnswer && loadingText && loadingText.innerText !== "Checking...") {
-        document.getElementById('message-container').style.display = 'none';
+    // and if we are loading a NEW reaction (not just showing an answer)
+    if (!showAnswer) {
+        if (loadingText && loadingText.innerText !== "Checking..." && !loadingText.innerText.includes("Incorrect")) {
+            document.getElementById('message-container').style.display = 'none';
+        }
+    } else {
+        // If we are showing an answer, we should probably show the message container if there is feedback
+        if (lastFeedback) {
+            document.getElementById('message-container').style.display = 'block';
+        }
     }
+
 
 
     if (!data) return;
@@ -568,39 +577,53 @@ function renderRichText(text, container, isExplanation = false) {
     if (!container) return;
     container.innerHTML = '';
 
-    // Match [[SMILES: SMILES_STRING]]
-    const parts = text.split(/(\[\[SMILES:[\s\S]*?\]\])/g);
+    // Match [[SMILES: SMILES_STRING]] possibly with stray trailing brackets
+    const parts = text.split(/(\[\[SMILES:[\s\S]*?\]\]+)/g);
 
 
     parts.forEach(part => {
-        const match = part.match(/\[\[SMILES:(.*?)\]\]/);
+        const match = part.match(/\[\[SMILES:([\s\S]*?)\]\]+/);
         if (match) {
-            const smiles = match[1].trim();
-            
-            // For copy-pastability, keep the original tag in a hidden span
-            const hiddenText = document.createElement('span');
-            hiddenText.className = 'sr-only-smiles';
-            hiddenText.innerText = `[[SMILES: ${smiles}]]`;
-            container.appendChild(hiddenText);
+            let smiles = match[1].trim();
+            // Handle cases where the AI might have outputted [[SMILES: ...]]] (extra ] at end)
+            if (smiles.endsWith(']')) {
+                const openCount = (smiles.match(/\[/g) || []).length;
+                const closeCount = (smiles.match(/\]/g) || []).length;
+                if (closeCount > openCount) {
+                    smiles = smiles.substring(0, smiles.length - 1);
+                }
+            }
 
             const wrapper = document.createElement('div');
             wrapper.className = isExplanation ? 'inline-molecule-explanation' : 'inline-molecule';
-            const canvas = document.createElement('canvas');
-            const uniqueId = `inline-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-            canvas.id = uniqueId;
-            wrapper.appendChild(canvas);
             
-            // Add a title for hover-copying or just reference
-            wrapper.title = smiles;
+            // For copy-pastability AND readability, add a label
+            if (isExplanation) {
+                const label = document.createElement('code');
+                label.className = 'smiles-label';
+                label.innerText = smiles;
+                wrapper.appendChild(label);
+            } else {
+                // Invisible copyable text for arrow context
+                const hiddenText = document.createElement('span');
+                hiddenText.className = 'sr-only-smiles';
+                hiddenText.innerText = `[[SMILES: ${smiles}]]`;
+                container.appendChild(hiddenText);
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.className = 'molecule-canvas';
+            wrapper.appendChild(canvas);
             
             container.appendChild(wrapper);
 
             // Draw small molecule
             const dpr = window.devicePixelRatio || 1;
-            const bSize = isExplanation ? 120 : 80; 
+            const bSize = isExplanation ? 70 : 80; // Smaller for explanation to avoid overflow
             const size = bSize * dpr;
             canvas.style.width = bSize + "px";
             canvas.style.height = bSize + "px";
+
 
             const options = { width: size, height: size, bondThickness: 2, bondSpacing: 4, padding: 5 };
             const sd = new SmilesDrawer.Drawer(options);

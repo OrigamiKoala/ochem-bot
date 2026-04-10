@@ -525,14 +525,31 @@ canvas {
 }
 
 .inline-molecule-explanation {
-    display: block;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
     background: white;
     border: 1px solid #f2f2f7;
     border-radius: 12px;
-    margin: 10px 0;
-    padding: 10px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    margin: 5px 10px;
+    padding: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    vertical-align: middle;
+    max-width: fit-content;
 }
+
+.smiles-label {
+    display: block;
+    font-size: 0.7rem;
+    color: #8e8e93;
+    margin-top: 4px;
+    font-family: 'SF Mono', 'Roboto Mono', monospace;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 
 
 
