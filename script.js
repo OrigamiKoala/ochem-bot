@@ -1021,10 +1021,11 @@ async function submitDrawing() {
             promptSnippet = `Act as a supportive organic chemistry tutor. 
 1. If 'Incorrect', identify the specific chemical error (e.g., regio/stereo, steric clash, valency, or incorrect mechanism step) and explain the principle/rule being violated (e.g. Markovnikov, Anti-Zaitsev). 
 2. Be encouraging. 
-3. DO NOT give the answer or SMILES/structure names.`;
+3. STATED RULE: NEVER give the answer, product name, or SMILES. Help them think, don't tell them.`;
         } else {
-            promptSnippet = `Drawing correct? Output 'Correct' or 'Incorrect' (with subtle 10-word hint if wrong).`;
+            promptSnippet = `Drawing correct? Output 'Correct' or 'Incorrect'. If wrong, give a subtle hint (max 10 words). NEVER give the answer or reveal the final structure.`;
         }
+
 
         const prompt = `Evaluate drawing.
 Task: ${currentReaction.qtype}
