@@ -292,7 +292,15 @@ class GeminiLiveAgent {
             setup: {
                 model: this.model,
                 generation_config: {
-                    response_modalities: ["AUDIO"]
+                    response_modalities: ["TEXT"]
+                },
+                // Required for Gemini 3.1 to allow send_client_content
+                history_config: {
+                    initial_history_in_client_content: true
+                },
+                // Disable VAD since we're text-only (no audio input)
+                realtime_input_config: {
+                    automatic_activity_detection: { disabled: true }
                 },
                 system_instruction: {
                     parts: [{
@@ -308,7 +316,7 @@ class GeminiLiveAgent {
 Grade student drawings accurately.
 CRITICAL RULE: NEVER tell the user exactly what to draw or reveal the final answer.
 You are a tutor, not a solution key. Provide pedagogical feedback that explains chemical reasoning.
-STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., use \\\\Psi, not \\Psi; use \\\\Delta, not \\Delta). All responses must be valid JSON. Reaction 'reactants' and 'answer' fields must contain ONLY valid SMILES strings, no extra text.`
+STRICT JSON RULES: You MUST double-escape all backslashes in LaTeX and SMILES. Reaction 'reactants' and 'answer' fields must contain ONLY valid SMILES strings, no extra text.`
                     }]
                 }
             }
@@ -337,7 +345,7 @@ STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., us
             if (data.serverContent) {
                 const sc = data.serverContent;
 
-                // Capture text from modelTurn parts
+                // Capture text from modelTurn parts (TEXT modality)
                 if (sc.modelTurn?.parts) {
                     for (const part of sc.modelTurn.parts) {
                         if (part.text) {
@@ -345,12 +353,6 @@ STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., us
                             if (this.onChunk) this.onChunk(part.text);
                         }
                     }
-                }
-
-                // Capture text from outputTranscription (AUDIO modality fallback)
-                if (sc.outputTranscription?.text) {
-                    this.textBuffer += sc.outputTranscription.text;
-                    if (this.onChunk) this.onChunk(sc.outputTranscription.text);
                 }
 
                 // Check for turn completion
@@ -370,6 +372,7 @@ STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., us
         if (!this.isConnected) await this.connect();
 
         if (this.ws?.readyState === WebSocket.OPEN) {
+            // Send image via realtime_input (video frame)
             if (base64Image) {
                 this.ws.send(JSON.stringify({
                     realtime_input: {
@@ -377,8 +380,13 @@ STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., us
                     }
                 }));
             }
+
+            // Send text via client_content (structured turn)
             this.ws.send(JSON.stringify({
-                realtime_input: { text: prompt }
+                client_content: {
+                    turns: [{ role: "user", parts: [{ text: prompt }] }],
+                    turn_complete: true
+                }
             }));
         } else {
             console.warn('WebSocket not open.');
@@ -386,6 +394,7 @@ STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., us
 
         return new Promise((resolve) => { this.pendingResolve = resolve; });
     }
+
 
     async getNextQuestion(topic, difficulty) {
         const perf = this.history.length > 0 ? this.history[this.history.length - 1] : "start";
@@ -410,10 +419,7 @@ JSON ONLY.`;
             const end = responseText.lastIndexOf('}');
             if (start === -1 || end === -1) throw new Error("No JSON found in response");
 
-            // Auto-escape raw LaTeX backslashes that break JSON.parse
-            const jsonText = responseText.substring(start, end + 1)
-                .replace(/\\(?!["\\\/bfnrtu])/g, '\\\\');
-
+            const jsonText = responseText.substring(start, end + 1);
             return JSON.parse(jsonText);
         } catch (e) {
             console.error("Failed to parse adaptive question:", e, responseText);
