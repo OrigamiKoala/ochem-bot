@@ -264,7 +264,9 @@ class GeminiLiveAgent {
 
         // Adaptive history (simplified)
         this.history = [];
+        this.textBuffer = "";
     }
+
     async getToken() {
         const apiUrl = `/api/token?t=${Date.now()}`;
         console.log(`[DEBUG] Fetching key from: ${apiUrl}`);
@@ -329,7 +331,8 @@ class GeminiLiveAgent {
   "instructions": "Task description",
   "explanation": "Detailed mechanism with [[SMILES: ...]] placeholders."
 }
-Grade student drawings as 'Correct' or 'Incorrect' with a brief hint. Be concise.`
+Grade student drawings accurately. Provide detailed, helpful pedagogical feedback and explain the chemical reasoning behind your assessment. Hint at patterns like nucleophilic attack or carbocation stability instead of just saying correct/incorrect.`
+
                     }]
                 }
             }
@@ -360,27 +363,32 @@ Grade student drawings as 'Correct' or 'Incorrect' with a brief hint. Be concise
 
             if (data.serverContent) {
                 const serverContent = data.serverContent;
-                let combinedText = "";
 
                 // 1. Capture text from modelTurn parts (standard for TEXT modality)
                 if (serverContent.modelTurn?.parts) {
                     for (const part of serverContent.modelTurn.parts) {
                         if (part.text) {
-                            combinedText += part.text;
+                            this.textBuffer += part.text;
                         }
                     }
                 }
 
                 // 2. Capture text from outputTranscription (fallback for AUDIO modality transcriptions)
                 if (serverContent.outputTranscription?.text) {
-                    combinedText += serverContent.outputTranscription.text;
+                    this.textBuffer += serverContent.outputTranscription.text;
                 }
 
-                if (combinedText && this.pendingResolve) {
-                    this.pendingResolve(combinedText);
+                // 3. Check for turn completion (usually in modelTurn)
+                const isTurnComplete = serverContent.turnComplete || serverContent.modelTurn?.turnComplete;
+                if (isTurnComplete && this.pendingResolve) {
+
+                    const fullText = this.textBuffer;
+                    this.textBuffer = ""; // Reset for next turn
+                    this.pendingResolve(fullText);
                     this.pendingResolve = null;
                 }
             }
+
         } catch (e) { console.error("Live message error:", e); }
     }
 
@@ -430,8 +438,12 @@ Grade student drawings as 'Correct' or 'Incorrect' with a brief hint. Be concise
             3. Provide 'instructions' that guide the user's thinking process.
             4. JSON ONLY.`;
         } else {
-            prompt = `Generate a new adaptive question. Topic: ${topic}. Difficulty: ${difficulty}. User's last performance: ${perf}. JSON ONLY.`;
+            prompt = `Generate a new adaptive question. Topic: ${topic}. Difficulty: ${difficulty}. User's last performance: ${perf}.
+            Focus on creating questions that highlight key mechanisms.
+            Provide clear 'instructions' that hint at the pattern the student should look for.
+            JSON ONLY.`;
         }
+
 
         const responseText = await this.sendTurn(prompt);
 
@@ -932,8 +944,9 @@ async function submitDrawing() {
         const base64Image = dataUrl.split(',')[1];
 
         const prompt = isLearnMode 
-            ? "Evaluate my drawing based on the guided step. Be pedagogical and explain the 'why' if it's incorrect." 
-            : "Evaluate my drawing.";
+            ? "Evaluate my drawing based on the guided step. Provide a detailed pedagogical explanation of why it is correct or incorrect, and suggest the next logical pattern to look for." 
+            : "Evaluate my drawing. Provide a detailed assessment and explain the chemical reasoning behind the mechanism steps. If incorrect, provide a helpful hint targeting the specific error.";
+
         const feedback = await liveAgent.sendTurn(prompt, base64Image);
 
 
