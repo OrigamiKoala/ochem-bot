@@ -973,7 +973,9 @@ async function submitDrawing() {
 
         const diffLabel = { 1: "Beginner", 2: "USNCO (Intermediate)", 3: "Collegiate/IChO (Advanced)" }[currentDifficulty];
 
-        // CONTEXT INJECTION: Explicitly remind the AI of the reaction it is grading.        const context = `Context: Reactants: ${currentReaction.reactants}, Target Answer: ${currentReaction.answer}.`;
+        // CONTEXT INJECTION: Explicitly remind the AI of the reaction it is grading.
+        const context = `Context: Reactants: ${currentReaction.reactants}, Target Answer: ${currentReaction.answer}.`;
+
         
         const prompt = isLearnMode 
             ? `${context} Evaluate my drawing. Be extremely concise (max 2 sentences). Difficulty: ${diffLabel}. Suggest next step. DO NOT TELL ME WHAT TO DRAW.` 
