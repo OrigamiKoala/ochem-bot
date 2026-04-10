@@ -607,22 +607,22 @@ async function fetchBatchReactions(isExplicit = false) {
         };
 
         // Use user-selected topics
-    const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
+        const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
 
-    // Immediate gratification: If this is the first ever question request, try starter.json first
-    if (!currentReaction && reactionQueue.length === 0) {
-        const starter = await getStarterQuestion(topic, currentDifficulty);
-        if (starter) {
-            console.log("Loading starter question:", starter.id);
-            reactionQueue.push(starter);
-            // We need to release isFetching to allow displayNextReaction to call fetchBatchReactions again if it wants
-            // but actually displayNextReaction doesn't call it if something is in the queue.
-            // However, we want the Gemini fetch to CONTINUE in the background.
-            // So we display the starter and then PROCEED with the API call.
-            displayNextReaction();
-            // Important: We DON'T return here because we still want to fetch the rest of the batch from Gemini
+        // Immediate gratification: If this is the first ever question request, try starter.json first
+        if (!currentReaction && reactionQueue.length === 0) {
+            const starter = await getStarterQuestion(topic, currentDifficulty);
+            if (starter) {
+                console.log("Loading starter question:", starter.id);
+                reactionQueue.push(starter);
+                // We need to release isFetching to allow displayNextReaction to call fetchBatchReactions again if it wants
+                // but actually displayNextReaction doesn't call it if something is in the queue.
+                // However, we want the Gemini fetch to CONTINUE in the background.
+                // So we display the starter and then PROCEED with the API call.
+                displayNextReaction();
+                // Important: We DON'T return here because we still want to fetch the rest of the batch from Gemini
+            }
         }
-    }
 
         const prompt = `Generate 5 organic chemistry questions (Topic: ${topic}). Difficulty: ${difficultyMap[currentDifficulty]}. JSON only.
 
@@ -647,7 +647,8 @@ RULES:
 1. SMILES: NO hydrogens.
 2. LaTeX: Use DOUBLE backslashes for commands (e.g. \\\\Delta).
 3. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas.
-4. Make sure the reaction actually occurs to a significant extent.`;
+4. Make sure the reaction actually occurs to a significant extent.
+5. Make sure the SMILES syntax is correct and proper.`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
