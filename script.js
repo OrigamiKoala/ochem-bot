@@ -76,9 +76,18 @@ const globalSmilesDrawer = new SmilesDrawer.Drawer({
 
 const DIFF_LABELS = { 1: "Beginner", 2: "USNCO (Intermediate)", 3: "Collegiate/IChO (Advanced)" };
 
-/** Strip trailing AI chatter from SMILES (e.g. "CC(O)C | some description") */
+/** Strip trailing AI chatter and validate SMILES. Returns null if invalid. */
 function cleanSmiles(raw) {
-    return raw.split('|')[0].trim().split(/\s+/)[0];
+    const s = raw.split('|')[0].trim().split(/\s+/)[0];
+    if (!s) return null;
+    // Reject unclosed brackets/parens or strings ending with an operator
+    const opens = (s.match(/\[/g) || []).length;
+    const closes = (s.match(/\]/g) || []).length;
+    const parensOpen = (s.match(/\(/g) || []).length;
+    const parensClose = (s.match(/\)/g) || []).length;
+    if (opens !== closes || parensOpen !== parensClose) return null;
+    if (/[=\-+#\[$]$/.test(s)) return null; // trailing operator/bracket
+    return s;
 }
 
 /** Unified message box visibility control */
@@ -513,6 +522,7 @@ function renderMolecules(molecules, container, suffix = "") {
 
     molecules.forEach((mol, index) => {
         const cleaned = cleanSmiles(mol);
+        if (!cleaned) return; // Skip invalid SMILES
 
         if (index > 0) {
             const plus = document.createElement('div');
@@ -550,7 +560,10 @@ function renderExplanationWithMolecules(text, container) {
         const match = part.match(/\[\[SMILES:(.*?)\]\]/);
         if (match) {
             const cleaned = cleanSmiles(match[1]);
+            if (!cleaned) return; // Skip invalid SMILES
+
             const wrapper = document.createElement('div');
+
             wrapper.className = 'inline-molecule';
             const c = document.createElement('canvas');
             c.id = `inline-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
@@ -611,10 +624,10 @@ function renderReaction(data, showAnswer = false) {
         }
     }
 
-    // Only invoke MathJax if there's actual LaTeX to typeset
-    if (window.MathJax && (data.conditions || "").includes("\\")) {
+    if (window.MathJax) {
         MathJax.typesetPromise([arrowContainer]).catch(err => console.error('MathJax error:', err));
     }
+
 }
 
 // =============================================
