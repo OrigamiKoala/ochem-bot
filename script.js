@@ -215,17 +215,27 @@ async function sendFollowupQuestion(overrideText) {
 
     const botMsgDiv = document.createElement('div');
     botMsgDiv.className = 'chat-msg bot-msg';
-    botMsgDiv.innerText = '...';
+    botMsgDiv.innerText = '';
     chatMessages.appendChild(botMsgDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
 
     try {
+        // Stream chunks live into the chat bubble
+        liveAgent.onChunk = (chunk) => {
+            botMsgDiv.innerText += chunk;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        };
+
         const botResponse = await liveAgent.sendTurn(question);
         botMsgDiv.innerText = botResponse ? botResponse.trim() : "Sorry, I couldn't process that question.";
     } catch (e) {
         console.error("Chat error:", e);
         botMsgDiv.innerText = "Oops, I'm having trouble connecting to the lab.";
+    } finally {
+        liveAgent.onChunk = null;
     }
 }
+
 
 // =============================================
 // 7. GEMINI LIVE AGENT (WebSocket)
