@@ -331,6 +331,7 @@ STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., us
         try {
             let text;
             if (event.data instanceof Blob) {
+                // Audio blobs are binary — try to parse as JSON, skip if not
                 text = await event.data.text();
             } else if (typeof event.data === 'string') {
                 text = event.data;
@@ -338,12 +339,18 @@ STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., us
                 return;
             }
 
-            const data = JSON.parse(text);
+            let data;
+            try {
+                data = JSON.parse(text);
+            } catch {
+                return; // Skip non-JSON messages (binary audio, etc.)
+            }
 
             if (data.setupComplete) {
                 this.isSetup = true;
                 return;
             }
+
 
             if (data.serverContent) {
                 const sc = data.serverContent;
@@ -759,20 +766,33 @@ async function submitDrawing() {
     try {
         const base64Image = captureDrawing();
         const diffLabel = DIFF_LABELS[currentDifficulty];
-        const context = `Context: Reactants: ${currentReaction.reactants}, Target Answer: ${currentReaction.answer}. Carefully analyze the Whiteboard Drawing for mechanistic arrows and lone pairs.`;
+        const context = `Context: Reactants: ${currentReaction.reactants}, Target Answer: ${currentReaction.answer}. Carefully analyze the submitted whiteboard drawing.`;
 
         const prompt = isLearnMode
             ? `${context} Evaluate my drawing. Be extremely concise (max 2 sentences). Difficulty: ${diffLabel}. Suggest next step. DO NOT TELL ME WHAT TO DRAW.`
             : `${context} Evaluate my drawing. Difficulty: ${diffLabel}. EXTREMELY CONCISE (max 1 sentence). DO NOT TELL ME WHAT TO DRAW.`;
 
-        // Stream feedback chunks to the UI in real-time
-        toggleMessage(true, "");
-        liveAgent.onChunk = (chunk) => { loadingText.innerText += chunk; };
+        // HYBRID: Use REST API for image evaluation (reliable vision via inline_data).
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt,
+                image: base64Image,
+                temperature: 0.3
+            })
+        });
 
-        const feedback = await liveAgent.sendTurn(prompt, base64Image);
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || `API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const feedback = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
 
         if (feedback) {
-            loadingText.innerText = feedback;
+            toggleMessage(true, feedback);
             lastFeedback = feedback;
             hasSubmitted = true;
 
@@ -794,13 +814,13 @@ async function submitDrawing() {
         }
     } catch (e) {
         console.error("Submission error:", e);
-        toggleMessage(true, "Oops. Live session error!", "error-text");
+        toggleMessage(true, "Oops. Evaluation error!", "error-text");
     } finally {
         isSubmitting = false;
         updateSubmitDisabled();
-        liveAgent.onChunk = null;
     }
 }
+
 
 // =============================================
 // 12. EVENT LISTENERS (single consolidated block)
