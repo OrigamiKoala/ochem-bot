@@ -711,20 +711,29 @@ async function fetchBatchReactions(isExplicit = false) {
             currentReaction = questionQueue.shift();
             displayNextReaction();
         } else {
-            // Queue empty — show a starter from user's selected topics instantly, then fetch
+            // Queue empty — show a starter instantly while API loads in background
             toggleMessage(true, "Generating adaptive challenge...");
             const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
             const starter = await getStarterQuestion(topic, currentDifficulty);
+            let starterShown = false;
             if (starter) {
                 currentReaction = starter;
                 displayNextReaction();
+                starterShown = true;
             }
-            // Fetch fresh batch and display the first one
+
+            // Fetch fresh batch from API
             const questions = await liveAgent.getNextQuestions(topic, currentDifficulty);
             if (questions.length > 0) {
-                currentReaction = questions.shift();
-                questionQueue.push(...questions); // Queue the rest
-                displayNextReaction();
+                if (starterShown) {
+                    // User is already working on the starter — just queue everything
+                    questionQueue.push(...questions);
+                } else {
+                    // No starter was available — display the first API result
+                    currentReaction = questions.shift();
+                    questionQueue.push(...questions);
+                    displayNextReaction();
+                }
             }
         }
 
@@ -739,6 +748,7 @@ async function fetchBatchReactions(isExplicit = false) {
         isFetching = false;
     }
 }
+
 
 function handleGiveUp() {
     if (!currentReaction) return;
