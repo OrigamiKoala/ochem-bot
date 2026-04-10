@@ -625,7 +625,13 @@ function renderMolecules(molecules, container, suffix = "") {
             smilesDrawer.draw(tree, newCanvas, 'monochrome', false);
         }, function (err) {
             console.error("Smiles parsing error: ", cleanedMol, err);
+            // Fallback for user: replace canvas with text if rendering fails
+            const fallback = document.createElement('span');
+            fallback.innerText = mol;
+            fallback.style.fontSize = '0.8rem';
+            newCanvas.replaceWith(fallback);
         });
+
     });
 }
 
@@ -699,8 +705,16 @@ function renderRichText(text, container, isExplanation = false) {
             if (cleanedMol) {
                 SmilesDrawer.parse(cleanedMol, (tree) => {
                     sd.draw(tree, canvas, 'monochrome', false);
-                }, (err) => console.error("Rich SMILES err:", err));
+                }, (err) => {
+                    console.error("Rich SMILES err:", cleanedMol, err);
+                    // Fallback to text
+                    const fallbackText = document.createElement('span');
+                    fallbackText.innerText = smiles;
+                    fallbackText.style.fontSize = '0.8rem';
+                    canvas.replaceWith(fallbackText);
+                });
             }
+
 
 
         } else if (part.trim().length > 0) {
