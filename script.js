@@ -351,7 +351,7 @@ class GeminiLiveAgent {
                 model: this.model,
                 generation_config: {
                     // [STABILITY FIX] AUDIO is required for 3.1 Live stability; TEXT causes 1011 Internal Error.
-                    response_modalities: ["AUDIO"] 
+                    response_modalities: ["AUDIO"]
                 },
                 system_instruction: {
                     parts: [{
@@ -367,7 +367,9 @@ class GeminiLiveAgent {
 Grade student drawings accurately. 
 CRITICAL RULE: NEVER tell the user exactly what to draw or reveal the final answer. 
 You are a tutor, not a solution key. Provide pedagogical feedback that explains chemical reasoning. 
-STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., use \\Psi, not \Psi; use \\Delta, not \Delta). All responses must be valid JSON.`
+STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., use \\Psi, not \Psi; use \\Delta, not \Delta). All responses must be valid JSON. Reaction 'reactants' and 'answer' fields must contain ONLY valid SMILES strings, no extra text.
+Make sure you use proper and correct SMILES syntax.`
+
 
 
 
@@ -478,7 +480,7 @@ STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., us
     async getNextQuestion(topic, difficulty) {
         const perf = this.history.length > 0 ? this.history[this.history.length - 1] : "start";
         const diffLabel = { 1: "Beginner", 2: "USNCO (Intermediate)", 3: "Collegiate/IChO (Advanced)" }[difficulty];
-        
+
         let prompt;
         if (isLearnMode) {
             prompt = `Generate a new GUIDED learning question. Topic: ${topic}. Difficulty: ${diffLabel}. 
@@ -507,7 +509,7 @@ STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., us
 
             const jsonText = responseText.substring(start, end + 1)
                 .replace(/\\(?!["\\\/bfnrtu])/g, '\\\\'); // FEAT: Auto-escape raw LaTeX backslashes 
-            
+
             const data = JSON.parse(jsonText);
             return data;
 
@@ -770,7 +772,11 @@ function renderReaction(data, showAnswer = false) {
 // Helper to render a group of molecules with '+' signs
 function renderMolecules(molecules, container, suffix = "") {
     molecules.forEach((mol, index) => {
+        // Sanitize: AI sometimes adds chatter like "SMILES | description"
+        const cleanedMol = mol.split('|')[0].trim().split(/\s+/)[0];
+
         const newCanvas = document.createElement('canvas');
+
         newCanvas.id = `canvas-${suffix}-${index}-${Date.now()}`; // Unique ID
 
         if (index > 0) {
@@ -786,7 +792,7 @@ function renderMolecules(molecules, container, suffix = "") {
 
         // iPad/Retina support: Scale resolution by device pixel ratio
         const dpr = window.devicePixelRatio || 1;
-        const baseSize = 85; 
+        const baseSize = 85;
 
         // Adjust canvas display size
         newCanvas.style.width = baseSize + "px";
@@ -794,12 +800,13 @@ function renderMolecules(molecules, container, suffix = "") {
         newCanvas.width = baseSize * dpr;
         newCanvas.height = baseSize * dpr;
 
-        SmilesDrawer.parse(mol, function (tree) {
+        SmilesDrawer.parse(cleanedMol, function (tree) {
             // Passing the element directly is faster than ID lookup
             globalSmilesDrawer.draw(tree, newCanvas, 'light', false);
         }, function (err) {
-            console.error("Smiles parsing error: ", mol, err);
+            console.error("Smiles parsing error: ", cleanedMol, err);
         });
+
     });
 }
 
@@ -833,10 +840,14 @@ function renderExplanationWithMolecules(text, container) {
             canvas.width = bSize * dpr;
             canvas.height = bSize * dpr;
 
-            SmilesDrawer.parse(smiles, (tree) => {
+            // Sanitize: Remove any trailing AI chatter
+            const cleanedSmiles = smiles.split('|')[0].trim().split(/\s+/)[0];
+
+            SmilesDrawer.parse(cleanedSmiles, (tree) => {
                 // Passing the element directly is faster than ID lookup
                 globalSmilesDrawer.draw(tree, canvas, 'light', false);
-            }, (err) => console.error("Inline SMILES err:", err));
+            }, (err) => console.error("Inline SMILES err:", cleanedSmiles, err));
+
 
 
         } else if (part.trim().length > 0) {
@@ -903,7 +914,7 @@ async function fetchBatchReactions(isExplicit = false) {
 
         // Use Live Agent to get the next adaptive question
         // Stream instructions - Suppress JSON chunks from the main UI
-        liveAgent.onChunk = null; 
+        liveAgent.onChunk = null;
 
         const newReaction = await liveAgent.getNextQuestion(topic, currentDifficulty);
 
@@ -1006,17 +1017,17 @@ async function submitDrawing() {
         tempCanvas.width = targetSize;
         tempCanvas.height = targetSize;
         const tempCtx = tempCanvas.getContext('2d');
-        
+
         // Fill white background
         tempCtx.fillStyle = '#ffffff';
         tempCtx.fillRect(0, 0, targetSize, targetSize);
-        
+
         // Draw main canvas onto temp canvas (proportional fit)
         const scale = Math.min(targetSize / canvas.width, targetSize / canvas.height);
         const nw = canvas.width * scale;
         const nh = canvas.height * scale;
         tempCtx.drawImage(canvas, (targetSize - nw) / 2, (targetSize - nh) / 2, nw, nh);
-        
+
         const dataUrl = tempCanvas.toDataURL('image/jpeg', 0.8);
         const base64Image = dataUrl.split(',')[1];
 
@@ -1024,15 +1035,15 @@ async function submitDrawing() {
 
         // CONTEXT INJECTION: Explicitly remind the AI of the reaction it is grading and force visual focus.
         const context = `Context: Reactants: ${currentReaction.reactants}, Target Answer: ${currentReaction.answer}. Carefully analyze the Whiteboard Drawing for mechanistic arrows and lone pairs.`;
-        
-        const prompt = isLearnMode 
-            ? `${context} Evaluate my drawing. Be extremely concise (max 2 sentences). Difficulty: ${diffLabel}. Suggest next step. DO NOT TELL ME WHAT TO DRAW.` 
+
+        const prompt = isLearnMode
+            ? `${context} Evaluate my drawing. Be extremely concise (max 2 sentences). Difficulty: ${diffLabel}. Suggest next step. DO NOT TELL ME WHAT TO DRAW.`
             : `${context} Evaluate my drawing. Difficulty: ${diffLabel}. EXTREMELY CONCISE (max 1 sentence). DO NOT TELL ME WHAT TO DRAW.`;
 
 
         // Real-time streaming UI: show chunks as they arrive
         toggleMessage(true, "");
-        
+
         liveAgent.onChunk = (chunk) => {
 
             loadingText.innerText += chunk;
