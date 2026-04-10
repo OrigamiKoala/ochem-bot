@@ -22,6 +22,13 @@ const monochromeTheme = {
     F: '#000', Cl: '#000', Br: '#000', I: '#000', H: '#000',
     BACKGROUND: 'transparent'
 };
+const smilesOptions = { 
+    bondThickness: 2.2, 
+    bondSpacing: 4.2, 
+    padding: 2, 
+    themes: { monochrome: monochromeTheme } 
+};
+
 
 
 // State for "Give Up" logic
@@ -553,15 +560,11 @@ function renderMolecules(molecules, container, suffix = "") {
         const baseSize = 100; // Increased base size
         const size = baseSize * dpr;
 
-        let options = {
-            width: size,
-            height: size,
-            bondThickness: 2,
-            bondSpacing: 4,
-            fontSizeLarge: 10,
-            padding: 10
+        const options = { 
+            width: size, 
+            height: size, 
+            ...smilesOptions 
         };
-
         let smilesDrawer = new SmilesDrawer.Drawer(options);
 
         // Adjust canvas display size
@@ -572,10 +575,8 @@ function renderMolecules(molecules, container, suffix = "") {
         if (!cleanedMol) return;
 
         SmilesDrawer.parse(cleanedMol, function (tree) {
-            smilesDrawer.draw(tree, newCanvas, monochromeTheme, false);
+            smilesDrawer.draw(tree, newCanvas, 'monochrome', false);
         }, function (err) {
-
-
             console.error("Smiles parsing error: ", cleanedMol, err);
         });
     });
@@ -648,14 +649,13 @@ function renderRichText(text, container, isExplanation = false) {
             canvas.style.height = bSize + "px";
 
 
-            const options = { width: size, height: size, bondThickness: 2.2, bondSpacing: 4.2, padding: 0 };
-
+            const options = { width: size, height: size, ...smilesOptions };
             const sd = new SmilesDrawer.Drawer(options);
             
             const cleanedMol = cleanSmiles(smiles);
             if (cleanedMol) {
                 SmilesDrawer.parse(cleanedMol, (tree) => {
-                    sd.draw(tree, canvas, monochromeTheme, false);
+                    sd.draw(tree, canvas, 'monochrome', false);
                 }, (err) => console.error("Rich SMILES err:", err));
             }
 
