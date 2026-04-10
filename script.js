@@ -411,18 +411,16 @@ You are a tutor, not a solution key. Provide pedagogical feedback that explains 
             // OPTIMIZATION: Send a non-blocking 'Burst' of frames to ground 
             // the visual scene, followed immediately by the text prompt.
             if (base64Image) {
-                const frameMsg = JSON.stringify({
+                this.ws.send(JSON.stringify({
                     realtimeInput: {
                         video: {
                             data: base64Image,
                             mimeType: "image/jpeg"
                         }
                     }
-                });
-                this.ws.send(frameMsg);
-                this.ws.send(frameMsg);
-                this.ws.send(frameMsg);
+                }));
             }
+
 
             const textMessage = {
                 realtimeInput: {
