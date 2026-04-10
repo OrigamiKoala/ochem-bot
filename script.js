@@ -545,16 +545,24 @@ function renderMolecules(molecules, container, suffix = "") {
         const baseSize = 100; // Increased base size
         const size = baseSize * dpr;
 
-        let options = {
+        // Settings for monochrome, zero-whitespace structures
+        const options = {
             width: size,
             height: size,
             bondThickness: 2,
             bondSpacing: 4,
             fontSizeLarge: 10,
-            padding: 10
+            padding: 0,
+            themes: {
+                mono: {
+                    C: '#1a1a1a', O: '#1a1a1a', N: '#1a1a1a', F: '#1a1a1a', 
+                    CL: '#1a1a1a', BR: '#1a1a1a', I: '#1a1a1a', P: '#1a1a1a', 
+                    S: '#1a1a1a', B: '#1a1a1a', H: '#1a1a1a', BACKGROUND: 'transparent'
+                }
+            }
         };
 
-        let smilesDrawer = new SmilesDrawer.Drawer(options);
+        const smilesDrawer = new SmilesDrawer.Drawer(options);
 
         // Adjust canvas display size
         newCanvas.style.width = baseSize + "px";
@@ -564,9 +572,8 @@ function renderMolecules(molecules, container, suffix = "") {
         if (!cleanedMol) return;
 
         SmilesDrawer.parse(cleanedMol, function (tree) {
-            smilesDrawer.draw(tree, newCanvas, 'light', false);
+            smilesDrawer.draw(tree, newCanvas, 'mono', false);
         }, function (err) {
-
             console.error("Smiles parsing error: ", cleanedMol, err);
         });
     });
@@ -577,14 +584,16 @@ function renderRichText(text, container, isExplanation = false) {
     if (!container) return;
     container.innerHTML = '';
 
-    // Match [[SMILES: SMILES_STRING]] possibly with spaces between brackets [[SMILES: ... ] ]
-    const parts = text.split(/(\[\[SMILES:[\s\S]*?\]\s*\]\s*\]*)/g);
+    // Match [[SMILES: SMILES_STRING]] possibly with multiple trailing brackets/spaces (greedy end)
+    const parts = text.split(/(\[\[SMILES:[\s\S]*?\]\s*?\]\s*?\]*)/g);
+
 
 
 
 
     parts.forEach(part => {
-        const match = part.match(/\[\[SMILES:([\s\S]*?)\]\s*\]\s*\]*/);
+        const match = part.match(/\[\[SMILES:([\s\S]*?)\]\s*?\]\s*?\]*/);
+
 
 
         if (match) {
@@ -623,21 +632,34 @@ function renderRichText(text, container, isExplanation = false) {
 
             // Draw small molecule
             const dpr = window.devicePixelRatio || 1;
-            const bSize = isExplanation ? 70 : 80; // Smaller for explanation to avoid overflow
+            const bSize = isExplanation ? 60 : 70; // Even smaller for compactness
             const size = bSize * dpr;
             canvas.style.width = bSize + "px";
             canvas.style.height = bSize + "px";
 
-
-            const options = { width: size, height: size, bondThickness: 2, bondSpacing: 4, padding: 5 };
+            const options = { 
+                width: size, 
+                height: size, 
+                bondThickness: 1.5, 
+                bondSpacing: 4, 
+                padding: 0,
+                themes: {
+                    mono: {
+                        C: '#1a1a1a', O: '#1a1a1a', N: '#1a1a1a', F: '#1a1a1a', 
+                        CL: '#1a1a1a', BR: '#1a1a1a', I: '#1a1a1a', P: '#1a1a1a', 
+                        S: '#1a1a1a', B: '#1a1a1a', H: '#1a1a1a', BACKGROUND: 'transparent'
+                    }
+                }
+            };
             const sd = new SmilesDrawer.Drawer(options);
             
             const cleanedMol = cleanSmiles(smiles);
             if (cleanedMol) {
                 SmilesDrawer.parse(cleanedMol, (tree) => {
-                    sd.draw(tree, canvas, 'light', false);
+                    sd.draw(tree, canvas, 'mono', false);
                 }, (err) => console.error("Rich SMILES err:", err));
             }
+
 
         } else if (part.trim().length > 0) {
             const span = document.createElement('span');
@@ -770,10 +792,11 @@ Structure:
 RULES:
 1. SMILES: NO hydrogens.
 2. LaTeX: Use DOUBLE backslashes for commands (e.g. \\\\Delta).
-3. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
+3. REAGENTS: Use [[SMILES: ...]] ONLY for complex organic molecules. For simple inorganic reagents or common catalysts (OsO4, NaBH4, KMnO4, H2SO4, etc.), ALWAYS use standard LaTeX.
 4. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas.
 5. Make sure the reaction actually occurs to a significant extent.
 6. Make sure the SMILES syntax is correct and proper.`;
+
 
 
         const response = await fetch('/api/chat', {
@@ -954,8 +977,9 @@ async function submitDrawing() {
 
     try {
         // Capture canvas
-        const dataUrl = canvas.toDataURL('image/png');
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // Compress for performance
         const base64Image = dataUrl.split(',')[1];
+
 
         const prompt = `Evaluate the user's drawing for this challenge:
 Task Type: ${currentReaction.qtype}
@@ -1043,8 +1067,9 @@ async function reevaluateDrawing() {
     isSubmitting = true;
 
     try {
-        const dataUrl = canvas.toDataURL('image/png');
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.6); // Compress for performance
         const base64Image = dataUrl.split(',')[1];
+
 
         const prompt = `The user is appealing your previous 'Incorrect' verdict for this OChem drawing.
 Task Type: ${currentReaction.qtype}
