@@ -168,7 +168,21 @@ body {
         width: 90%;
         max-width: 400px;
     }
+
+    #toolbar {
+        top: auto;
+        bottom: 25px;
+        left: 50%;
+        right: auto;
+        transform: translateX(-50%);
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        width: 100%;
+        padding: 0 10px;
+    }
 }
+
 
 
 #reaction-target {
@@ -188,15 +202,18 @@ body {
 
 #toolbar {
     position: absolute;
-    bottom: 25px;
+    top: 55%; /* Slightly lower to avoid top-right nav conflict */
     right: 20px;
+    transform: translateY(-50%);
     display: flex;
-    flex-wrap: wrap-reverse;
-    justify-content: flex-end;
+    flex-direction: column;
+    align-items: flex-end;
+    justify-content: center;
     gap: 12px;
-    max-width: calc(100% - 40px); /* Leave space for margins */
     z-index: 20;
 }
+
+
 
 
 #toolbar button {

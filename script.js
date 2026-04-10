@@ -265,7 +265,9 @@ class GeminiLiveAgent {
         // Adaptive history (simplified)
         this.history = [];
         this.textBuffer = "";
+        this.onChunk = null; // Callback for streaming text chunks
     }
+
 
     async getToken() {
         const apiUrl = `/api/token?t=${Date.now()}`;
@@ -370,6 +372,7 @@ Grade student drawings accurately. Provide pedagogical feedback that explains ch
                     for (const part of serverContent.modelTurn.parts) {
                         if (part.text) {
                             this.textBuffer += part.text;
+                            if (this.onChunk) this.onChunk(part.text);
                         }
                     }
                 }
@@ -377,7 +380,9 @@ Grade student drawings accurately. Provide pedagogical feedback that explains ch
                 // 2. Capture text from outputTranscription (fallback for AUDIO modality transcriptions)
                 if (serverContent.outputTranscription?.text) {
                     this.textBuffer += serverContent.outputTranscription.text;
+                    if (this.onChunk) this.onChunk(serverContent.outputTranscription.text);
                 }
+
 
                 // 3. Check for turn completion (usually in modelTurn)
                 const isTurnComplete = serverContent.turnComplete || serverContent.modelTurn?.turnComplete;
@@ -397,6 +402,20 @@ Grade student drawings accurately. Provide pedagogical feedback that explains ch
         if (!this.isConnected) await this.connect();
 
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            // OPTIMIZATION: Send the image/video data FIRST to ensure the vision model 
+            // has the context before the text prompt is processed.
+            if (base64Image) {
+                this.ws.send(JSON.stringify({
+                    realtimeInput: {
+                        video: {
+                            data: base64Image,
+                            mimeType: "image/jpeg"
+                        }
+                    }
+                }));
+                console.log('Video data sent first for vision context.');
+            }
+
             const textMessage = {
                 realtimeInput: {
                     text: prompt
@@ -408,24 +427,11 @@ Grade student drawings accurately. Provide pedagogical feedback that explains ch
             console.warn('WebSocket not open.');
         }
 
-        // 2. If image present, send via realtimeInput video field (per user's "Sending video" screenshot)
-
-        // 2. If image present, send via realtimeInput video field (per user's "Sending video" screenshot)
-        if (base64Image) {
-            this.ws.send(JSON.stringify({
-                realtimeInput: {
-                    video: {
-                        data: base64Image,
-                        mimeType: "image/jpeg"
-                    }
-                }
-            }));
-        }
-
         return new Promise((resolve) => {
             this.pendingResolve = resolve;
         });
     }
+
 
     async getNextQuestion(topic, difficulty) {
         const perf = this.history.length > 0 ? this.history[this.history.length - 1] : "start";
@@ -840,14 +846,26 @@ async function fetchBatchReactions(isExplicit = false) {
 
     if (isExplicit) {
         container.querySelectorAll('canvas, .plus-sign, .reaction-arrow').forEach(el => el.remove());
+        const instructionDiv = document.getElementById('question-instruction');
+        if (instructionDiv) instructionDiv.innerText = '';
         loadingText.innerText = "Generating adaptive challenge...";
         loadingText.style.display = 'block';
     }
+
 
     try {
         const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
 
         // Use Live Agent to get the next adaptive question
+        // Stream instructions if they arrive in chunks
+        liveAgent.onChunk = (chunk) => {
+            if (!currentReaction) {
+                loadingText.innerText = "Generating: " + chunk;
+            } else {
+                loadingText.innerText += chunk;
+            }
+        };
+
         const newReaction = await liveAgent.getNextQuestion(topic, currentDifficulty);
 
         if (newReaction) {
@@ -855,6 +873,7 @@ async function fetchBatchReactions(isExplicit = false) {
             displayNextReaction();
         }
     } catch (e) {
+
         console.error("Live Question Fetch error:", e);
         loadingText.innerText = "Oops. The Live connection failed!";
         loadingText.style.display = 'block';
@@ -948,8 +967,14 @@ async function submitDrawing() {
             ? "Evaluate my drawing based on the guided step. Provide a detailed pedagogical explanation of why it is correct or incorrect, and suggest the next logical pattern to look for." 
             : "Evaluate my drawing. Be concise. If incorrect, provide a brief hint targeting the pattern without giving away the final answer.";
 
+        // Real-time streaming UI: show chunks as they arrive
+        loadingText.innerText = ""; // Clear "Checking..."
+        liveAgent.onChunk = (chunk) => {
+            loadingText.innerText += chunk;
+        };
 
         const feedback = await liveAgent.sendTurn(prompt, base64Image);
+
 
 
         if (feedback) {
@@ -992,3 +1017,5 @@ submitBtn.addEventListener('click', (e) => {
 
 // Initial state: wait for user to click "New"
 updateButtonState();
+
+
