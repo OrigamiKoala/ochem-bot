@@ -10,7 +10,7 @@ let isDrawing = false;
 let isEraser = false;
 
 // API key is handled securely on the backend in /api/chat.js
-// Modern fetch is built-in to Node 18+ and Vercel runtimes. No SDK import needed for proxy logic.
+// Modern fetch is built-in to Node 24+ and Vercel runtimes. No SDK import needed for proxy logic.
 let reactionQueue = []; // Legacy - will be removed in favor of single-adaptive flow
 let currentReaction = null;
 let isFetching = false;
