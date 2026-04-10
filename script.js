@@ -22,11 +22,9 @@ const monochromeTheme = {
     F: '#000', Cl: '#000', Br: '#000', I: '#000', H: '#000',
     BACKGROUND: 'transparent'
 };
-const smilesOptions = { 
-    bondThickness: 2.2, 
-    bondSpacing: 4.2, 
-    padding: 2, 
-    themes: { monochrome: monochromeTheme } 
+const smilesOptions = {
+    padding: 2,
+    themes: { monochrome: monochromeTheme }
 };
 
 
@@ -65,17 +63,17 @@ const reportBtn = document.getElementById('report-btn');
 function cleanSmiles(smiles) {
     if (!smiles) return null;
     let s = smiles.replace(/^\[\[SMILES: (.*?)\]\]$/, '$1').trim(); // Strip wrapping and trim
-    
+
     // SMILES backslashes usually shouldn't be doubled if they come from JSON.parse
     // However, if the API sends them escaped, we only want one level.
     // Let's assume the string is raw SMILES.
-    
+
     // Balance brackets
     const openBrackets = (s.match(/\[/g) || []).length;
     const closeBrackets = (s.match(/\]/g) || []).length;
     if (openBrackets > closeBrackets) s += ']'.repeat(openBrackets - closeBrackets);
     if (closeBrackets > openBrackets) s = '['.repeat(closeBrackets - openBrackets) + s;
-    
+
     // Check for hanging operators (this can happen during AI generation)
     if (/[\-\+\=\#]$/.test(s)) {
         // Only strip if it's not a charge at the end e.g. [O-]
@@ -463,7 +461,7 @@ function renderReaction(data, showAnswer = false) {
 
     // Immediate clear
     moleculeDiv.innerHTML = '';
-    
+
     // Only hide explanation if we aren't explicitly showing the answer
     if (!showAnswer) {
         explanationDisplay.style.display = 'none';
@@ -501,23 +499,23 @@ function renderReaction(data, showAnswer = false) {
     // Render Arrow with Reagents and Conditions
     const arrowContainer = document.createElement('div');
     arrowContainer.className = 'reaction-arrow-container';
-    
+
     const topRow = document.createElement('div');
     topRow.className = 'reagents-top';
     // Backwards compatibility for older starter.json / stored reactions
     const reagentsText = data.reagents || data.conditions || '';
     renderRichText(reagentsText.replace(/\\\\/g, '\\'), topRow);
-    
+
     const arrowLine = document.createElement('div');
     arrowLine.className = 'arrow-line';
     // Remove innerHTML MathJax for the line; we'll use CSS for a better stretching arrow
-    
+
     const bottomRow = document.createElement('div');
     bottomRow.className = 'conditions-bottom';
     if (data.reagents) {
         renderRichText(data.conditions || '', bottomRow);
     }
-    
+
     arrowContainer.appendChild(topRow);
     arrowContainer.appendChild(arrowLine);
     arrowContainer.appendChild(bottomRow);
@@ -560,10 +558,10 @@ function renderMolecules(molecules, container, suffix = "") {
         const baseSize = 100; // Increased base size
         const size = baseSize * dpr;
 
-        const options = { 
-            width: size, 
-            height: size, 
-            ...smilesOptions 
+        const options = {
+            width: size,
+            height: size,
+            ...smilesOptions
         };
         let smilesDrawer = new SmilesDrawer.Drawer(options);
 
@@ -610,17 +608,17 @@ function renderRichText(text, container, isExplanation = false) {
 
             // Horizontal separation for reagents (add + sign between multiple molecules)
             if (!isExplanation && container.children.length > 0) {
-                 const plus = document.createElement('span');
-                 plus.innerText = "+";
-                 plus.className = "reagent-separator";
-                 container.appendChild(plus);
+                const plus = document.createElement('span');
+                plus.innerText = "+";
+                plus.className = "reagent-separator";
+                container.appendChild(plus);
             }
 
 
             const wrapper = document.createElement('div');
 
             wrapper.className = isExplanation ? 'inline-molecule-explanation' : 'inline-molecule';
-            
+
             // For copy-pastability, we keep the sr-only-smiles span
             if (!isExplanation) {
                 // Invisible copyable text for arrow context
@@ -634,7 +632,7 @@ function renderRichText(text, container, isExplanation = false) {
             const canvas = document.createElement('canvas');
             canvas.className = 'molecule-canvas';
             wrapper.appendChild(canvas);
-            
+
             container.appendChild(wrapper);
 
             // Draw small molecule
@@ -647,7 +645,7 @@ function renderRichText(text, container, isExplanation = false) {
 
             const options = { width: size, height: size, ...smilesOptions };
             const sd = new SmilesDrawer.Drawer(options);
-            
+
             const cleanedMol = cleanSmiles(smiles);
             if (cleanedMol) {
                 SmilesDrawer.parse(cleanedMol, (tree) => {
@@ -659,7 +657,7 @@ function renderRichText(text, container, isExplanation = false) {
         } else if (part.trim().length > 0) {
             const span = document.createElement('span');
             let content = part.trim();
-            
+
             // Reagents/Conditions on arrow need auto-mhchem wrapping
             // Explanation text: 
             // 1. Don't auto-wrap everything (breaks fonts)
@@ -677,7 +675,7 @@ function renderRichText(text, container, isExplanation = false) {
                     }
                 }
             }
-            
+
             span.innerHTML = content.replace(/\n/g, '<br>');
             container.appendChild(span);
         }
@@ -848,7 +846,7 @@ RULES:
 
     } finally {
         isFetching = false;
-        
+
         // If the user was waiting for this specific batch (queue was empty),
         // display the first reaction from the new batch.
         if (requestedDirectly && reactionQueue.length > 0) {
@@ -890,7 +888,7 @@ function displayNextReaction() {
     updateQueueCount();
     updateButtonState();
     updateSubmitDisabled();
-    
+
     // Ensure "New" button is immediately responsive by clearing status
     const loadingText = document.getElementById('loading-text');
     if (loadingText && (loadingText.className === "success-text" || loadingText.className === "error-text")) {
@@ -903,7 +901,7 @@ function displayNextReaction() {
         reportBtn.innerText = "Report Error";
         reportBtn.style.backgroundColor = "#8e8e93";
     }
-    
+
     renderReaction(nextReaction);
 
 
@@ -982,23 +980,23 @@ async function submitDrawing() {
         // 1. Capture the drawing
         // 2. Downscale to 60% for faster transmission and AI processing
         const originalDataUrl = canvas.toDataURL('image/png');
-        
+
         // Use a temporary offscreen canvas for downscaling
         const offscreen = document.createElement('canvas');
-        const scale = 0.6; 
+        const scale = 0.6;
         offscreen.width = canvas.width * scale;
         offscreen.height = canvas.height * scale;
         const octx = offscreen.getContext('2d');
-        
+
         // Draw whitespace background
         octx.fillStyle = "white";
         octx.fillRect(0, 0, offscreen.width, offscreen.height);
-        
+
         const img = new Image();
         img.src = originalDataUrl;
         await new Promise(resolve => img.onload = resolve);
         octx.drawImage(img, 0, 0, offscreen.width, offscreen.height);
-        
+
         const base64Image = offscreen.toDataURL('image/png').split(',')[1];
 
         const prompt = `Evaluate drawing.
@@ -1039,12 +1037,12 @@ Drawing correct? Output 'Correct' or 'Incorrect' (with subtle 10-word hint if wr
                 loadingText.className = "success-text";
                 isShowingAnswer = true; // Transition "Give up" to "New"
                 updateButtonState();
-                
+
                 if (reportBtn) {
                     reportBtn.innerText = "Report Error";
                     reportBtn.style.backgroundColor = "#8e8e93";
                 }
-                
+
                 // Show the actual answer so the user can see it!
                 if (explanationDisplay) {
                     explanationDisplay.style.display = 'block';
