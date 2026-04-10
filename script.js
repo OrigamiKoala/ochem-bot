@@ -331,7 +331,8 @@ class GeminiLiveAgent {
   "instructions": "Task description",
   "explanation": "Detailed mechanism with [[SMILES: ...]] placeholders."
 }
-Grade student drawings accurately. Provide detailed, helpful pedagogical feedback and explain the chemical reasoning behind your assessment. Hint at patterns like nucleophilic attack or carbocation stability instead of just saying correct/incorrect.`
+Grade student drawings accurately. Provide pedagogical feedback that explains chemical reasoning when requested. When providing hints for incorrect drawings, focus on the underlying patterns (e.g., nucleophilic attack, carbocation stability) without giving away the final answer.`
+
 
                     }]
                 }
@@ -945,7 +946,8 @@ async function submitDrawing() {
 
         const prompt = isLearnMode 
             ? "Evaluate my drawing based on the guided step. Provide a detailed pedagogical explanation of why it is correct or incorrect, and suggest the next logical pattern to look for." 
-            : "Evaluate my drawing. Provide a detailed assessment and explain the chemical reasoning behind the mechanism steps. If incorrect, provide a helpful hint targeting the specific error.";
+            : "Evaluate my drawing. Be concise. If incorrect, provide a brief hint targeting the pattern without giving away the final answer.";
+
 
         const feedback = await liveAgent.sendTurn(prompt, base64Image);
 
