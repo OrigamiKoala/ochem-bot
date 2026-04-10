@@ -363,9 +363,12 @@ You are a tutor, not a solution key. Provide pedagogical feedback that explains 
             console.log('Received:', data);
 
             if (data.setupComplete) {
+                console.log("[DEBUG] Setup complete. Warming up vision engine...");
+                await new Promise(r => setTimeout(r, 500)); // Multimodal warm-up
                 this.isSetup = true;
                 return;
             }
+
 
             if (data.serverContent) {
                 const serverContent = data.serverContent;
@@ -405,18 +408,29 @@ You are a tutor, not a solution key. Provide pedagogical feedback that explains 
         if (!this.isConnected) await this.connect();
 
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            // OPTIMIZATION: Send the image/video data FIRST to ensure the vision model 
-            // has the context before the text prompt is processed.
+            // OPTIMIZATION: Send a 'Burst' of frames to help the vision model ground 
+            // the visual scene before the text prompt is processed.
             if (base64Image) {
-                this.ws.send(JSON.stringify({
-                    realtimeInput: {
-                        video: {
-                            data: base64Image,
-                            mimeType: "image/jpeg"
+                const sendFrame = () => {
+                    this.ws.send(JSON.stringify({
+                        realtimeInput: {
+                            video: {
+                                data: base64Image,
+                                mimeType: "image/jpeg"
+                            }
                         }
-                    }
-                }));
-                console.log('Video data sent first for vision context.');
+                    }));
+                };
+
+                // Frame 1
+                sendFrame();
+                
+                // Frame 2 + Delay
+                await new Promise(r => setTimeout(r, 200)); 
+                sendFrame();
+
+                // Wait another short period for the vision buffer to stabilize
+                await new Promise(r => setTimeout(r, 100));
             }
 
             const textMessage = {
@@ -426,6 +440,22 @@ You are a tutor, not a solution key. Provide pedagogical feedback that explains 
             };
             this.ws.send(JSON.stringify(textMessage));
             console.log('Text message sent:', prompt);
+
+            // Optional Frame 3 (Heartbeat) after the prompt
+            if (base64Image) {
+                setTimeout(() => {
+                    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+                        this.ws.send(JSON.stringify({
+                            realtimeInput: {
+                                video: {
+                                    data: base64Image,
+                                    mimeType: "image/jpeg"
+                                }
+                            }
+                        }));
+                    }
+                }, 100);
+            }
         } else {
             console.warn('WebSocket not open.');
         }
@@ -434,6 +464,7 @@ You are a tutor, not a solution key. Provide pedagogical feedback that explains 
             this.pendingResolve = resolve;
         });
     }
+
 
 
     async getNextQuestion(topic, difficulty) {
