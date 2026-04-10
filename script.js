@@ -231,13 +231,25 @@ async function sendFollowupQuestion(overrideText) {
     chatMessages.scrollTop = chatMessages.scrollHeight;
 
     try {
+        // Inject full reaction context so the Live agent knows what we're discussing
+        const r = currentReaction;
+        const ctx = [
+            `[CONTEXT] Reactants: ${r.reactants}`,
+            `Conditions: ${r.conditions}`,
+            `Answer: ${r.answer}`,
+            r.instructions ? `Instructions: ${r.instructions}` : '',
+            r.explanation ? `Explanation: ${r.explanation}` : '',
+            lastFeedback ? `Last Feedback: ${lastFeedback}` : '',
+        ].filter(Boolean).join('. ');
+
         // Stream chunks live into the chat bubble
         liveAgent.onChunk = (chunk) => {
             botMsgDiv.innerText += chunk;
             chatMessages.scrollTop = chatMessages.scrollHeight;
         };
 
-        const botResponse = await liveAgent.sendTurn(question);
+        const botResponse = await liveAgent.sendTurn(`${ctx}\nRULE: You are a tutor. NEVER reveal the answer, product, or what to draw. Only give subtle hints about the underlying chemistry (e.g., "think about the nucleophile" or "consider the stereochemistry"). Be concise.\n\nStudent question: ${question}`);
+
         botMsgDiv.innerText = botResponse ? botResponse.trim() : "Sorry, I couldn't process that question.";
     } catch (e) {
         console.error("Chat error:", e);
