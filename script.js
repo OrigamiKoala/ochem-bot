@@ -886,6 +886,12 @@ RULES:
             try {
                 // In JSON mode, rawText should be pure JSON
                 let jsonText = rawText.trim();
+
+                // Sanitize: Gemini often emits unescaped backslashes in LaTeX
+                // within JSON string values (e.g.  \circ, \Delta, \ce{}).
+                // Fix by escaping lone backslashes that aren't valid JSON escapes.
+                jsonText = jsonText.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+
                 const data = JSON.parse(jsonText);
 
                 // Support both {reactions: [...]} and direct [...]
@@ -912,10 +918,10 @@ RULES:
 
         // If the user was waiting for this specific batch (queue was empty),
         // display the first reaction from the new batch.
-        if (isExplicit && reactionQueue.length > 0) {
-            displayNextReaction();
-        } else if (reactionQueue.length > 0 && !currentReaction) {
-            // Initial load scenario
+        // Only auto-display if the user has no active reaction (they're genuinely waiting).
+        // This prevents background prefetches or initial API batches from overwriting
+        // a question the user is currently viewing.
+        if (reactionQueue.length > 0 && !currentReaction) {
             displayNextReaction();
         }
 
@@ -959,6 +965,8 @@ function resetQuestionUI() {
 // ------ Manage Display Logic ------
 function displayNextReaction() {
     if (reactionQueue.length === 0) {
+        // Mark that the user is waiting — no active reaction
+        currentReaction = null;
         fetchBatchReactions(true);
         return;
     }
