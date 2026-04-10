@@ -13,6 +13,7 @@ const ctx = canvas.getContext('2d');
 const clearBtn = document.getElementById('clear-btn');
 const eraseBtn = document.getElementById('eraser-btn');
 const submitBtn = document.getElementById('submit-btn');
+const generateBtn = document.getElementById('generate-btn');
 const settingsBtn = document.getElementById('settings-btn');
 const settingsModal = document.getElementById('settings-modal');
 const saveSettingsBtn = document.getElementById('save-settings-btn');
@@ -749,6 +750,7 @@ if (eraseBtn) {
     });
 }
 
+if (generateBtn) generateBtn.addEventListener('click', displayNextReaction);
 submitBtn.addEventListener('click', submitDrawing);
 
 if (reportBtn) {
