@@ -14,8 +14,9 @@ export default async function handler(req, res) {
 
     // Hierarchical model list (Always starts from the top)
     const MODELS = [
-        "gemini-3.1-flash-lite-preview",           // Ultra-fast next-gen
-        "gemini-3-flash-preview",           // Reliable fast tier
+        "gemini-3.1-flash-lite-preview", // Primary / "Top" Bot
+        "gemini-3-flash-preview",              // Fallback 1
+        "gemini-2.5-flash"           // Fallback 2 (Highest availability)
     ];
 
     let lastError = null;
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
             if (image) {
                 parts.push({
                     inline_data: {
-                        mime_type: 'image/jpeg',
+                        mime_type: 'image/png',
                         data: image
                     }
                 });

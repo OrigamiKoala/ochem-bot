@@ -46,7 +46,7 @@ body {
 #question-instruction {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #1a1a1a; 
+    color: #5856d6; /* Purple theme for the task */
     margin-bottom: 12px;
     width: 100%;
 }
@@ -54,7 +54,7 @@ body {
 #explanation-display {
     margin-top: 15px;
     padding: 15px;
-    border-top: 1px solid #eee;
+    border-top: 1px dashed #c7c7cc;
     font-size: 0.95rem;
     color: #48484a;
     line-height: 1.4;
@@ -503,11 +503,14 @@ canvas {
 
 .inline-molecule {
     display: inline-flex;
+    background: white;
+    border: 1px solid #f2f2f7;
+    border-radius: 8px;
     margin: 2px;
-    padding: 2px;
+    padding: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     vertical-align: middle;
 }
-
 
 .sr-only-smiles {
     position: absolute;
@@ -522,13 +525,19 @@ canvas {
 }
 
 .inline-molecule-explanation {
-    display: inline-block;
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    background: white;
+    border: 1px solid #f2f2f7;
+    border-radius: 8px;
+    margin: 2px 4px;
+    padding: 6px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     vertical-align: middle;
-    margin: 0 4px;
-    padding: 0;
-    max-width: 250px;
+    max-width: 200px;
+    overflow: hidden;
 }
-
 
 .smiles-label {
     display: block;
