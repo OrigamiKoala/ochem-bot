@@ -555,8 +555,9 @@ function renderMolecules(molecules, container, suffix = "") {
         if (!cleanedMol) return;
 
         SmilesDrawer.parse(cleanedMol, function (tree) {
-            smilesDrawer.draw(tree, newCanvas.id, 'light', false);
+            smilesDrawer.draw(tree, newCanvas, 'light', false);
         }, function (err) {
+
             console.error("Smiles parsing error: ", cleanedMol, err);
         });
     });
@@ -568,7 +569,8 @@ function renderRichText(text, container, isExplanation = false) {
     container.innerHTML = '';
 
     // Match [[SMILES: SMILES_STRING]]
-    const parts = text.split(/(\[\[SMILES:.*?\]\])/g);
+    const parts = text.split(/(\[\[SMILES:[\s\S]*?\]\])/g);
+
 
     parts.forEach(part => {
         const match = part.match(/\[\[SMILES:(.*?)\]\]/);
@@ -606,9 +608,10 @@ function renderRichText(text, container, isExplanation = false) {
             const cleanedMol = cleanSmiles(smiles);
             if (cleanedMol) {
                 SmilesDrawer.parse(cleanedMol, (tree) => {
-                    sd.draw(tree, uniqueId, 'light', false);
+                    sd.draw(tree, canvas, 'light', false);
                 }, (err) => console.error("Rich SMILES err:", err));
             }
+
         } else if (part.trim().length > 0) {
             const span = document.createElement('span');
             let content = part.trim();
