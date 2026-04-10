@@ -16,6 +16,14 @@ let isFetching = false;
 let isSubmitting = false;
 let starterQuestionsBuffer = null;
 
+// Monochrome theme for colorless SMILES
+const monochromeTheme = {
+    C: '#000', O: '#000', N: '#000', P: '#000', S: '#000', B: '#000',
+    F: '#000', Cl: '#000', Br: '#000', I: '#000', H: '#000',
+    BACKGROUND: 'transparent'
+};
+
+
 // State for "Give Up" logic
 let hasSubmitted = false;
 let lastFeedback = "";
@@ -564,8 +572,9 @@ function renderMolecules(molecules, container, suffix = "") {
         if (!cleanedMol) return;
 
         SmilesDrawer.parse(cleanedMol, function (tree) {
-            smilesDrawer.draw(tree, newCanvas, 'light', false);
+            smilesDrawer.draw(tree, newCanvas, monochromeTheme, false);
         }, function (err) {
+
 
             console.error("Smiles parsing error: ", cleanedMol, err);
         });
@@ -598,7 +607,18 @@ function renderRichText(text, container, isExplanation = false) {
                 }
             }
 
+            // Horizontal separation for reagents
+            if (!isExplanation && container.children.length > 0 && part.trim() === "") {
+                 const plus = document.createElement('span');
+                 plus.innerText = "+";
+                 plus.style.margin = "0 8px";
+                 plus.style.fontSize = "1.2rem";
+                 plus.style.color = "#8e8e93";
+                 container.appendChild(plus);
+            }
+
             const wrapper = document.createElement('div');
+
             wrapper.className = isExplanation ? 'inline-molecule-explanation' : 'inline-molecule';
             
             // For copy-pastability AND readability, add a label
@@ -629,15 +649,17 @@ function renderRichText(text, container, isExplanation = false) {
             canvas.style.height = bSize + "px";
 
 
-            const options = { width: size, height: size, bondThickness: 2, bondSpacing: 4, padding: 5 };
+            const options = { width: size, height: size, bondThickness: 2.2, bondSpacing: 4.2, padding: 0 };
+
             const sd = new SmilesDrawer.Drawer(options);
             
             const cleanedMol = cleanSmiles(smiles);
             if (cleanedMol) {
                 SmilesDrawer.parse(cleanedMol, (tree) => {
-                    sd.draw(tree, canvas, 'light', false);
+                    sd.draw(tree, canvas, monochromeTheme, false);
                 }, (err) => console.error("Rich SMILES err:", err));
             }
+
 
         } else if (part.trim().length > 0) {
             const span = document.createElement('span');
@@ -873,7 +895,14 @@ function displayNextReaction() {
     updateButtonState();
     updateSubmitDisabled();
     
+    // Ensure "New" button is immediately responsive by clearing status
+    const loadingText = document.getElementById('loading-text');
+    if (loadingText && (loadingText.className === "success-text" || loadingText.className === "error-text")) {
+        document.getElementById('message-container').style.display = 'none';
+    }
+
     // Reset report button
+
     if (reportBtn) {
         reportBtn.innerText = "Report Error";
         reportBtn.style.backgroundColor = "#8e8e93";
@@ -953,23 +982,40 @@ async function submitDrawing() {
     updateSubmitDisabled();
 
     try {
-        // Capture canvas
-        const dataUrl = canvas.toDataURL('image/png');
-        const base64Image = dataUrl.split(',')[1];
+        // High-speed grading optimization: 
+        // 1. Capture the drawing
+        // 2. Downscale to 60% for faster transmission and AI processing
+        const originalDataUrl = canvas.toDataURL('image/png');
+        
+        // Use a temporary offscreen canvas for downscaling
+        const offscreen = document.createElement('canvas');
+        const scale = 0.6; 
+        offscreen.width = canvas.width * scale;
+        offscreen.height = canvas.height * scale;
+        const octx = offscreen.getContext('2d');
+        
+        // Draw whitespace background
+        octx.fillStyle = "white";
+        octx.fillRect(0, 0, offscreen.width, offscreen.height);
+        
+        const img = new Image();
+        img.src = originalDataUrl;
+        await new Promise(resolve => img.onload = resolve);
+        octx.drawImage(img, 0, 0, offscreen.width, offscreen.height);
+        
+        const base64Image = offscreen.toDataURL('image/png').split(',')[1];
 
-        const prompt = `Evaluate the user's drawing for this challenge:
-Task Type: ${currentReaction.qtype}
-Instructions: ${currentReaction.instructions}
-Reaction: ${currentReaction.reactants} [${currentReaction.conditions}] -> ${currentReaction.answer}
-
-Is the drawing correct? Output 'Correct' or 'Incorrect'. 
-CRITICAL RULE: If Incorrect, give a subtle hint (max 10 words) that guides them without giving the answer away (no structure names or SMILES).`;
+        const prompt = `Evaluate drawing.
+Task: ${currentReaction.qtype}
+Target: ${currentReaction.reactants} [${currentReaction.reagents || currentReaction.conditions}] -> ${currentReaction.answer}
+Drawing correct? Output 'Correct' or 'Incorrect' (with subtle 10-word hint if wrong).`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt, image: base64Image })
         });
+
 
         if (!response.ok) {
             const errorData = await response.json();
