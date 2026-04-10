@@ -408,30 +408,26 @@ You are a tutor, not a solution key. Provide pedagogical feedback that explains 
         if (!this.isConnected) await this.connect();
 
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            // ATOMIC TURN: Use client_content to send prompt and media together.
-            // This ensures they are processed in a single logical turn, fixing 'blindness'.
-            const parts = [{ text: prompt }];
+            // Revert to realtime_input (snake_case) as client_content is restricted for seeding.
+            // This fixes the 1007 'Invalid Argument' error.
             if (base64Image) {
-                parts.push({
-                    inline_data: {
-                        mime_type: "image/jpeg",
-                        data: base64Image
+                this.ws.send(JSON.stringify({
+                    realtime_input: {
+                        video: {
+                            data: base64Image,
+                            mime_type: "image/jpeg"
+                        }
                     }
-                });
+                }));
             }
 
-            const turnMessage = {
-                client_content: {
-                    turns: [{
-                        role: "user",
-                        parts: parts
-                    }],
-                    turn_complete: true
+            const textMessage = {
+                realtime_input: {
+                    text: prompt
                 }
             };
-            
-            this.ws.send(JSON.stringify(turnMessage));
-            console.log('Atomic client_content turn sent:', prompt);
+            this.ws.send(JSON.stringify(textMessage));
+            console.log('realtime_input turn sent:', prompt);
         } else {
             console.warn('WebSocket not open.');
         }
@@ -440,6 +436,7 @@ You are a tutor, not a solution key. Provide pedagogical feedback that explains 
             this.pendingResolve = resolve;
         });
     }
+
 
 
 
