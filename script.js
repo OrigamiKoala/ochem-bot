@@ -43,6 +43,8 @@ const chatMessages = document.getElementById('chat-messages');
 const explanationDisplay = document.getElementById('explanation-display');
 const explanationContent = document.getElementById('explanation-text-content');
 const difficultySlider = document.getElementById('difficulty-slider');
+const reportBtn = document.getElementById('report-btn');
+
 
 // Helper to sanitize SMILES syntax to prevent parser crashes
 function cleanSmiles(smiles) {
@@ -816,7 +818,15 @@ function displayNextReaction() {
     updateQueueCount();
     updateButtonState();
     updateSubmitDisabled();
+    
+    // Reset report button
+    if (reportBtn) {
+        reportBtn.innerText = "Report Error";
+        reportBtn.style.backgroundColor = "#8e8e93";
+    }
+    
     renderReaction(nextReaction);
+
 
     // If we're running low, fetch more in the background
     if (reactionQueue.length <= 2) {
@@ -858,7 +868,13 @@ function handleGiveUp() {
         explanationDiv.style.display = 'block';
     }
 
+    if (reportBtn) {
+        reportBtn.innerText = "Report Error";
+        reportBtn.style.backgroundColor = "#8e8e93";
+    }
+
     renderReaction(currentReaction, true);
+
     updateButtonState();
 }
 generateBtn.addEventListener('click', (e) => {
@@ -928,6 +944,11 @@ CRITICAL RULE: If Incorrect, give a subtle hint (max 10 words) that guides them 
                 isShowingAnswer = true; // Transition "Give up" to "New"
                 updateButtonState();
                 
+                if (reportBtn) {
+                    reportBtn.innerText = "Report Error";
+                    reportBtn.style.backgroundColor = "#8e8e93";
+                }
+                
                 // Show the actual answer so the user can see it!
                 if (explanationDisplay) {
                     explanationDisplay.style.display = 'block';
@@ -935,7 +956,12 @@ CRITICAL RULE: If Incorrect, give a subtle hint (max 10 words) that guides them 
                 renderReaction(currentReaction, true);
             } else {
                 loadingText.className = "error-text";
+                if (reportBtn) {
+                    reportBtn.innerText = "I was right";
+                    reportBtn.style.backgroundColor = "#ff9500"; // Orange to indicate appeal
+                }
             }
+
         }
     } catch (e) {
         console.error("Submission error:", e);
@@ -951,3 +977,74 @@ submitBtn.addEventListener('click', (e) => {
     e.preventDefault();
     submitDrawing();
 });
+
+// ------ Report Error / I was right logic ------
+async function reevaluateDrawing() {
+    if (!currentReaction || isSubmitting) return;
+
+    const loadingText = document.getElementById('loading-text');
+    loadingText.innerText = "Re-evaluating...";
+    loadingText.className = "";
+    document.getElementById('message-container').style.display = 'block';
+    isSubmitting = true;
+
+    try {
+        const dataUrl = canvas.toDataURL('image/png');
+        const base64Image = dataUrl.split(',')[1];
+
+        const prompt = `The user is appealing your previous 'Incorrect' verdict for this OChem drawing.
+Task Type: ${currentReaction.qtype}
+Instructions: ${currentReaction.instructions}
+Reaction: ${currentReaction.reactants} [${currentReaction.reagents || currentReaction.conditions}] -> ${currentReaction.answer}
+Previous Feedback: ${lastFeedback}
+
+Re-evaluate VERY carefully. Is the user's drawing actually a plausible representation of the correct answer? 
+Consider different orientations, implicit hydrogens, or valid alternative mechanisms if applicable.
+Output 'Correct' or 'Incorrect'. If still Incorrect, explain specifically why (max 15 words).`;
+
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt, image: base64Image })
+        });
+
+        if (!response.ok) throw new Error("API error");
+
+        const result = await response.json();
+        if (result.candidates && result.candidates[0].content.parts[0].text) {
+            const feedback = result.candidates[0].content.parts[0].text.trim();
+            loadingText.innerText = feedback;
+            lastFeedback = feedback;
+
+            if (feedback.toLowerCase().startsWith('correct')) {
+                loadingText.className = "success-text";
+                isShowingAnswer = true;
+                updateButtonState();
+                if (explanationDisplay) explanationDisplay.style.display = 'block';
+                renderReaction(currentReaction, true);
+            } else {
+                loadingText.className = "error-text";
+            }
+        }
+    } catch (e) {
+        console.error("Re-evaluation error:", e);
+        loadingText.innerText = "Error re-evaluating.";
+    } finally {
+        isSubmitting = false;
+        if (reportBtn) {
+            reportBtn.innerText = "Report Error";
+            reportBtn.style.backgroundColor = "#8e8e93";
+        }
+    }
+}
+
+if (reportBtn) {
+    reportBtn.addEventListener('click', () => {
+        if (reportBtn.innerText === "Report Error") {
+            displayNextReaction();
+        } else {
+            reevaluateDrawing();
+        }
+    });
+}
+
