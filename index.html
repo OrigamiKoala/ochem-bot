@@ -63,7 +63,15 @@
   <div id="settings-modal" class="modal" style="display: none;">
     <div class="modal-content">
       <h2>Practice Settings</h2>
+      <div id="settings-learn-mode-container">
+        <label class="switch-row">
+          <span>Learn Mode (Guided Steps)</span>
+          <input type="checkbox" id="learn-mode-toggle">
+        </label>
+        <p class="settings-hint">When enabled, AI guides you through patterns step-by-step.</p>
+      </div>
       <div id="settings-difficulty-container">
+
         <h3>Practice Difficulty</h3>
         <div class="difficulty-slider-row">
           <input type="range" id="difficulty-slider" min="1" max="3" step="1" value="1">

@@ -46,6 +46,8 @@ const chatMessages = document.getElementById('chat-messages');
 const explanationDisplay = document.getElementById('explanation-display');
 const explanationContent = document.getElementById('explanation-text-content');
 const difficultySlider = document.getElementById('difficulty-slider');
+const learnModeToggle = document.getElementById('learn-mode-toggle');
+
 
 // About Modal Elements
 const aboutBtn = document.getElementById('about-btn');
@@ -55,12 +57,19 @@ const aboutContent = document.getElementById('about-content');
 
 
 let currentDifficulty = parseInt(localStorage.getItem('ochem_difficulty')) || 1;
+let isLearnMode = localStorage.getItem('ochem_learn_mode') === 'true';
+
 
 function initSettings() {
     if (!topicsListDiv || !difficultySlider) return;
 
     // Set slider value
     difficultySlider.value = currentDifficulty;
+
+    if (learnModeToggle) {
+        learnModeToggle.checked = isLearnMode;
+    }
+
 
     topicsListDiv.innerHTML = '';
 
@@ -139,6 +148,12 @@ if (saveSettingsBtn) {
         // Save difficulty
         currentDifficulty = parseInt(difficultySlider.value);
         localStorage.setItem('ochem_difficulty', currentDifficulty);
+
+        if (learnModeToggle) {
+            isLearnMode = learnModeToggle.checked;
+            localStorage.setItem('ochem_learn_mode', isLearnMode);
+        }
+
 
         // Default to all if none selected to prevent errors
         if (selectedTopics.length === 0) selectedTopics = [...baseTopics, ...userCustomTopics];
@@ -405,8 +420,21 @@ Grade student drawings as 'Correct' or 'Incorrect' with a brief hint. Be concise
 
     async getNextQuestion(topic, difficulty) {
         const perf = this.history.length > 0 ? this.history[this.history.length - 1] : "start";
-        const prompt = `Generate a new adaptive question. Topic: ${topic}. Difficulty: ${difficulty}. User's last performance: ${perf}. JSON ONLY.`;
+        
+        let prompt;
+        if (isLearnMode) {
+            prompt = `Generate a new GUIDED learning question. Topic: ${topic}. Difficulty: ${difficulty}. 
+            LEARN MODE RULES:
+            1. Focus on teaching a specific pattern (e.g. nucleophile/electrophile identification, resonance, or a specific step).
+            2. Do NOT ask for the final product immediately if it's a multi-step reaction.
+            3. Provide 'instructions' that guide the user's thinking process.
+            4. JSON ONLY.`;
+        } else {
+            prompt = `Generate a new adaptive question. Topic: ${topic}. Difficulty: ${difficulty}. User's last performance: ${perf}. JSON ONLY.`;
+        }
+
         const responseText = await this.sendTurn(prompt);
+
 
         try {
             // Robust JSON extraction: Find the first '{' and last '}'
@@ -903,8 +931,11 @@ async function submitDrawing() {
         const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
         const base64Image = dataUrl.split(',')[1];
 
-        const prompt = "Evaluate my drawing.";
+        const prompt = isLearnMode 
+            ? "Evaluate my drawing based on the guided step. Be pedagogical and explain the 'why' if it's incorrect." 
+            : "Evaluate my drawing.";
         const feedback = await liveAgent.sendTurn(prompt, base64Image);
+
 
         if (feedback) {
             loadingText.innerText = feedback;

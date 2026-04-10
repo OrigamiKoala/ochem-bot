@@ -317,7 +317,64 @@ canvas {
     font-weight: 600;
 }
 
+/* Learn Mode Toggle */
+#settings-learn-mode-container {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.switch-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.1rem;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+}
+
+.settings-hint {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: #8e8e93;
+    line-height: 1.3;
+}
+
+#learn-mode-toggle {
+    width: 44px;
+    height: 24px;
+    appearance: none;
+    background: #e9e9eb;
+    border-radius: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+#learn-mode-toggle:checked {
+    background: #34c759;
+}
+
+#learn-mode-toggle::before {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: white;
+    border-radius: 50%;
+    top: 2px;
+    left: 2px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: transform 0.3s;
+}
+
+#learn-mode-toggle:checked::before {
+    transform: translateX(20px);
+}
+
 /* Inline Molecule in Explanation */
+
 .inline-molecule {
     display: block;
     background: white;
