@@ -761,9 +761,10 @@ function renderReaction(data, showAnswer = false) {
         }
     }
 
-    if (window.MathJax) {
+    if (window.MathJax && (data.conditions || "").includes("\\")) {
         MathJax.typesetPromise([arrowContainer]).catch(err => console.error('MathJax error:', err));
     }
+
 }
 
 // Helper to render a group of molecules with '+' signs
@@ -785,7 +786,7 @@ function renderMolecules(molecules, container, suffix = "") {
 
         // iPad/Retina support: Scale resolution by device pixel ratio
         const dpr = window.devicePixelRatio || 1;
-        const baseSize = 100;
+        const baseSize = 85; 
 
         // Adjust canvas display size
         newCanvas.style.width = baseSize + "px";
@@ -794,12 +795,14 @@ function renderMolecules(molecules, container, suffix = "") {
         newCanvas.height = baseSize * dpr;
 
         SmilesDrawer.parse(mol, function (tree) {
-            globalSmilesDrawer.draw(tree, newCanvas.id, 'light', false);
+            // Passing the element directly is faster than ID lookup
+            globalSmilesDrawer.draw(tree, newCanvas, 'light', false);
         }, function (err) {
             console.error("Smiles parsing error: ", mol, err);
         });
     });
 }
+
 
 
 // ------ Rendering Mechanistic Explanations ------
@@ -824,15 +827,17 @@ function renderExplanationWithMolecules(text, container) {
 
             // iPad/Retina support
             const dpr = window.devicePixelRatio || 1;
-            const bSize = 120;
+            const bSize = 90;
             canvas.style.width = bSize + "px";
             canvas.style.height = bSize + "px";
             canvas.width = bSize * dpr;
             canvas.height = bSize * dpr;
 
             SmilesDrawer.parse(smiles, (tree) => {
-                globalSmilesDrawer.draw(tree, uniqueId, 'light', false);
+                // Passing the element directly is faster than ID lookup
+                globalSmilesDrawer.draw(tree, canvas, 'light', false);
             }, (err) => console.error("Inline SMILES err:", err));
+
 
         } else if (part.trim().length > 0) {
             const span = document.createElement('span');
