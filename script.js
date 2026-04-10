@@ -392,34 +392,39 @@ STRICT JSON RULES: You MUST escape all backslashes in LaTeX and SMILES (e.g., us
         const diffLabel = DIFF_LABELS[difficulty];
 
         const prompt = isLearnMode
-            ? `Generate a new GUIDED learning question. Topic: ${topic}. Difficulty: ${diffLabel}.
-LEARN MODE RULES:
-1. Focus on teaching a specific pattern (e.g. nucleophile/electrophile identification, resonance, or a specific step).
-2. Do NOT ask for the final product immediately if it's a multi-step reaction.
-3. Provide 'instructions' that guide the user's thinking process via subtle hints.
-4. JSON ONLY.`
-            : `Generate a new adaptive question. Topic: ${topic}. Difficulty: ${diffLabel}. User's last performance: ${perf}.
-Focus on creating questions that highlight key mechanisms.
-Provide clear 'instructions' that hint at the pattern the student should look for without revealing the answer.
-JSON ONLY.`;
+            ? `You are an organic chemistry tutor. Generate 1 reaction question as JSON.
+Topic: ${topic}. Difficulty: ${diffLabel}.
+LEARN MODE: Focus on teaching a specific pattern. Provide 'instructions' that guide thinking via subtle hints. Do NOT ask for the final product immediately if multi-step.
+JSON schema: {"qtype":"predict|mechanism|stereo","reactants":"SMILES","conditions":"LaTeX","answer":"SMILES","instructions":"string","explanation":"string with [[SMILES: ...]] placeholders"}`
+            : `You are an organic chemistry tutor. Generate 1 reaction question as JSON.
+Topic: ${topic}. Difficulty: ${diffLabel}. User's last performance: ${perf}.
+Focus on key mechanisms. Provide 'instructions' that hint at the pattern without revealing the answer.
+JSON schema: {"qtype":"predict|mechanism|stereo","reactants":"SMILES","conditions":"LaTeX","answer":"SMILES","instructions":"string","explanation":"string with [[SMILES: ...]] placeholders"}`;
 
-        const responseText = await this.sendTurn(prompt);
+        // HYBRID APPROACH: Use REST API for question generation (guaranteed valid JSON).
+        // The Live WebSocket is reserved for interactive feedback and chat.
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt,
+                responseMimeType: 'application/json',
+                temperature: 0.8
+            })
+        });
 
-        try {
-            const start = responseText.indexOf('{');
-            const end = responseText.lastIndexOf('}');
-            if (start === -1 || end === -1) throw new Error("No JSON found in response");
-
-            // Auto-escape raw LaTeX backslashes that break JSON.parse
-            const jsonText = responseText.substring(start, end + 1)
-                .replace(/\\(?!["\\\/bfnrtu])/g, '\\\\');
-
-            return JSON.parse(jsonText);
-        } catch (e) {
-            console.error("Failed to parse adaptive question:", e, responseText);
-            throw e;
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.error || `REST API error: ${response.status}`);
         }
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (!text) throw new Error("No text in REST response");
+
+        return JSON.parse(text);
     }
+
 }
 
 const liveAgent = new GeminiLiveAgent();
