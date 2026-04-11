@@ -728,7 +728,7 @@ function renderRichText(text, container, isExplanation = false) {
             // 1. Don't auto-wrap everything (breaks fonts)
             // 2. DO wrap LaTeX commands (starting with \) so they render
             if (!isExplanation && !content.includes('\\(') && !content.includes('\\[')) {
-                if (/[_^{}\\]/.test(content) || content.length > 2) {
+                if (/[_^{}\\+\-]/.test(content) || content.length >= 2) {
                     content = `\\( \\ce{${content}} \\)`;
                 }
             } else if (isExplanation) {
@@ -852,11 +852,14 @@ RULES:
    - {DELTA} for the heat/reflux triangle symbol
    - {deg} for the degree sign (e.g. "0 {deg}C", "-78 {deg}C")
    - {hv} for photochemical light (h nu)
-4. Write solvents and reagent names as plain text: "EtOH", "THF", "CH2Cl2". Do NOT wrap them in \\text{}.
+   - {H2} for hydrogen gas (H_2)
+   - {H+} for a proton/acid catalyst (H^+)
+4. Write solvents and reagent names as plain text: "EtOH", "THF", "CH2Cl2", "H2", "H+", "H2O". Do NOT wrap them in \\text{}.
 5. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
-6. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas. NO backslashes.
-7. Make sure the reaction actually occurs to a significant extent.
-8. Make sure the SMILES syntax is correct and proper.`;
+6. HYDROGENS: Do NOT use [[SMILES: ...]] for simple reagents like H2 or H+. Use plain text or the tokens above.
+7. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas. NO backslashes.
+8. Make sure the reaction actually occurs to a significant extent.
+9. Make sure the SMILES syntax is correct and proper.`;
 
 
         const response = await fetch('/api/chat', {
@@ -900,7 +903,9 @@ RULES:
                         return obj
                             .replace(/\{DELTA\}/g, '\\Delta')
                             .replace(/\{deg\}/g, '^{\\circ}')
-                            .replace(/\{hv\}/g, 'h\\nu');
+                            .replace(/\{hv\}/g, 'h\\nu')
+                            .replace(/\{H2\}/g, 'H_2')
+                            .replace(/\{H\+\}/g, 'H^{+}');
                     }
                     if (Array.isArray(obj)) return obj.map(applyLatexTokens);
                     if (obj && typeof obj === 'object') {
