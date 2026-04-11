@@ -279,7 +279,7 @@ Explanation: ${currentReaction.explanation}
 
 Student Question: ${question}
 
-Instructions: You are an expert organic chemistry tutor. Answer the student's question concisely (max 50 words) based on the reaction context above. Focus on mechanistic logic and principles.`;
+Instructions: You are an expert organic chemistry tutor. Answer the student's question concisely (max 30 words) based on the reaction context above. Focus on mechanistic logic and principles.`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -1120,11 +1120,11 @@ async function submitDrawing() {
         let promptSnippet = "";
         if (isLearnMode) {
             promptSnippet = `Act as a supportive organic chemistry tutor. 
-1. If 'Incorrect', identify the specific chemical error (e.g., regio/stereo, steric clash, valency, or incorrect mechanism step) and explain the principle/rule being violated (e.g. Markovnikov, Anti-Zaitsev). 
+1. If 'Incorrect', identify the specific chemical error (e.g., regio/stereo, steric clash, valency, or incorrect mechanism step) and explain the principle/rule being violated. 
 2. Be encouraging. 
-3. STATED RULE: NEVER give the answer, product name, or SMILES. Help them think, don't tell them.`;
+3. STATED RULE: NEVER give the answer or SMILES. Be extremely concise (max 30 words).`;
         } else {
-            promptSnippet = `Drawing correct? Output 'Correct' or 'Incorrect'. If wrong, give a subtle hint (max 10 words). NEVER give the answer or reveal the final structure.`;
+            promptSnippet = `Output ONLY 'Correct' or 'Incorrect: [Subtle hint (max 10 words)]'. Be extremely concise. NEVER reveal the answer or structure.`;
         }
 
 
@@ -1229,7 +1229,7 @@ Previous Feedback: ${lastFeedback}
 
 Re-evaluate VERY carefully. Is the user's drawing actually a plausible representation of the correct answer? 
 Consider different orientations, implicit hydrogens, or valid alternative mechanisms if applicable.
-Output 'Correct' or 'Incorrect'. If still Incorrect, explain specifically why (max 15 words).`;
+Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
