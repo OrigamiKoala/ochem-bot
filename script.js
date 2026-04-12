@@ -581,7 +581,7 @@ function renderReaction(data, showAnswer = false) {
         }
     }
 
-    if (window.MathJax) {
+    if (window.MathJax && MathJax.typesetPromise) {
         MathJax.typesetPromise([arrowContainer]).catch(err => console.error('MathJax error:', err));
     }
 }
@@ -746,7 +746,7 @@ function renderRichText(text, container, isExplanation = false) {
         }
     });
 
-    if (window.MathJax) {
+    if (window.MathJax && MathJax.typesetPromise) {
         MathJax.typesetPromise([container]).catch(err => console.error('MathJax error:', err));
     }
 }
