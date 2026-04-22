@@ -180,7 +180,7 @@ function addCustomTopic() {
     localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
 
     customTopicInput.value = '';
-    
+
     // Set learn mode toggle
     if (learnModeToggle) {
         learnModeToggle.checked = isLearnMode;
@@ -846,6 +846,7 @@ Structure:
 }
 
 RULES:
+MOST IMPORTANT: Make sure the reaction actually occurs to a significant extent, and make sure reactants/reagents are correct.
 1. SMILES: NO hydrogens.
 2. NO BACKSLASHES: NEVER use backslash commands (\\Delta, \\circ, \\text, etc.) anywhere in JSON. They break parsing.
 3. SPECIAL SYMBOLS — use these exact placeholder tokens instead:
@@ -858,7 +859,6 @@ RULES:
 5. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
 6. HYDROGENS: Do NOT use [[SMILES: ...]] for simple reagents like H2 or H+. Use plain text or the tokens above.
 7. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas. NO backslashes.
-8. Make sure the reaction actually occurs to a significant extent.
 9. Make sure the SMILES syntax is correct and proper.`;
 
 
@@ -970,7 +970,7 @@ function resetQuestionUI() {
     if (moleculeDiv) moleculeDiv.innerHTML = '';
     if (explanationDisplay) explanationDisplay.style.display = 'none';
     if (chatMessages) chatMessages.innerHTML = '';
-    
+
     // Clear whiteboard
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     isCanvasBlank = true;
