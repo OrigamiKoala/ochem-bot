@@ -90,6 +90,73 @@ function cleanSmiles(smiles) {
     return s;
 }
 
+// Attempt to salvage truncated JSON from the AI response.
+// The typical structure is {"reactions": [{...}, {...}, ...]}
+// If the response was cut off mid-object, we find the last complete object and close the array/object.
+function repairTruncatedJSON(raw) {
+    try {
+        // Strip markdown code fences if present
+        let text = raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
+
+        // Strategy: find the last complete reaction object by locating the last "},"
+        // or the last "}" that closes a complete object before the truncation point.
+        
+        // Find the position of "reactions" key
+        const reactionsIdx = text.indexOf('"reactions"');
+        if (reactionsIdx === -1) return null;
+
+        // Find the opening bracket of the reactions array
+        const arrayStart = text.indexOf('[', reactionsIdx);
+        if (arrayStart === -1) return null;
+
+        // Walk through and collect complete objects
+        let depth = 0;
+        let lastCompleteEnd = -1;
+        let inString = false;
+        let escapeNext = false;
+
+        for (let i = arrayStart + 1; i < text.length; i++) {
+            const ch = text[i];
+
+            if (escapeNext) {
+                escapeNext = false;
+                continue;
+            }
+
+            if (ch === '\\') {
+                if (inString) escapeNext = true;
+                continue;
+            }
+
+            if (ch === '"') {
+                inString = !inString;
+                continue;
+            }
+
+            if (inString) continue;
+
+            if (ch === '{') {
+                depth++;
+            } else if (ch === '}') {
+                depth--;
+                if (depth === 0) {
+                    // We've closed a top-level object in the array
+                    lastCompleteEnd = i;
+                }
+            }
+        }
+
+        if (lastCompleteEnd === -1) return null; // No complete objects found
+
+        // Reconstruct valid JSON: everything up to the last complete object, then close array + object
+        const repaired = text.substring(0, lastCompleteEnd + 1) + ']}';
+        return JSON.parse(repaired);
+    } catch (e) {
+        console.error("JSON repair failed:", e);
+        return null;
+    }
+}
+
 
 // About Modal Elements
 const aboutBtn = document.getElementById('about-btn');
@@ -895,7 +962,17 @@ MOST IMPORTANT: Make sure the reaction actually occurs to a significant extent, 
                 // In JSON mode, rawText should be pure JSON.
                 // No sanitizer needed — the prompt forbids backslashes entirely
                 // and uses placeholder tokens ({DELTA}, {deg}, {hv}) instead.
-                const data = JSON.parse(rawText.trim());
+                let data;
+                try {
+                    data = JSON.parse(rawText.trim());
+                } catch (parseErr) {
+                    // JSON was likely truncated by token limit — attempt repair
+                    console.warn("JSON parse failed, attempting repair...", parseErr.message);
+                    data = repairTruncatedJSON(rawText.trim());
+                    if (!data) throw parseErr; // repair failed, surface original error
+                    console.log("JSON repair succeeded, recovered reactions:", 
+                        (data.reactions || data).length);
+                }
 
                 // Convert placeholder tokens to LaTeX in all string fields
                 function applyLatexTokens(obj) {
