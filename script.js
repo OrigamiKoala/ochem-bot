@@ -493,6 +493,8 @@ function getCoordinates(event) {
     };
 }
 
+let lastPoint = null; // Track previous point for curve smoothing
+
 function startDrawing(e) {
     e.preventDefault(); // Important to prevent default touch behaviors like scrolling
     isDrawing = true;
@@ -507,16 +509,24 @@ function startDrawing(e) {
     }
 
     const pos = getCoordinates(e);
+    lastPoint = pos;
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
 
     // Draw a single dot if it's just a tap
-    draw(e);
+    ctx.lineTo(pos.x + 0.1, pos.y + 0.1);
+    ctx.stroke();
 }
 
 function stopDrawing(e) {
     if (e) e.preventDefault();
+    // Draw final segment to last known position for a clean line end
+    if (isDrawing && lastPoint) {
+        ctx.lineTo(lastPoint.x, lastPoint.y);
+        ctx.stroke();
+    }
     isDrawing = false;
+    lastPoint = null;
     ctx.beginPath(); // Reset the path for the next stroke
 }
 
@@ -530,8 +540,17 @@ function draw(e) {
     }
 
     const pos = getCoordinates(e);
-    ctx.lineTo(pos.x, pos.y);
-    ctx.stroke();
+
+    if (lastPoint) {
+        // Use the midpoint as the endpoint, and the previous point as the
+        // control point — this creates smooth quadratic Bézier curves
+        const midX = (lastPoint.x + pos.x) / 2;
+        const midY = (lastPoint.y + pos.y) / 2;
+        ctx.quadraticCurveTo(lastPoint.x, lastPoint.y, midX, midY);
+        ctx.stroke();
+    }
+
+    lastPoint = pos;
 }
 
 // Intercept global touch events to strictly prevent "pull to refresh" reloads
