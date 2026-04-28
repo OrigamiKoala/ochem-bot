@@ -27,6 +27,30 @@ let isEraser = false;
 
 // API key is handled securely on the backend in /api/chat.js
 let reactionQueue = [];
+
+// ------ Queue Cache (localStorage) ------
+function saveQueueToCache() {
+    try {
+        localStorage.setItem('ochem_reaction_queue', JSON.stringify(reactionQueue));
+    } catch (e) {
+        console.warn('Failed to save queue to cache:', e);
+    }
+}
+
+function loadQueueFromCache() {
+    try {
+        const cached = localStorage.getItem('ochem_reaction_queue');
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed;
+            }
+        }
+    } catch (e) {
+        console.warn('Failed to load queue from cache:', e);
+    }
+    return [];
+}
 let currentReaction = null;
 let isFetching = false;
 let isSubmitting = false;
@@ -1018,6 +1042,7 @@ MOST IMPORTANT: Make sure the reaction actually occurs to a significant extent, 
 
                 if (reactions && Array.isArray(reactions)) {
                     reactionQueue = [...reactionQueue, ...reactions];
+                    saveQueueToCache();
                     updateQueueCount();
                 }
             } catch (e) {
@@ -1058,6 +1083,7 @@ MOST IMPORTANT: Make sure the reaction actually occurs to a significant extent, 
 function resetQuestionUI() {
     currentReaction = null;
     reactionQueue = [];
+    saveQueueToCache();
     const instructionDiv = document.getElementById('question-instruction');
     const moleculeDiv = document.getElementById('molecule-display');
     const loadingText = document.getElementById('loading-text');
@@ -1091,6 +1117,7 @@ function displayNextReaction() {
     }
 
     const nextReaction = reactionQueue.shift();
+    saveQueueToCache();
     currentReaction = nextReaction;
 
     // Reset state for new reaction
@@ -1378,6 +1405,16 @@ if (reportBtn) {
     });
 }
 
-// Initial load
-fetchBatchReactions(true);
+// Initial load — restore cached questions first, then fetch if needed
+const cachedQueue = loadQueueFromCache();
+if (cachedQueue.length > 0) {
+    reactionQueue = cachedQueue;
+    displayNextReaction();
+    // Still fetch more in the background if running low
+    if (reactionQueue.length <= 2) {
+        fetchBatchReactions(false);
+    }
+} else {
+    fetchBatchReactions(true);
+}
 
