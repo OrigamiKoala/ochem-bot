@@ -1,10 +1,26 @@
 // script.js
 console.log("hi!");
-const canvas = document.getElementById('whiteboard');
-const ctx = canvas.getContext('2d');
+const canvasEl = document.getElementById('whiteboard');
 const clearBtn = document.getElementById('clear-btn');
 const eraseBtn = document.getElementById('eraser-btn');
 const generateBtn = document.getElementById('generate-btn');
+
+// Initialize Fabric.js canvas
+const fabricCanvas = new fabric.Canvas('whiteboard', {
+    isDrawingMode: true,
+    backgroundColor: 'transparent',
+    selection: false,
+});
+
+// Configure the default pencil brush for smooth strokes
+fabricCanvas.freeDrawingBrush = new fabric.PencilBrush(fabricCanvas);
+fabricCanvas.freeDrawingBrush.color = '#2c3e50';
+fabricCanvas.freeDrawingBrush.width = 3;
+fabricCanvas.freeDrawingBrush.strokeLineCap = 'round';
+fabricCanvas.freeDrawingBrush.strokeLineJoin = 'round';
+
+// Keep a reference to the underlying canvas element for toDataURL compatibility
+const canvas = fabricCanvas.lowerCanvasEl;
 
 let isDrawing = false;
 let isEraser = false;
@@ -41,7 +57,71 @@ let isCanvasBlank = true;
 let isLearnMode = localStorage.getItem('ochem_learn_mode') === 'true';
 const learnModeToggle = document.getElementById('learn-mode-toggle');
 
-// ------ Settings & Topic Management ------
+// Track drawing state via Fabric.js events
+fabricCanvas.on('path:created', function() {
+    if (isCanvasBlank) {
+        isCanvasBlank = false;
+        updateSubmitDisabled();
+    }
+});
+
+// Handle window resizing correctly
+function resizeCanvas() {
+    const container = document.getElementById('whiteboard-container');
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    fabricCanvas.setWidth(width);
+    fabricCanvas.setHeight(height);
+    fabricCanvas.renderAll();
+}
+
+window.addEventListener('resize', resizeCanvas);
+// Give the browser a tiny bit of time to layout before initial sizing
+setTimeout(resizeCanvas, 0);
+
+// Intercept global touch events to strictly prevent "pull to refresh" reloads
+document.body.addEventListener('touchmove', function (e) {
+    // Allow touch scrolling on specific containers
+    if (e.target.closest('#about-content') || e.target.closest('#topics-list') || e.target.closest('#explanation-display') || e.target.closest('#molecule-display')) {
+        return;
+    }
+
+    e.preventDefault();
+}, { passive: false });
+
+
+// ------ Toolbar Actions ------
+clearBtn.addEventListener('click', () => {
+    fabricCanvas.clear();
+    fabricCanvas.backgroundColor = 'transparent';
+    isCanvasBlank = true;
+    updateSubmitDisabled();
+});
+
+if (eraseBtn) {
+    eraseBtn.addEventListener('click', () => {
+        isEraser = !isEraser;
+        eraseBtn.classList.toggle('active-tool', isEraser);
+
+        if (isEraser) {
+            eraseBtn.innerText = "Pen";
+            // Use a white brush to "erase" (draw over with background color)
+            fabricCanvas.freeDrawingBrush = new fabric.PencilBrush(fabricCanvas);
+            fabricCanvas.freeDrawingBrush.color = '#fafafa';
+            fabricCanvas.freeDrawingBrush.width = 20;
+            fabricCanvas.freeDrawingBrush.strokeLineCap = 'round';
+            fabricCanvas.freeDrawingBrush.strokeLineJoin = 'round';
+        } else {
+            eraseBtn.innerText = "Eraser";
+            fabricCanvas.freeDrawingBrush = new fabric.PencilBrush(fabricCanvas);
+            fabricCanvas.freeDrawingBrush.color = '#2c3e50';
+            fabricCanvas.freeDrawingBrush.width = 3;
+            fabricCanvas.freeDrawingBrush.strokeLineCap = 'round';
+            fabricCanvas.freeDrawingBrush.strokeLineJoin = 'round';
+        }
+    });
+}
 const baseTopics = ["addition", "substitution", "elimination", "on rings", "Grignard", "redox", "protecting groups", "cycloadditions", "electrocyclic", "rearrangements", "radicals", "carbenes", "stereochemistry", "regioselectivity"];
 let userCustomTopics = JSON.parse(localStorage.getItem('ochem_custom_topics')) || [];
 let selectedTopics = JSON.parse(localStorage.getItem('ochem_selected_topics')) || [...baseTopics, ...userCustomTopics];
@@ -458,144 +538,7 @@ function updateSubmitDisabled() {
 }
 updateSubmitDisabled(); // Initial state
 
-// Handle window resizing correctly to avoid stretching
-function resizeCanvas() {
-    canvas.width = canvas.parentElement.clientWidth;
-    canvas.height = canvas.parentElement.clientHeight;
 
-    // Set standard drawing styles
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = '#2c3e50'; // Dark slate blue for ink
-}
-
-window.addEventListener('resize', resizeCanvas);
-// Give the browser a tiny bit of time to layout before initial sizing
-setTimeout(resizeCanvas, 0);
-
-// Helper function to extract correct coordinate for both Mouse and Touch events
-function getCoordinates(event) {
-    const rect = canvas.getBoundingClientRect();
-    let clientX, clientY;
-
-    if (event.touches && event.touches.length > 0) {
-        clientX = event.touches[0].clientX;
-        clientY = event.touches[0].clientY;
-    } else {
-        clientX = event.clientX;
-        clientY = event.clientY;
-    }
-
-    return {
-        x: clientX - rect.left,
-        y: clientY - rect.top
-    };
-}
-
-let lastPoint = null; // Track previous point for curve smoothing
-
-function startDrawing(e) {
-    e.preventDefault(); // Important to prevent default touch behaviors like scrolling
-    isDrawing = true;
-
-    // Set brush mode
-    if (isEraser) {
-        ctx.globalCompositeOperation = 'destination-out';
-        ctx.lineWidth = 20; // Thicker for erasing
-    } else {
-        ctx.globalCompositeOperation = 'source-over';
-        ctx.lineWidth = 3; // Standard for pen
-    }
-
-    const pos = getCoordinates(e);
-    lastPoint = pos;
-    ctx.beginPath();
-    ctx.moveTo(pos.x, pos.y);
-
-    // Draw a single dot if it's just a tap
-    ctx.lineTo(pos.x + 0.1, pos.y + 0.1);
-    ctx.stroke();
-}
-
-function stopDrawing(e) {
-    if (e) e.preventDefault();
-    // Draw final segment to last known position for a clean line end
-    if (isDrawing && lastPoint) {
-        ctx.lineTo(lastPoint.x, lastPoint.y);
-        ctx.stroke();
-    }
-    isDrawing = false;
-    lastPoint = null;
-    ctx.beginPath(); // Reset the path for the next stroke
-}
-
-function draw(e) {
-    if (!isDrawing) return;
-    e.preventDefault();
-
-    if (isCanvasBlank) {
-        isCanvasBlank = false;
-        updateSubmitDisabled();
-    }
-
-    const pos = getCoordinates(e);
-
-    if (lastPoint) {
-        // Use the midpoint as the endpoint, and the previous point as the
-        // control point — this creates smooth quadratic Bézier curves
-        const midX = (lastPoint.x + pos.x) / 2;
-        const midY = (lastPoint.y + pos.y) / 2;
-        ctx.quadraticCurveTo(lastPoint.x, lastPoint.y, midX, midY);
-        ctx.stroke();
-    }
-
-    lastPoint = pos;
-}
-
-// Intercept global touch events to strictly prevent "pull to refresh" reloads
-// Intercept global touch events to strictly prevent "pull to refresh" reloads
-document.body.addEventListener('touchmove', function (e) {
-    // Allow touch scrolling on specific containers
-    if (e.target.closest('#about-content') || e.target.closest('#topics-list') || e.target.closest('#explanation-display') || e.target.closest('#molecule-display')) {
-        return;
-    }
-
-    e.preventDefault();
-}, { passive: false });
-
-
-// ------ Touch Events (Crucial for iPad) ------
-canvas.addEventListener('touchstart', startDrawing, { passive: false });
-canvas.addEventListener('touchmove', draw, { passive: false });
-canvas.addEventListener('touchend', stopDrawing, { passive: false });
-canvas.addEventListener('touchcancel', stopDrawing, { passive: false });
-
-// ------ Mouse Events (For testing on desktop) ------
-canvas.addEventListener('mousedown', startDrawing);
-canvas.addEventListener('mousemove', draw);
-canvas.addEventListener('mouseup', stopDrawing);
-canvas.addEventListener('mouseout', stopDrawing);
-
-// ------ Toolbar Actions ------
-clearBtn.addEventListener('click', () => {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    isCanvasBlank = true;
-    updateSubmitDisabled();
-});
-
-if (eraseBtn) {
-    eraseBtn.addEventListener('click', () => {
-        isEraser = !isEraser;
-        eraseBtn.classList.toggle('active-tool', isEraser);
-
-        if (isEraser) {
-            eraseBtn.innerText = "Pen";
-        } else {
-            eraseBtn.innerText = "Eraser";
-        }
-    });
-}
 
 // // ------ Render a Reaction ------
 function renderReaction(data, showAnswer = false) {
@@ -1125,7 +1068,7 @@ function resetQuestionUI() {
     if (chatMessages) chatMessages.innerHTML = '';
 
     // Clear whiteboard
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    fabricCanvas.clear(); fabricCanvas.backgroundColor = 'transparent';
     isCanvasBlank = true;
     updateSubmitDisabled();
     updateButtonState();
@@ -1157,7 +1100,7 @@ function displayNextReaction() {
     isCanvasBlank = true;
 
     // Clear the board for the new reaction
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    fabricCanvas.clear(); fabricCanvas.backgroundColor = 'transparent';
 
     updateQueueCount();
     updateButtonState();
@@ -1251,15 +1194,15 @@ async function submitDrawing() {
 
     try {
         // High-speed grading optimization: 
-        // 1. Capture the drawing
-        // 2. Downscale to 60% for faster transmission and AI processing
-        const originalDataUrl = canvas.toDataURL('image/png');
+        // 1. Capture the drawing from Fabric.js
+        // 2. Downscale to 80% for faster transmission and AI processing
+        const originalDataUrl = fabricCanvas.toDataURL({ format: 'png' });
 
         // Use a temporary offscreen canvas for downscaling
         const offscreen = document.createElement('canvas');
         const scale = 0.8; // Increased resolution for better AI accuracy
-        offscreen.width = canvas.width * scale;
-        offscreen.height = canvas.height * scale;
+        offscreen.width = fabricCanvas.getWidth() * scale;
+        offscreen.height = fabricCanvas.getHeight() * scale;
 
         const octx = offscreen.getContext('2d');
 
@@ -1376,7 +1319,7 @@ async function reevaluateDrawing() {
     isSubmitting = true;
 
     try {
-        const dataUrl = canvas.toDataURL('image/png');
+        const dataUrl = fabricCanvas.toDataURL({ format: 'png' });
         const base64Image = dataUrl.split(',')[1];
 
         const prompt = `The user is appealing your previous 'Incorrect' verdict for this OChem drawing.

@@ -408,11 +408,21 @@ body {
     transform: scale(0.95);
 }
 
-canvas {
+/* Whiteboard canvas (Fabric.js wraps it in .canvas-container) */
+#whiteboard-container .canvas-container {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+#whiteboard-container canvas {
     display: block;
-    width: 100%;
-    height: 100%;
     cursor: crosshair;
+}
+
+/* Molecule canvases in reaction display */
+#molecule-display canvas,
+#explanation-text-content canvas {
+    display: block;
 }
 
 .success-text {
