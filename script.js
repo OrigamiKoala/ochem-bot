@@ -696,63 +696,115 @@ function renderMolecules(molecules, container, suffix = "") {
     });
 }
 
+// Parse text into segments of {type: 'text'|'smiles', content: string}.
+// Handles SMILES atom brackets (e.g. [O-], [NH2]) inside [[SMILES: ...]] tags
+// by tracking bracket depth — only treats ]] as the tag closer when depth == 0.
+function parseSmilesSegments(text) {
+    const segments = [];
+    const tagPattern = /\[\[\s*SMILES:\s*/gi;
+    let lastIndex = 0;
+    let match;
+
+    while ((match = tagPattern.exec(text)) !== null) {
+        // Push any text before this tag
+        if (match.index > lastIndex) {
+            segments.push({ type: 'text', content: text.substring(lastIndex, match.index) });
+        }
+
+        // Now parse the SMILES content, tracking bracket depth
+        let i = match.index + match[0].length;
+        let depth = 0; // Track [ ] nesting inside SMILES
+        let smilesStart = i;
+        let found = false;
+
+        while (i < text.length) {
+            const ch = text[i];
+            if (ch === '[') {
+                depth++;
+                i++;
+            } else if (ch === ']') {
+                if (depth > 0) {
+                    // Closing an atom bracket inside the SMILES
+                    depth--;
+                    i++;
+                } else {
+                    // depth == 0: this ] might be part of the closing ]]
+                    if (i + 1 < text.length && text[i + 1] === ']') {
+                        // Found the closing ]] — extract SMILES content
+                        const smilesContent = text.substring(smilesStart, i);
+                        segments.push({ type: 'smiles', content: smilesContent });
+                        i += 2; // Skip past ]]
+                        // Also skip any extra trailing ] (AI sometimes outputs ]]])
+                        while (i < text.length && text[i] === ']') i++;
+                        found = true;
+                        break;
+                    } else {
+                        // Single ] at depth 0 — shouldn't normally happen in valid
+                        // SMILES inside a tag, but advance to avoid infinite loop
+                        i++;
+                    }
+                }
+            } else {
+                i++;
+            }
+        }
+
+        if (!found) {
+            // Tag was never closed — treat the whole remaining text as SMILES
+            const smilesContent = text.substring(smilesStart);
+            segments.push({ type: 'smiles', content: smilesContent });
+            i = text.length;
+        }
+
+        lastIndex = i;
+        tagPattern.lastIndex = i; // Resume regex search after parsed content
+    }
+
+    // Push any remaining text after the last tag
+    if (lastIndex < text.length) {
+        segments.push({ type: 'text', content: text.substring(lastIndex) });
+    }
+
+    return segments;
+}
+
 //// ------ Rendering Mechanistic Explanations & Rich Text ------
 function renderRichText(text, container, isExplanation = false) {
     if (!container) return;
     container.innerHTML = '';
 
-    // Standardize regex for SMILES tags: case-insensitive, ignores extra spaces.
-    // SMILES can contain single ] chars (atom brackets like [O-], [NH2]),
-    // so we use a negative lookahead: match anything that is NOT the start of ]].
-    // This ensures we don't prematurely close the tag at a single ] inside the SMILES.
-    const smilesTagPattern = /(\[\[\s*SMILES:\s*(?:(?!\]\])[\s\S])*\]\]\]*)/gi;
-    const parts = text.split(smilesTagPattern);
+    // Parse SMILES tags from the text. SMILES can contain ] chars (atom brackets
+    // like [O-], [NH2]), so simple regex splitting breaks. Instead, we use a custom
+    // parser that tracks bracket depth inside the SMILES content to find the real
+    // closing ]] delimiter.
+    const segments = parseSmilesSegments(text);
 
-    parts.forEach(part => {
-        const match = part.match(/\[\[\s*SMILES:\s*((?:(?!\]\])[\s\S])*)\s*\]\]\]*/i);
-
-
-        if (match) {
-            let smiles = match[1].trim();
-            // Handle cases where the AI might have outputted [[SMILES: ...]]] (extra ] at end)
-            if (smiles.endsWith(']')) {
-                const openCount = (smiles.match(/\[/g) || []).length;
-                const closeCount = (smiles.match(/\]/g) || []).length;
-                if (closeCount > openCount) {
-                    smiles = smiles.substring(0, smiles.length - 1);
-                }
-            }
-
-
-
+    segments.forEach(seg => {
+        if (seg.type === 'smiles') {
+            let smiles = seg.content.trim();
 
             const wrapper = document.createElement('div');
-
             wrapper.className = isExplanation ? 'inline-molecule-explanation' : 'inline-molecule';
 
             // For copy-pastability, we keep the sr-only-smiles span
             if (!isExplanation) {
-                // Invisible copyable text for arrow context
                 const hiddenText = document.createElement('span');
                 hiddenText.className = 'sr-only-smiles';
                 hiddenText.innerText = `[[SMILES: ${smiles}]]`;
                 container.appendChild(hiddenText);
             }
 
-
             const canvas = document.createElement('canvas');
             canvas.className = 'molecule-canvas';
             wrapper.appendChild(canvas);
-
             container.appendChild(wrapper);
 
             // Draw small molecule
             const dpr = window.devicePixelRatio || 1;
-            const bSize = isExplanation ? 70 : 80; // Smaller for explanation to avoid overflow
+            const bSize = isExplanation ? 70 : 80;
             const size = bSize * dpr;
             canvas.style.width = bSize + "px";
             canvas.style.height = bSize + "px";
-
 
             const options = { width: size, height: size, ...smilesOptions };
             const sd = new SmilesDrawer.Drawer(options);
@@ -763,7 +815,6 @@ function renderRichText(text, container, isExplanation = false) {
                     sd.draw(tree, canvas, 'monochrome', false);
                 }, (err) => {
                     console.error("Rich SMILES err:", cleanedMol, err);
-                    // Fallback to text
                     const fallbackText = document.createElement('span');
                     fallbackText.innerText = smiles;
                     fallbackText.style.fontSize = '0.8rem';
@@ -771,11 +822,9 @@ function renderRichText(text, container, isExplanation = false) {
                 });
             }
 
-
-
-        } else if (part.trim().length > 0) {
+        } else if (seg.content.trim().length > 0) {
             const span = document.createElement('span');
-            let content = part.trim();
+            let content = seg.content.trim();
 
             // Reagents/Conditions on arrow need auto-mhchem wrapping
             // Explanation text: 
@@ -788,7 +837,6 @@ function renderRichText(text, container, isExplanation = false) {
             } else if (isExplanation) {
                 // Auto-wrap LaTeX commands in explanations if they aren't already wrapped
                 if (!content.includes('\\(') && !content.includes('\\[')) {
-                    // Match \command or things that look like LaTeX
                     if (/\\[a-zA-Z]+/.test(content)) {
                         content = content.replace(/(\\[a-zA-Z]+(?:\{.*?\})?)/g, '\\( $1 \\)');
                     }
