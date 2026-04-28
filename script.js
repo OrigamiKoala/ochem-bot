@@ -659,14 +659,7 @@ function renderMolecules(molecules, container, suffix = "") {
         const newCanvas = document.createElement('canvas');
         newCanvas.id = `canvas-${suffix}-${index}-${Date.now()}`; // Unique ID
 
-        if (index > 0) {
-            const plus = document.createElement('div');
-            plus.innerText = '+';
-            plus.className = 'plus-sign';
-            plus.style.fontSize = '1.8rem';
-            plus.style.padding = '0 5px';
-            container.appendChild(plus);
-        }
+
 
         container.appendChild(newCanvas);
 
@@ -730,13 +723,7 @@ function renderRichText(text, container, isExplanation = false) {
                 }
             }
 
-            // Horizontal separation for reagents (add + sign between multiple molecules)
-            if (!isExplanation && container.children.length > 0) {
-                const plus = document.createElement('span');
-                plus.innerText = "+";
-                plus.className = "reagent-separator";
-                container.appendChild(plus);
-            }
+
 
 
             const wrapper = document.createElement('div');
