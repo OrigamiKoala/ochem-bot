@@ -701,15 +701,15 @@ function renderRichText(text, container, isExplanation = false) {
     if (!container) return;
     container.innerHTML = '';
 
-    // Standardize regex for SMILES tags: case-insensitive, ignores extra spaces
-    const parts = text.split(/(\[\[\s*SMILES:\s*[\s\S]*?\]\s*\])/gi);
-
-
-
-
+    // Standardize regex for SMILES tags: case-insensitive, ignores extra spaces.
+    // SMILES can contain single ] chars (atom brackets like [O-], [NH2]),
+    // so we use a negative lookahead: match anything that is NOT the start of ]].
+    // This ensures we don't prematurely close the tag at a single ] inside the SMILES.
+    const smilesTagPattern = /(\[\[\s*SMILES:\s*(?:(?!\]\])[\s\S])*\]\]\]*)/gi;
+    const parts = text.split(smilesTagPattern);
 
     parts.forEach(part => {
-        const match = part.match(/\[\[SMILES:([\s\S]*?)\]\s*\]\s*\]*/);
+        const match = part.match(/\[\[\s*SMILES:\s*((?:(?!\]\])[\s\S])*)\s*\]\]\]*/i);
 
 
         if (match) {
