@@ -69,22 +69,32 @@ const reportBtn = document.getElementById('report-btn');
 // Helper to sanitize SMILES syntax to prevent parser crashes
 function cleanSmiles(smiles) {
     if (!smiles) return null;
-    let s = smiles.replace(/^\[\[SMILES: (.*?)\]\]$/, '$1').trim(); // Strip wrapping and trim
+    let s = smiles.trim();
 
-    // SMILES backslashes usually shouldn't be doubled if they come from JSON.parse
-    // However, if the API sends them escaped, we only want one level.
-    // Let's assume the string is raw SMILES.
+    // Strip [[SMILES: ...]] wrapping if still present (legacy/fallback)
+    s = s.replace(/^\[\[\s*SMILES:\s*([\s\S]*?)\s*\]\]$/, '$1').trim();
 
-    // Balance brackets
+    if (s.length === 0) return null;
+
+    // Balance brackets — only trim excess closing ] at the end (don't prepend [)
     const openBrackets = (s.match(/\[/g) || []).length;
     const closeBrackets = (s.match(/\]/g) || []).length;
-    if (openBrackets > closeBrackets) s += ']'.repeat(openBrackets - closeBrackets);
-    if (closeBrackets > openBrackets) s = '['.repeat(closeBrackets - openBrackets) + s;
+    if (openBrackets > closeBrackets) {
+        s += ']'.repeat(openBrackets - closeBrackets);
+    } else if (closeBrackets > openBrackets) {
+        // Strip excess ] from end — prepending [ would corrupt the SMILES
+        let excess = closeBrackets - openBrackets;
+        while (excess > 0 && s.endsWith(']')) {
+            s = s.substring(0, s.length - 1);
+            excess--;
+        }
+    }
 
-    // Check for hanging operators (this can happen during AI generation)
-    if (/[\-\+\=\#]$/.test(s)) {
-        // Only strip if it's not a charge at the end e.g. [O-]
-        if (!s.endsWith(']')) return null;
+    // Check for hanging bond operators (truncated AI output)
+    // Don't reject if it ends with a charge like [O-] or [NH2+]
+    if (/[\-\+\=\#]$/.test(s) && !s.endsWith(']')) {
+        console.warn("cleanSmiles: rejecting truncated SMILES:", s);
+        return null;
     }
 
     return s;
@@ -820,11 +830,23 @@ function renderRichText(text, container, isExplanation = false) {
                     fallbackText.style.fontSize = '0.8rem';
                     canvas.replaceWith(fallbackText);
                 });
+            } else {
+                // cleanSmiles returned null — show text fallback instead of blank canvas
+                console.warn("cleanSmiles returned null for:", smiles);
+                const fallbackText = document.createElement('span');
+                fallbackText.innerText = smiles;
+                fallbackText.style.fontSize = '0.8rem';
+                canvas.replaceWith(fallbackText);
             }
 
         } else if (seg.content.trim().length > 0) {
             const span = document.createElement('span');
             let content = seg.content.trim();
+
+            // Strip leading/trailing commas and separators that can break mhchem
+            // e.g. ", NaOH" from splitting around [[SMILES:...]], NaOH
+            content = content.replace(/^[,;:\s]+/, '').replace(/[,;:\s]+$/, '');
+            if (content.length === 0) return; // Nothing left after stripping
 
             // Reagents/Conditions on arrow need auto-mhchem wrapping
             // Explanation text: 
