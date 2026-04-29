@@ -29,7 +29,8 @@ export default async function handler(req, res) {
     const models = (task === 'generate') ? GENERATION_MODELS : GRADING_MODELS;
 
     // Use higher temperature for generation (variety), low for grading (consistency)
-    const temperature = (task === 'generate') ? 1.0 : 0.2;
+    const temperature = (task === 'generate') ? 1.5 : 0.2;
+    const topP = (task === 'generate') ? 0.95 : 0.8;
 
     let lastError = null;
 
@@ -55,7 +56,7 @@ export default async function handler(req, res) {
                     generationConfig: {
                         maxOutputTokens: 8192,
                         temperature,
-                        topP: 0.8,
+                        topP: topP,
                         topK: 40,
                         response_mime_type: responseMimeType || "text/plain",
                     },
