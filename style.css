@@ -611,6 +611,21 @@ body {
     overflow: hidden;
 }
 
+/* Inline formula (simple SMILES rendered as mhchem text) */
+.inline-formula {
+    display: inline;
+    margin: 0 2px;
+    vertical-align: baseline;
+    font-size: 0.95em;
+}
+
+.inline-formula-explanation {
+    display: inline;
+    margin: 0 2px;
+    vertical-align: baseline;
+    font-size: 0.95em;
+}
+
 
 
 
