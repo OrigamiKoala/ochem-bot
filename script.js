@@ -567,7 +567,7 @@ Instructions: You are an expert organic chemistry tutor. Answer the student's qu
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt })
+            body: JSON.stringify({ prompt, task: 'chat' })
         });
 
         if (!response.ok) throw new Error("API error");
@@ -1083,7 +1083,15 @@ MOST IMPORTANT: Make sure the reaction actually occurs to a significant extent, 
 5. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
 6. HYDROGENS: Do NOT use [[SMILES: ...]] for simple reagents like H2 or H+. Use plain text or the tokens above.
 7. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas. NO backslashes.
-9. Make sure the SMILES syntax is correct and proper.`;
+9. Make sure the SMILES syntax is correct and proper.
+
+SELF-VERIFICATION (mandatory):
+Before finalizing each reaction, verify:
+- Does this reaction actually work with these specific reagents and conditions? Would it appear in Clayden, Wade, or McMurry?
+- Is the product the MAJOR product (not a minor side product)?
+- Is the SMILES for both reactant and product chemically valid and balanced?
+- Are the reagents compatible with each other (no unwanted side reactions)?
+If any check fails, replace that reaction with a well-known, textbook-verified transformation.`;
 
 
         const response = await fetch('/api/chat', {
@@ -1091,6 +1099,7 @@ MOST IMPORTANT: Make sure the reaction actually occurs to a significant extent, 
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 prompt,
+                task: 'generate',
                 responseMimeType: 'application/json'
             })
         });
@@ -1372,14 +1381,17 @@ async function submitDrawing() {
 
         const prompt = `Evaluate drawing.
 Task: ${currentReaction.qtype}
-Target: ${currentReaction.reactants} [${currentReaction.reagents || currentReaction.conditions}] -> ${currentReaction.answer}
+Instructions: ${currentReaction.instructions || 'Predict the major product'}
+Reaction: ${currentReaction.reactants} + [${currentReaction.reagents || ''}] under [${currentReaction.conditions || ''}]
+Expected Answer (SMILES): ${currentReaction.answer}
+Explanation: ${currentReaction.explanation || 'N/A'}
 ${promptSnippet}`;
 
 
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, image: base64Image })
+            body: JSON.stringify({ prompt, image: base64Image, task: 'grade' })
         });
 
 
@@ -1466,7 +1478,9 @@ async function reevaluateDrawing() {
         const prompt = `The user is appealing your previous 'Incorrect' verdict for this OChem drawing.
 Task Type: ${currentReaction.qtype}
 Instructions: ${currentReaction.instructions}
-Reaction: ${currentReaction.reactants} [${currentReaction.reagents || currentReaction.conditions}] -> ${currentReaction.answer}
+Reaction: ${currentReaction.reactants} + [${currentReaction.reagents || ''}] under [${currentReaction.conditions || ''}]
+Expected Answer (SMILES): ${currentReaction.answer}
+Explanation: ${currentReaction.explanation || 'N/A'}
 Previous Feedback: ${lastFeedback}
 
 Re-evaluate VERY carefully. Is the user's drawing actually a plausible representation of the correct answer? 
@@ -1476,7 +1490,7 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, image: base64Image })
+            body: JSON.stringify({ prompt, image: base64Image, task: 'grade' })
         });
 
         if (!response.ok) throw new Error("API error");

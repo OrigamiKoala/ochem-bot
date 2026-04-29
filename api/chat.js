@@ -5,25 +5,37 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { prompt, image, responseMimeType } = req.body;
+    const { prompt, image, responseMimeType, task } = req.body;
     const API_KEY = process.env.GEMINI_API_KEY;
 
     if (!API_KEY) {
         return res.status(500).json({ error: 'GEMINI_API_KEY is not configured on the server.' });
     }
 
-    // Hierarchical model list (Always starts from the top)
-    const MODELS = [
-        "gemini-3.1-flash-lite-preview", // Primary / "Top" Bot
-        "gemini-3-flash-preview",              // Fallback 1
-        "gemini-2.5-flash"           // Fallback 2 (Highest availability)
+    // Task-based model routing: use the best model for question generation,
+    // cheaper/faster models for grading and chat where speed matters more.
+    const GENERATION_MODELS = [
+        "gemini-2.5-flash",                // Best chemistry knowledge
+        "gemini-3-flash-preview",          // Fallback 1
+        "gemini-3.1-flash-lite-preview",   // Fallback 2
     ];
+
+    const GRADING_MODELS = [
+        "gemini-3.1-flash-lite-preview",   // Fast, cheap — fine for image eval
+        "gemini-3-flash-preview",          // Fallback 1
+        "gemini-2.5-flash",                // Fallback 2
+    ];
+
+    const models = (task === 'generate') ? GENERATION_MODELS : GRADING_MODELS;
+
+    // Use higher temperature for generation (variety), low for grading (consistency)
+    const temperature = (task === 'generate') ? 1.0 : 0.2;
 
     let lastError = null;
 
-    for (const modelId of MODELS) {
+    for (const modelId of models) {
         try {
-            console.log(`Attempting request with model: ${modelId}`);
+            console.log(`[${task || 'unknown'}] Attempting request with model: ${modelId}`);
 
             const parts = [{ text: prompt }];
             if (image) {
@@ -42,7 +54,7 @@ export default async function handler(req, res) {
                     contents: [{ parts }],
                     generationConfig: {
                         maxOutputTokens: 8192,
-                        temperature: 1.0,
+                        temperature,
                         topP: 0.8,
                         topK: 40,
                         response_mime_type: responseMimeType || "text/plain",
