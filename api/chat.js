@@ -31,6 +31,7 @@ export default async function handler(req, res) {
     // Use higher temperature for generation (variety), low for grading (consistency)
     const temperature = (task === 'generate') ? 1.5 : 0.2;
     const topP = (task === 'generate') ? 0.95 : 0.8;
+    const maxOutputTokens = (task === 'generate') ? 8192 : 256;
 
     let lastError = null;
 
@@ -54,12 +55,14 @@ export default async function handler(req, res) {
                 body: JSON.stringify({
                     contents: [{ parts }],
                     generationConfig: {
-                        maxOutputTokens: 8192,
+                        maxOutputTokens,
                         temperature,
                         topP: topP,
                         topK: 40,
                         response_mime_type: responseMimeType || "text/plain",
                     },
+                    // Disable thinking for grading — pure speed
+                    ...(task !== 'generate' ? { thinkingConfig: { thinkingBudget: 0 } } : {}),
                 })
             });
 

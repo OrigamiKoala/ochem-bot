@@ -664,9 +664,33 @@ function updateSubmitDisabled() {
 }
 updateSubmitDisabled(); // Initial state
 
+// Helper to prepare drawing for AI: downscale and convert to JPEG for speed
+async function getOptimizedImage() {
+    const originalDataUrl = fabricCanvas.toDataURL({ format: 'png' });
+
+    // Use a temporary offscreen canvas for downscaling
+    const offscreen = document.createElement('canvas');
+    const scale = 0.5; // Aggressive downscale for speed — structure is still clear
+    offscreen.width = fabricCanvas.getWidth() * scale;
+    offscreen.height = fabricCanvas.getHeight() * scale;
+
+    const octx = offscreen.getContext('2d');
+
+    // Draw whitespace background
+    octx.fillStyle = "white";
+    octx.fillRect(0, 0, offscreen.width, offscreen.height);
+
+    const img = new Image();
+    img.src = originalDataUrl;
+    await new Promise(resolve => img.onload = resolve);
+    octx.drawImage(img, 0, 0, offscreen.width, offscreen.height);
+
+    // JPEG at 0.7 quality is significantly smaller than PNG
+    return offscreen.toDataURL('image/jpeg', 0.7).split(',')[1];
+}
 
 
-// // ------ Render a Reaction ------
+// ------ Submit and Evaluate ------
 function renderReaction(data, showAnswer = false) {
     const instructionDiv = document.getElementById('question-instruction');
     const moleculeDiv = document.getElementById('molecule-display');
@@ -1343,29 +1367,7 @@ async function submitDrawing() {
     updateSubmitDisabled();
 
     try {
-        // High-speed grading optimization: 
-        // 1. Capture the drawing from Fabric.js
-        // 2. Downscale to 80% for faster transmission and AI processing
-        const originalDataUrl = fabricCanvas.toDataURL({ format: 'png' });
-
-        // Use a temporary offscreen canvas for downscaling
-        const offscreen = document.createElement('canvas');
-        const scale = 0.8; // Increased resolution for better AI accuracy
-        offscreen.width = fabricCanvas.getWidth() * scale;
-        offscreen.height = fabricCanvas.getHeight() * scale;
-
-        const octx = offscreen.getContext('2d');
-
-        // Draw whitespace background
-        octx.fillStyle = "white";
-        octx.fillRect(0, 0, offscreen.width, offscreen.height);
-
-        const img = new Image();
-        img.src = originalDataUrl;
-        await new Promise(resolve => img.onload = resolve);
-        octx.drawImage(img, 0, 0, offscreen.width, offscreen.height);
-
-        const base64Image = offscreen.toDataURL('image/png').split(',')[1];
+        const base64Image = await getOptimizedImage();
 
         // Evaluation strategy depends on Mode
         let promptSnippet = "";
@@ -1472,8 +1474,7 @@ async function reevaluateDrawing() {
     isSubmitting = true;
 
     try {
-        const dataUrl = fabricCanvas.toDataURL({ format: 'png' });
-        const base64Image = dataUrl.split(',')[1];
+        const base64Image = await getOptimizedImage();
 
         const prompt = `The user is appealing your previous 'Incorrect' verdict for this OChem drawing.
 Task Type: ${currentReaction.qtype}
