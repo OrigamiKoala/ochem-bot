@@ -42,7 +42,7 @@ export default async function handler(req, res) {
                     contents: [{ parts }],
                     generationConfig: {
                         maxOutputTokens: 8192,
-                        temperature: 0.1,
+                        temperature: 1.0,
                         topP: 0.8,
                         topK: 40,
                         response_mime_type: responseMimeType || "text/plain",
