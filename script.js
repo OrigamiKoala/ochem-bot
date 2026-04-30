@@ -31,7 +31,8 @@ let reactionQueue = [];
 // ------ Queue Cache (localStorage) ------
 function saveQueueToCache() {
     try {
-        localStorage.setItem('ochem_reaction_queue', JSON.stringify(reactionQueue));
+        const queueToSave = currentReaction ? [currentReaction, ...reactionQueue] : reactionQueue;
+        localStorage.setItem('ochem_reaction_queue', JSON.stringify(queueToSave));
     } catch (e) {
         console.warn('Failed to save queue to cache:', e);
     }
@@ -1264,8 +1265,8 @@ function displayNextReaction() {
     }
 
     const nextReaction = reactionQueue.shift();
-    saveQueueToCache();
     currentReaction = nextReaction;
+    saveQueueToCache();
 
     // Reset state for new reaction
     hasSubmitted = false;
