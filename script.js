@@ -65,7 +65,7 @@ const monochromeTheme = {
     BACKGROUND: 'transparent'
 };
 const smilesOptions = {
-    padding: 30,
+    padding: 10,
     themes: { monochrome: monochromeTheme }
 };
 
