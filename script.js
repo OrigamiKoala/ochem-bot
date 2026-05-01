@@ -619,7 +619,16 @@ Instructions: You are an expert organic chemistry tutor. Answer the student's qu
             body: JSON.stringify({ prompt, task: 'chat', stream: true })
         });
 
-        if (!response.ok) throw new Error("API error");
+        if (!response.ok) {
+            const errorData = await response.json();
+            const errMsg = errorData.error || "";
+            if (response.status === 503 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity')) {
+                botMsgDiv.innerText = "The bot is currently at capacity. Please try again in a moment.";
+            } else {
+                botMsgDiv.innerText = "Oops, I'm having trouble connecting to the lab.";
+            }
+            return;
+        }
 
         await handleStream(
             response,
@@ -1137,15 +1146,17 @@ Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 33.`;
 
         if (!response.ok) {
             const errorData = await response.json();
+            const errMsg = errorData.error || "";
             console.error('Gemini API Error:', response.status, errorData);
 
-            if (response.status === 503 || response.status === 429) {
-                loadingText.innerText = "Looks like the bot's busy...Please try again in a moment.";
+            if (response.status === 503 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity')) {
+                loadingText.innerText = "The bot is currently at capacity. Please try again in a moment.";
             } else {
                 loadingText.innerText = "Oops. Looks like the bot messed up!";
             }
 
             document.getElementById('message-container').style.display = 'block';
+            isFetching = false;
             return;
         }
 
@@ -1404,10 +1415,11 @@ Explanation: ${currentReaction.explanation || 'N/A'}`;
 
         if (!response.ok) {
             const errorData = await response.json();
+            const errMsg = errorData.error || "";
             console.error('Submission Gemini API Error:', response.status, errorData);
 
-            if (response.status === 503 || response.status === 429) {
-                loadingText.innerText = "Looks like the bot's busy...Please try again in a moment.";
+            if (response.status === 503 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity')) {
+                loadingText.innerText = "The bot is currently at capacity. Please try again in a moment.";
             } else {
                 loadingText.innerText = "Oops. Looks like the bot messed up!";
             }
