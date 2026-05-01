@@ -107,8 +107,13 @@ setTimeout(resizeCanvas, 0);
 
 // Intercept global touch events to strictly prevent "pull to refresh" reloads
 document.body.addEventListener('touchmove', function (e) {
-    // Allow touch scrolling on specific containers
+    // Allow touch scrolling on specific scrollable containers
     if (e.target.closest('#about-content') || e.target.closest('#topics-list') || e.target.closest('#explanation-display') || e.target.closest('#molecule-display')) {
+        return;
+    }
+
+    // Allow vertical scrolling on #app (for whiteboard scroll) when not drawing on canvas
+    if (e.target.closest('#app') && !e.target.closest('.canvas-container')) {
         return;
     }
 

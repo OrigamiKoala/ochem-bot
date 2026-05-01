@@ -12,9 +12,10 @@ html, body {
 body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: #f4f4f9;
-    /* Prevent scrolling/bouncing/pull-to-refresh on iPad */
-    overflow: hidden;
-    touch-action: none; 
+    /* Allow vertical scrolling for the expanded whiteboard */
+    overflow-x: hidden;
+    overflow-y: auto;
+    touch-action: pan-y; 
     overscroll-behavior: none;
     overscroll-behavior-y: none;
 }
@@ -22,9 +23,11 @@ body {
 #app {
     display: flex;
     flex-direction: column;
-    height: 100vh; /* Fallback for older browsers */
-    height: 100dvh; /* Dynamic viewport height for modern mobile browsers */
+    min-height: 100vh;
+    min-height: 100dvh;
     width: 100vw;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
 }
 
 #reaction-container {
@@ -368,16 +371,19 @@ body {
 
 
 #whiteboard-container {
-    flex: 1;
     position: relative;
     background-color: #fafafa;
     /* Add a subtle dot grid pattern for the whiteboard feel */
     background-image: radial-gradient(#d7d7d7 1px, transparent 1px);
     background-size: 20px 20px;
+    /* Taller than viewport so user can scroll for more space */
+    height: 150vh;
+    min-height: 600px;
+    flex-shrink: 0;
 }
 
 #toolbar {
-    position: absolute;
+    position: fixed;
     top: 55%; /* Slightly lower to avoid top-right nav conflict */
     right: 20px;
     transform: translateY(-50%);
