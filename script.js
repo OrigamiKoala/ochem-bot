@@ -83,7 +83,7 @@ let isLearnMode = localStorage.getItem('ochem_learn_mode') === 'true';
 const learnModeToggle = document.getElementById('learn-mode-toggle');
 
 // Track drawing state via Fabric.js events
-fabricCanvas.on('path:created', function() {
+fabricCanvas.on('path:created', function () {
     if (isCanvasBlank) {
         isCanvasBlank = false;
         updateSubmitDisabled();
@@ -317,7 +317,7 @@ function repairTruncatedJSON(raw) {
 
         // Strategy: find the last complete reaction object by locating the last "},"
         // or the last "}" that closes a complete object before the truncation point.
-        
+
         // Find the position of "reactions" key
         const reactionsIdx = text.indexOf('"reactions"');
         if (reactionsIdx === -1) return null;
@@ -1074,7 +1074,7 @@ async function fetchBatchReactions(isExplicit = false) {
         }
         isInitialLoad = false; // Ensure it's false even if starter fetch failed
 
-        const prompt = `Generate 5 organic chemistry questions (Topic: ${topic}). Difficulty: ${difficultyMap[currentDifficulty]}. JSON only.
+        const prompt = `Generate 5 random organic chemistry questions (Topic: ${topic}). Difficulty: ${difficultyMap[currentDifficulty]}. JSON only.
 
 Type Mix: randomly use "predict" (Predict product), "mechanism" (Draw arrow mechanism), or "stereo" (stereochemistry focus).
 Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 1.
@@ -1161,7 +1161,7 @@ If any check fails, replace that reaction with a well-known, textbook-verified t
                     console.warn("JSON parse failed, attempting repair...", parseErr.message);
                     data = repairTruncatedJSON(rawText.trim());
                     if (!data) throw parseErr; // repair failed, surface original error
-                    console.log("JSON repair succeeded, recovered reactions:", 
+                    console.log("JSON repair succeeded, recovered reactions:",
                         (data.reactions || data).length);
                 }
 
