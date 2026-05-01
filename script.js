@@ -669,15 +669,15 @@ updateSubmitDisabled(); // Initial state
 async function getOptimizedImage() {
     const originalBg = fabricCanvas.backgroundColor;
     fabricCanvas.backgroundColor = 'white';
-    
+
     const dataUrl = fabricCanvas.toDataURL({
         format: 'jpeg',
         quality: 0.7,
         multiplier: 0.5
     });
-    
+
     fabricCanvas.backgroundColor = originalBg;
-    
+
     return dataUrl.split(',')[1];
 }
 
@@ -1064,44 +1064,9 @@ async function fetchBatchReactions(isExplicit = false) {
         }
         isInitialLoad = false; // Ensure it's false even if starter fetch failed
 
-        const prompt = `Generate 5 random unique organic chemistry questions (Topic: ${topic}). Difficulty: ${currentDifficulty}/100 (where 1 is Beginner and 100 is Advanced IChO/Collegiate). Type: ${questiontype}. JSON only.
+        const prompt = `Generate 5 random unique organic chemistry questions. Topic: ${topic}. Difficulty: ${currentDifficulty}/100 (where 1 is Beginner and 100 is Advanced IChO/Collegiate). Type: ${questiontype}. JSON only.
 
-        Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 33.
-
-Structure:
-{
-  "reactions": [
-    {
-      "qtype": "predict|mechanism|stereo",
-      "reactants": "SMILES",
-      "reagents": "Organic reagents in [[SMILES: ...]] and others in plain text. Top of arrow.",
-      "conditions": "Solvents, temperature, time, etc. in plain text. Bottom of arrow.",
-      "answer": "SMILES",
-      "instructions": "Specific task",
-      "explanation": "Detailed mechanism. Use [[SMILES: SMILES_STRING]] to draw mechanistic intermediates within the text."
-    }
-  ]
-}
-
-RULES:
-MOST IMPORTANT: Make sure the reaction actually occurs to a significant extent, and make sure reactants/reagents are correct.
-1. SPECIAL SYMBOLS — use these exact placeholder tokens instead:
-   - {DELTA} for the heat/reflux triangle symbol
-   - {deg} for the degree sign (e.g. "0 {deg}C", "-78 {deg}C")
-   - {hv} for photochemical light (h nu)
-   - {H2} for hydrogen gas (H_2)
-   - {H+} for a proton/acid catalyst (H^+)
-2. Write solvents and reagent names as plain text: "EtOH", "THF", "CH2Cl2", "H2", "H+", "H2O". Do NOT wrap them in \\text{}.
-3. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
-4. Make sure the SMILES syntax is strictly valid and uses full atomic representation. Do NOT use any abbreviations like OAc, Ph, Me, Et, Ts, tBu in SMILES strings!
-
-SELF-VERIFICATION (mandatory):
-Before finalizing each reaction, verify:
-- Does this reaction actually work with these specific reagents and conditions? Would it appear in Clayden, Wade, or McMurry?
-- Is the product the MAJOR product (not a minor side product)?
-- Is the SMILES for both reactant and product chemically valid and balanced?
-- Are the reagents compatible with each other (no unwanted side reactions)?
-Replace failed reactions with a correct one.`;
+Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 33.`;
 
 
         const response = await fetch('/api/chat', {
@@ -1355,31 +1320,22 @@ async function submitDrawing() {
     try {
         const base64Image = await getOptimizedImage();
 
-        // Evaluation strategy depends on Mode
-        let promptSnippet = "";
-        if (isLearnMode) {
-            promptSnippet = `Act as a supportive organic chemistry tutor. 
-1. If 'Incorrect', identify the specific chemical error (e.g., regio/stereo, steric clash, valency, or incorrect mechanism step) and explain the principle/rule being violated. 
-2. Be encouraging. 
-3. STATED RULE: NEVER give the answer or SMILES. Be extremely concise (max 30 words).`;
-        } else {
-            promptSnippet = `Output ONLY 'Correct' or 'Incorrect: [Subtle hint (max 10 words)]'. Be extremely concise. NEVER reveal the answer or structure.`;
-        }
-
-
-        const prompt = `Identify if the user's drawing matches the correct answer.
-Task: ${currentReaction.qtype}
+        // Dynamic context only — static grading instructions are cached server-side
+        const prompt = `Task: ${currentReaction.qtype}
 Instructions: ${currentReaction.instructions || 'Predict the major product'}
 Reaction: ${currentReaction.reactants} + [${currentReaction.reagents || ''}] under [${currentReaction.conditions || ''}]
 Expected Answer (SMILES): ${currentReaction.answer}
-Explanation: ${currentReaction.explanation || 'N/A'}
-${promptSnippet}`;
-
+Explanation: ${currentReaction.explanation || 'N/A'}`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, image: base64Image, task: 'grade' })
+            body: JSON.stringify({
+                prompt,
+                image: base64Image,
+                task: 'grade',
+                gradeMode: isLearnMode ? 'learn' : 'normal'
+            })
         });
 
 
