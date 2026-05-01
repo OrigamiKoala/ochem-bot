@@ -667,27 +667,18 @@ updateSubmitDisabled(); // Initial state
 
 // Helper to prepare drawing for AI: downscale and convert to JPEG for speed
 async function getOptimizedImage() {
-    const originalDataUrl = fabricCanvas.toDataURL({ format: 'png' });
-
-    // Use a temporary offscreen canvas for downscaling
-    const offscreen = document.createElement('canvas');
-    const scale = 0.5; // Aggressive downscale for speed — structure is still clear
-    offscreen.width = fabricCanvas.getWidth() * scale;
-    offscreen.height = fabricCanvas.getHeight() * scale;
-
-    const octx = offscreen.getContext('2d');
-
-    // Draw whitespace background
-    octx.fillStyle = "white";
-    octx.fillRect(0, 0, offscreen.width, offscreen.height);
-
-    const img = new Image();
-    img.src = originalDataUrl;
-    await new Promise(resolve => img.onload = resolve);
-    octx.drawImage(img, 0, 0, offscreen.width, offscreen.height);
-
-    // JPEG at 0.7 quality is significantly smaller than PNG
-    return offscreen.toDataURL('image/jpeg', 0.7).split(',')[1];
+    const originalBg = fabricCanvas.backgroundColor;
+    fabricCanvas.backgroundColor = 'white';
+    
+    const dataUrl = fabricCanvas.toDataURL({
+        format: 'jpeg',
+        quality: 0.7,
+        multiplier: 0.5
+    });
+    
+    fabricCanvas.backgroundColor = originalBg;
+    
+    return dataUrl.split(',')[1];
 }
 
 
