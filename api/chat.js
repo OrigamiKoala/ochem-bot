@@ -5,57 +5,44 @@ let generationCacheState = { name: null, expiry: 0 };
 let gradingLearnCacheState = { name: null, expiry: 0 };
 let gradingNormalCacheState = { name: null, expiry: 0 };
 
-const GENERATION_SYSTEM_INSTRUCTION = `You are an expert organic chemistry professor generating practice problems.
+// --- Gen-Chem mode caches (separate from ochem) ---
+let genchemGenerationCacheState = { name: null, expiry: 0 };
+let genchemGradingLearnCacheState = { name: null, expiry: 0 };
+let genchemGradingNormalCacheState = { name: null, expiry: 0 };
 
-Output JSON matching this structure exactly:
-{
-  "reactions": [
-    {
-      "qtype": "predict|mechanism|stereo",
-      "reactants": "SMILES",
-      "reagents": "Organic reagents in [[SMILES: ...]] and others in plain text. Top of arrow.",
-      "conditions": "Solvents, temperature, time, etc. in plain text. Bottom of arrow.",
-      "answer": "SMILES",
-      "instructions": "Specific task",
-      "explanation": "Detailed mechanism. Use [[SMILES: SMILES_STRING]] to draw mechanistic intermediates within the text."
-    }
-  ]
-}
+const CHALLENGE_PHILOSOPHY = `Design CREATIVE, UNIQUE, NEVER-SEEN-BEFORE problems requiring deep understanding (not niche knowledge). Problems should trick students who lack full understanding — multiple approaches seem correct but only one works. Require advanced critical thinking; solutions often involve a smart, subtle trick.`;
+
+const GENERATION_SYSTEM_INSTRUCTION = `Expert organic chemistry problem generator. Output JSON only:
+{"reactions":[{"qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], others plain text","conditions":"plain text","answer":"SMILES","instructions":"task","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
 
 RULES:
-MOST IMPORTANT: Make sure the reaction actually occurs to a significant extent, and make sure reactants/reagents are correct.
-1. SPECIAL SYMBOLS — use these exact placeholder tokens instead:
-   - {DELTA} for the heat/reflux triangle symbol
-   - {deg} for the degree sign (e.g. "0 {deg}C", "-78 {deg}C")
-   - {hv} for photochemical light (h nu)
-   - {H2} for hydrogen gas (H_2)
-   - {H+} for a proton/acid catalyst (H^+)
-2. Write solvents and reagent names as plain text: "EtOH", "THF", "CH2Cl2", "H2", "H+", "H2O". Do NOT wrap them in \\text{}.
-3. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
-4. Make sure the SMILES syntax is strictly valid and uses full atomic representation. Do NOT use any abbreviations like OAc, Ph, Me, Et, Ts, tBu in SMILES strings!
+- Reactions MUST actually occur. Verify against Clayden/Wade/McMurry.
+- Symbols: {DELTA}=heat, {deg}=°, {hv}=hν, {H2}=H₂, {H+}=H⁺
+- Plain text for solvents/reagents (EtOH, THF, H2O). No \\text{}.
+- [[SMILES: ...]] for organic reagents. Valid SMILES only — no abbreviations (Ph, Me, Et, OAc, Ts, tBu).
+- Product must be MAJOR product. SMILES must be valid and balanced.
+- ${CHALLENGE_PHILOSOPHY}`;
 
-SELF-VERIFICATION (mandatory):
-Before finalizing each reaction, verify:
-- Does this reaction actually work with these specific reagents and conditions? Would it appear in Clayden, Wade, or McMurry?
-- Is the product the MAJOR product (not a minor side product)?
-- Is the SMILES for both reactant and product chemically valid and balanced?
-- Are the reagents compatible with each other (no unwanted side reactions)?
-Replace failed reactions with a correct one.`;
+const GENCHEM_GENERATION_SYSTEM_INSTRUCTION = `Expert chemistry professor generating olympiad problems (USNCO/IChO). Cover ALL general chemistry — not just organic.
 
-const GRADING_LEARN_SYSTEM_INSTRUCTION = `You are grading a student's organic chemistry drawing.
-Identify if the user's drawing matches the correct answer.
+Output JSON only:
+{"reactions":[{"qtype":"predict|calculate|conceptual|mechanism","reactants":"SMILES/formula/description","reagents":"[[SMILES: ...]] for organic, plain text otherwise","conditions":"plain text","answer":"SMILES/formula/numeric with units","instructions":"specific task","explanation":"detailed solution with LaTeX math and [[SMILES: ...]]"}]}
 
-Act as a supportive organic chemistry tutor.
-1. If 'Incorrect', identify the specific chemical error (e.g., regio/stereo, steric clash, valency, or incorrect mechanism step) and explain the principle/rule being violated.
-2. Be encouraging.
-3. STATED RULE: NEVER give the answer or SMILES. Be extremely concise (max 30 words).
-4. Use LaTeX (e.g. \\( \\ce{H2SO4} \\)) for chemical formulas and math in your response.`;
+RULES:
+- Chemistry MUST be correct. Double-check calculations and products.
+- Symbols: {DELTA}=heat, {deg}=°, {hv}=hν, {H2}=H₂, {H+}=H⁺
+- Plain text for solvents/reagents. No \\text{}. Valid SMILES only, no abbreviations.
+- Calculations: show all steps, final answer with correct units and sig figs.
+- VISUAL DIAGRAMS: For visual questions (energy diagrams, MO, phase diagrams, titration curves, CFT splitting, data tables), embed LaTeX in 'instructions' using \\\\( ... \\\\) or \\\\[ ... \\\\]. Use arrays/matrices for tables, \\\\boxed{\\\\uparrow\\\\downarrow} for orbitals.
+- ${CHALLENGE_PHILOSOPHY}`;
 
-const GRADING_NORMAL_SYSTEM_INSTRUCTION = `You are grading a student's organic chemistry drawing.
-Identify if the user's drawing matches the correct answer.
+const GENCHEM_GRADING_LEARN_SYSTEM_INSTRUCTION = `Grade chemistry olympiad answer. If incorrect: identify specific error, explain principle violated. Be encouraging. NEVER reveal answer/SMILES. Max 30 words. Use LaTeX for formulas.`;
 
-Output ONLY 'Correct' or 'Incorrect: [Subtle hint (max 10 words)]'. Be extremely concise. NEVER reveal the answer or structure.
-Use LaTeX (e.g. \\( \\ce{H2SO4} \\)) for chemical formulas and math in your response.`;
+const GENCHEM_GRADING_NORMAL_SYSTEM_INSTRUCTION = `Grade chemistry olympiad answer. Output ONLY 'Correct' or 'Incorrect: [hint max 10 words]'. NEVER reveal answer. Use LaTeX for formulas.`;
+
+const GRADING_LEARN_SYSTEM_INSTRUCTION = `Grade organic chemistry drawing. If incorrect: identify specific error (regio/stereo/valency/mechanism), explain principle violated. Be encouraging. NEVER reveal answer/SMILES. Max 30 words. Use LaTeX for formulas.`;
+
+const GRADING_NORMAL_SYSTEM_INSTRUCTION = `Grade organic chemistry drawing. Output ONLY 'Correct' or 'Incorrect: [hint max 10 words]'. NEVER reveal answer. Use LaTeX for formulas.`;
 
 const CACHE_TTL_SECONDS = 3600; // 1 hour
 
@@ -87,9 +74,10 @@ async function ensureCache(label, modelId, apiKey, systemText, state) {
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-    const { prompt, image, responseMimeType, task, gradeMode, stream } = req.body;
-    const API_KEY = process.env.GEMINI_API_KEY;
-    if (!API_KEY) return res.status(500).json({ error: 'GEMINI_API_KEY missing' });
+    const { prompt, image, responseMimeType, task, gradeMode, stream, mode } = req.body;
+    const isGenChem = mode === 'genchem';
+    const API_KEY = isGenChem ? process.env.GEN_CHEM_API_KEY : process.env.GEMINI_API_KEY;
+    if (!API_KEY) return res.status(500).json({ error: isGenChem ? 'GEN_CHEM_API_KEY missing' : 'GEMINI_API_KEY missing' });
 
     const GENERATION_MODELS = ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-3.1-flash-lite-preview"];
     const GRADING_MODELS = ["gemini-3.1-flash-lite-preview", "gemini-3-flash-preview", "gemini-2.5-flash"];
@@ -135,16 +123,21 @@ export default async function handler(req, res) {
             const parts = [{ text: prompt }];
             if (image) parts.push({ inline_data: { mime_type: 'image/jpeg', data: image } });
 
-            // Determine cache config
+            // Determine cache config (use separate caches for genchem mode)
             let cacheLabel = null, cacheSystemText = null, cacheState = null;
             if (task === 'generate') {
-                cacheLabel = 'generation';
-                cacheSystemText = GENERATION_SYSTEM_INSTRUCTION;
-                cacheState = generationCacheState;
+                cacheLabel = isGenChem ? 'genchem-generation' : 'generation';
+                cacheSystemText = isGenChem ? GENCHEM_GENERATION_SYSTEM_INSTRUCTION : GENERATION_SYSTEM_INSTRUCTION;
+                cacheState = isGenChem ? genchemGenerationCacheState : generationCacheState;
             } else if (task === 'grade' && gradeMode) {
-                cacheLabel = `grading-${gradeMode}`;
-                cacheSystemText = (gradeMode === 'learn') ? GRADING_LEARN_SYSTEM_INSTRUCTION : GRADING_NORMAL_SYSTEM_INSTRUCTION;
-                cacheState = (gradeMode === 'learn') ? gradingLearnCacheState : gradingNormalCacheState;
+                cacheLabel = isGenChem ? `genchem-grading-${gradeMode}` : `grading-${gradeMode}`;
+                if (isGenChem) {
+                    cacheSystemText = (gradeMode === 'learn') ? GENCHEM_GRADING_LEARN_SYSTEM_INSTRUCTION : GENCHEM_GRADING_NORMAL_SYSTEM_INSTRUCTION;
+                    cacheState = (gradeMode === 'learn') ? genchemGradingLearnCacheState : genchemGradingNormalCacheState;
+                } else {
+                    cacheSystemText = (gradeMode === 'learn') ? GRADING_LEARN_SYSTEM_INSTRUCTION : GRADING_NORMAL_SYSTEM_INSTRUCTION;
+                    cacheState = (gradeMode === 'learn') ? gradingLearnCacheState : gradingNormalCacheState;
+                }
             }
 
             const genConfig = { maxOutputTokens, temperature, topP, topK: 40, response_mime_type: responseMimeType || "text/plain" };

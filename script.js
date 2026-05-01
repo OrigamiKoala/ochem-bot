@@ -29,10 +29,15 @@ let isEraser = false;
 let reactionQueue = [];
 
 // ------ Queue Cache (localStorage) ------
+// Use separate cache keys for ochem vs genchem mode
+function getQueueCacheKey() {
+    return isGenChemMode ? 'genchem_reaction_queue' : 'ochem_reaction_queue';
+}
+
 function saveQueueToCache() {
     try {
         const queueToSave = currentReaction ? [currentReaction, ...reactionQueue] : reactionQueue;
-        localStorage.setItem('ochem_reaction_queue', JSON.stringify(queueToSave));
+        localStorage.setItem(getQueueCacheKey(), JSON.stringify(queueToSave));
     } catch (e) {
         console.warn('Failed to save queue to cache:', e);
     }
@@ -40,7 +45,7 @@ function saveQueueToCache() {
 
 function loadQueueFromCache() {
     try {
-        const cached = localStorage.getItem('ochem_reaction_queue');
+        const cached = localStorage.getItem(getQueueCacheKey());
         if (cached) {
             const parsed = JSON.parse(cached);
             if (Array.isArray(parsed) && parsed.length > 0) {
@@ -153,8 +158,26 @@ if (eraseBtn) {
     });
 }
 const baseTopics = ["addition", "substitution", "elimination", "on rings", "Grignard", "redox", "protecting groups", "cycloadditions", "electrocyclic", "rearrangements", "radicals", "carbenes", "stereochemistry", "regioselectivity"];
-let userCustomTopics = JSON.parse(localStorage.getItem('ochem_custom_topics')) || [];
-let selectedTopics = JSON.parse(localStorage.getItem('ochem_selected_topics')) || [...baseTopics, ...userCustomTopics];
+const genchemBaseTopics = ["stoichiometry", "thermodynamics", "kinetics", "equilibrium", "acid-base", "electrochemistry", "atomic structure", "bonding & VSEPR", "solutions & colligative", "gas laws", "nuclear chemistry", "coordination chemistry", "descriptive inorganic", "organic reactions"];
+
+// Gen-chem mode state
+let isGenChemMode = localStorage.getItem('ochem_genchem_mode') === 'true';
+const genchemModeToggle = document.getElementById('genchem-mode-toggle');
+
+function getActiveBaseTopics() {
+    return isGenChemMode ? genchemBaseTopics : baseTopics;
+}
+
+function getSelectedTopicsKey() {
+    return isGenChemMode ? 'genchem_selected_topics' : 'ochem_selected_topics';
+}
+
+function getCustomTopicsKey() {
+    return isGenChemMode ? 'genchem_custom_topics' : 'ochem_custom_topics';
+}
+
+let userCustomTopics = JSON.parse(localStorage.getItem(getCustomTopicsKey())) || [];
+let selectedTopics = JSON.parse(localStorage.getItem(getSelectedTopicsKey())) || [...getActiveBaseTopics(), ...userCustomTopics];
 
 const settingsBtn = document.getElementById('settings-btn');
 const settingsModal = document.getElementById('settings-modal');
@@ -397,7 +420,7 @@ function initSettings() {
 
     topicsListDiv.innerHTML = '';
 
-    const allAvailableTopics = [...baseTopics, ...userCustomTopics];
+    const allAvailableTopics = [...getActiveBaseTopics(), ...userCustomTopics];
 
     allAvailableTopics.forEach(topic => {
         const item = document.createElement('div');
@@ -506,15 +529,15 @@ function addCustomTopic() {
 
     const newTopic = customTopicInput.value.trim().toLowerCase();
     if (!newTopic) return;
-    if (baseTopics.includes(newTopic) || userCustomTopics.includes(newTopic)) {
+    if (getActiveBaseTopics().includes(newTopic) || userCustomTopics.includes(newTopic)) {
         alert("Topic already exists!");
         return;
     }
 
     userCustomTopics.push(newTopic);
     selectedTopics.push(newTopic); // Auto-select new topic
-    localStorage.setItem('ochem_custom_topics', JSON.stringify(userCustomTopics));
-    localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
+    localStorage.setItem(getCustomTopicsKey(), JSON.stringify(userCustomTopics));
+    localStorage.setItem(getSelectedTopicsKey(), JSON.stringify(selectedTopics));
 
     customTopicInput.value = '';
 
@@ -530,8 +553,8 @@ function addCustomTopic() {
 function removeCustomTopic(topicToRemove) {
     userCustomTopics = userCustomTopics.filter(t => t !== topicToRemove);
     selectedTopics = selectedTopics.filter(t => t !== topicToRemove);
-    localStorage.setItem('ochem_custom_topics', JSON.stringify(userCustomTopics));
-    localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
+    localStorage.setItem(getCustomTopicsKey(), JSON.stringify(userCustomTopics));
+    localStorage.setItem(getSelectedTopicsKey(), JSON.stringify(selectedTopics));
     initSettings();
 }
 
@@ -548,8 +571,15 @@ if (settingsBtn) {
         _settingsSnapshot = {
             topics: [...selectedTopics].sort().join(','),
             difficulty: currentDifficulty,
-            learnMode: isLearnMode
+            learnMode: isLearnMode,
+            genChemMode: isGenChemMode
         };
+
+        // Set gen-chem toggle state
+        if (genchemModeToggle) {
+            genchemModeToggle.checked = isGenChemMode;
+        }
+
         initSettings();
         settingsModal.style.display = 'flex';
     });
@@ -557,10 +587,25 @@ if (settingsBtn) {
 
 if (saveSettingsBtn) {
     saveSettingsBtn.addEventListener('click', () => {
-        const checkboxes = topicsListDiv.querySelectorAll('input[type="checkbox"]');
-        selectedTopics = Array.from(checkboxes)
-            .filter(cb => cb.checked)
-            .map(cb => cb.value);
+        // Save gen-chem mode first (it affects which topics are available)
+        const prevGenChemMode = isGenChemMode;
+        if (genchemModeToggle) {
+            isGenChemMode = genchemModeToggle.checked;
+            localStorage.setItem('ochem_genchem_mode', isGenChemMode);
+        }
+
+        // If gen-chem mode changed, load that mode's saved topics (or defaults)
+        const genChemModeChanged = prevGenChemMode !== isGenChemMode;
+        if (genChemModeChanged) {
+            // Load the new mode's custom topics and selections from cache
+            userCustomTopics = JSON.parse(localStorage.getItem(getCustomTopicsKey())) || [];
+            selectedTopics = JSON.parse(localStorage.getItem(getSelectedTopicsKey())) || [...getActiveBaseTopics(), ...userCustomTopics];
+        } else {
+            const checkboxes = topicsListDiv.querySelectorAll('input[type="checkbox"]');
+            selectedTopics = Array.from(checkboxes)
+                .filter(cb => cb.checked)
+                .map(cb => cb.value);
+        }
 
         // Save difficulty
         currentDifficulty = parseInt(difficultySlider.value);
@@ -573,22 +618,23 @@ if (saveSettingsBtn) {
         }
 
         // Default to all if none selected to prevent errors
+        if (selectedTopics.length === 0) selectedTopics = [...getActiveBaseTopics(), ...userCustomTopics];
 
-        if (selectedTopics.length === 0) selectedTopics = [...baseTopics, ...userCustomTopics];
-
-        localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
+        localStorage.setItem(getSelectedTopicsKey(), JSON.stringify(selectedTopics));
         settingsModal.style.display = 'none';
 
         // Only regenerate questions if settings actually changed
         const newSnapshot = {
             topics: [...selectedTopics].sort().join(','),
             difficulty: currentDifficulty,
-            learnMode: isLearnMode
+            learnMode: isLearnMode,
+            genChemMode: isGenChemMode
         };
         const changed = !_settingsSnapshot ||
             newSnapshot.topics !== _settingsSnapshot.topics ||
             newSnapshot.difficulty !== _settingsSnapshot.difficulty ||
-            newSnapshot.learnMode !== _settingsSnapshot.learnMode;
+            newSnapshot.learnMode !== _settingsSnapshot.learnMode ||
+            newSnapshot.genChemMode !== _settingsSnapshot.genChemMode;
 
         if (changed) {
             resetQuestionUI();
@@ -630,20 +676,17 @@ async function sendFollowupQuestion() {
     chatMessages.appendChild(botMsgDiv);
 
     try {
-        const prompt = `Context:
-Reactants: ${currentReaction.reactants}
-Conditions: ${currentReaction.conditions}
-Answer: ${currentReaction.answer}
+        const prompt = `Reaction: ${currentReaction.reactants} + [${currentReaction.reagents || ''}] / [${currentReaction.conditions || ''}] → ${currentReaction.answer}
 Explanation: ${currentReaction.explanation}
 
-Student Question: ${question}
+Student asks: ${question}
 
-Instructions: You are an expert organic chemistry tutor. Answer the student's question concisely based on the reaction context above. Focus on mechanistic logic and principles. Make sure to draw out any arrow-pushing mechanisms described with SMILES.`;
+Answer concisely as ${isGenChemMode ? 'chemistry' : 'organic chemistry'} tutor. Use [[SMILES: ...]] for structures.`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, task: 'chat', stream: true })
+            body: JSON.stringify({ prompt, task: 'chat', stream: true, mode: isGenChemMode ? 'genchem' : 'ochem' })
         });
 
         if (!response.ok) {
@@ -1155,9 +1198,9 @@ async function fetchBatchReactions(isExplicit = false) {
         }
         isInitialLoad = false; // Ensure it's false even if starter fetch failed
 
-        const prompt = `Generate 5 random unique organic chemistry questions. Topic: ${topic}. Difficulty: ${currentDifficulty}/100 (where 1 is Beginner and 100 is Advanced IChO/Collegiate). Type: ${questiontype}. JSON only.
-
-Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 33.`;
+        const prompt = isGenChemMode
+            ? `5 chemistry olympiad questions. Topic: ${topic}. Difficulty: ${currentDifficulty}/100. Type: ${questiontype}. JSON only. ${currentDifficulty > 33 ? 'Allow multi-part calculations.' : ''}`
+            : `5 organic chemistry questions. Topic: ${topic}. Difficulty: ${currentDifficulty}/100. Type: ${questiontype}. JSON only. ${currentDifficulty > 33 ? 'Allow multistep reagents.' : ''}`;
 
 
         const response = await fetch('/api/chat', {
@@ -1167,7 +1210,8 @@ Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 33.`;
                 prompt,
                 task: 'generate',
                 responseMimeType: 'application/json',
-                stream: true
+                stream: true,
+                mode: isGenChemMode ? 'genchem' : 'ochem'
             })
         });
 
@@ -1420,12 +1464,9 @@ async function submitDrawing() {
     try {
         const base64Image = await getOptimizedImage();
 
-        // Dynamic context only — static grading instructions are cached server-side
-        const prompt = `Task: ${currentReaction.qtype}
-Instructions: ${currentReaction.instructions || 'Predict the major product'}
-Reaction: ${currentReaction.reactants} + [${currentReaction.reagents || ''}] under [${currentReaction.conditions || ''}]
-Expected Answer (SMILES): ${currentReaction.answer}
-Explanation: ${currentReaction.explanation || 'N/A'}`;
+        const prompt = `Task: ${currentReaction.qtype} | ${currentReaction.instructions || 'Predict the major product'}
+Reaction: ${currentReaction.reactants} + [${currentReaction.reagents || ''}] / [${currentReaction.conditions || ''}]
+Answer: ${currentReaction.answer}`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -1435,7 +1476,8 @@ Explanation: ${currentReaction.explanation || 'N/A'}`;
                 image: base64Image,
                 task: 'grade',
                 gradeMode: isLearnMode ? 'learn' : 'normal',
-                stream: true
+                stream: true,
+                mode: isGenChemMode ? 'genchem' : 'ochem'
             })
         });
 
@@ -1479,7 +1521,7 @@ Explanation: ${currentReaction.explanation || 'N/A'}`;
 
                         // Remove the correct question from cache immediately
                         // (currentReaction stays in memory so the answer can still display)
-                        localStorage.setItem('ochem_reaction_queue', JSON.stringify(reactionQueue));
+                        localStorage.setItem(getQueueCacheKey(), JSON.stringify(reactionQueue));
 
                         if (reportBtn) {
                             reportBtn.innerText = "Report Error";
@@ -1547,7 +1589,7 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, image: base64Image, task: 'grade' })
+            body: JSON.stringify({ prompt, image: base64Image, task: 'grade', mode: isGenChemMode ? 'genchem' : 'ochem' })
         });
 
         if (!response.ok) throw new Error("API error");
@@ -1563,7 +1605,7 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
                 isShowingAnswer = true;
                 updateButtonState();
                 // Remove the correct question from cache immediately
-                localStorage.setItem('ochem_reaction_queue', JSON.stringify(reactionQueue));
+                localStorage.setItem(getQueueCacheKey(), JSON.stringify(reactionQueue));
                 if (explanationDisplay) explanationDisplay.style.display = 'block';
                 renderReaction(currentReaction, true);
             } else {
