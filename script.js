@@ -1211,22 +1211,16 @@ function renderRichText(text, container, isExplanation = false) {
 
             // Reagents/Conditions on arrow need auto-mhchem wrapping
             // Explanation text: 
-            // 1. Don't auto-wrap everything (breaks fonts)
-            // 2. DO wrap LaTeX commands (starting with \) so they render
+            // We rely on the AI's math delimiters ($...$ or \[...\]) to render LaTeX properly,
+            // as auto-wrapping breaks existing delimiters and generates MathJax errors.
             if (!isExplanation && !content.includes('\\(') && !content.includes('\\[')) {
                 if (/[_^{}\\+\-]/.test(content) || content.length >= 2) {
                     content = `\\( \\ce{${content}} \\)`;
                 }
-            } else if (isExplanation) {
-                // Auto-wrap LaTeX commands in explanations if they aren't already wrapped
-                if (!content.includes('\\(') && !content.includes('\\[')) {
-                    if (/\\[a-zA-Z]+/.test(content)) {
-                        content = content.replace(/(\\[a-zA-Z]+(?:\{.*?\})?)/g, '\\( $1 \\)');
-                    }
-                }
             }
 
-            span.innerHTML = content.replace(/\n/g, '<br>');
+            // The AI often passes literal \n sequences inside the JSON string instead of true newlines.
+            span.innerHTML = content.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
             container.appendChild(span);
         }
     });
