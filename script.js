@@ -343,12 +343,27 @@ function cleanSmiles(smiles) {
 // AI outputs \frac, \sqrt, \cdot etc. inside JSON strings without escaping,
 // causing \f (form feed), \t (tab), \s (invalid), \c (invalid) parse errors.
 function fixLatexEscapes(text) {
-    return text.replace(/(\\+)([a-zA-Z])/g, (match, slashes, letter) => {
-        // If odd number of backslashes, the last one is bare — add one to make it even
-        if (slashes.length % 2 === 1) {
-            return slashes + '\\' + letter;
+    return text.replace(/(\\+)(.)/g, (match, slashes, letter, offset, string) => {
+        // If slashes count is even, they are already paired/escaped properly.
+        if (slashes.length % 2 === 0) return match;
+
+        // Do not escape valid JSON structural characters
+        if (letter === '"' || letter === '\\' || letter === '/') {
+            return match;
         }
-        return match;
+
+        // Handle Unicode escapes (\uXXXX) vs LaTeX commands starting with u (\uparrow, \under)
+        if (letter === 'u') {
+            const next4 = string.substring(offset + slashes.length + 1, offset + slashes.length + 5);
+            if (/^[0-9a-fA-F]{4}$/.test(next4)) {
+                // Valid Unicode escape sequence, leave it alone
+                return match;
+            }
+        }
+
+        // For all other cases (LaTeX symbols, commands like \frac, \text, \(, \[),
+        // we add an extra backslash to escape it properly for JSON string encoding.
+        return slashes + '\\' + letter;
     });
 }
 function repairTruncatedJSON(raw) {
@@ -359,13 +374,11 @@ function repairTruncatedJSON(raw) {
         // Strategy: find the last complete reaction object by locating the last "},"
         // or the last "}" that closes a complete object before the truncation point.
 
-        // Find the position of "reactions" key
-        const reactionsIdx = text.indexOf('"reactions"');
-        if (reactionsIdx === -1) return null;
-
-        // Find the opening bracket of the reactions array
-        const arrayStart = text.indexOf('[', reactionsIdx);
+        // Find the opening bracket of the array
+        let arrayStart = text.indexOf('[');
         if (arrayStart === -1) return null;
+
+        const isWrapped = text.indexOf('"reactions"') !== -1 && text.indexOf('"reactions"') < arrayStart;
 
         // Walk through and collect complete objects
         let depth = 0;
@@ -406,8 +419,8 @@ function repairTruncatedJSON(raw) {
 
         if (lastCompleteEnd === -1) return null; // No complete objects found
 
-        // Reconstruct valid JSON: everything up to the last complete object, then close array + object
-        const repaired = text.substring(0, lastCompleteEnd + 1) + ']}';
+        // Reconstruct valid JSON: everything up to the last complete object, then close array (+ object if wrapped)
+        const repaired = text.substring(0, lastCompleteEnd + 1) + (isWrapped ? ']}' : ']');
         return JSON.parse(repaired);
     } catch (e) {
         console.error("JSON repair failed:", e);
