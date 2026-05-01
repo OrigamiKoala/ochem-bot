@@ -901,18 +901,6 @@ function renderReaction(data, showAnswer = false) {
 
     // AI sometimes renames 'instructions' to 'instruction' or 'question'
     const questionText = data.instructions || data.instruction || data.question || data.text;
-    
-    console.log("RENDER REACTION CALLED!", {
-        dataString: JSON.stringify(data),
-        questionText: questionText,
-        instructionDiv: instructionDiv
-    });
-    
-    // TEMPORARY DEBUG: outline the div so we can see if it's there
-    if (instructionDiv) {
-        instructionDiv.style.border = "2px solid red";
-        instructionDiv.style.minHeight = "50px";
-    }
 
     // Set Instruction (with LaTeX/SMILES support)
     renderRichText(questionText || (isGenChemMode ? "" : "Predict the major product:"), instructionDiv, true);
@@ -1374,10 +1362,25 @@ async function fetchBatchReactions(isExplicit = false) {
                         }
                         const processedData = applyLatexTokens(data);
 
-                        // Support both {reactions: [...]} and direct [...]
-                        const reactions = Array.isArray(processedData) ? processedData : processedData.reactions;
+                        // Support multiple AI hallucinated shapes:
+                        // 1. { "reactions": [ { qtype... } ] }
+                        // 2. [ { qtype... } ]
+                        // 3. [ { "reactions": [ { qtype... } ] } ]
+                        let reactions = [];
+                        if (Array.isArray(processedData)) {
+                            // It's an array. Check if the elements are wrapper objects or actual reactions
+                            processedData.forEach(item => {
+                                if (item && Array.isArray(item.reactions)) {
+                                    reactions = reactions.concat(item.reactions);
+                                } else if (item && item.qtype) {
+                                    reactions.push(item);
+                                }
+                            });
+                        } else if (processedData && Array.isArray(processedData.reactions)) {
+                            reactions = processedData.reactions;
+                        }
 
-                        if (reactions && Array.isArray(reactions)) {
+                        if (reactions.length > 0) {
                             reactionQueue = [...reactionQueue, ...reactions];
                             saveQueueToCache();
                             updateQueueCount();
