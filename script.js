@@ -539,8 +539,17 @@ if (addCustomTopicBtn) {
     addCustomTopicBtn.addEventListener('click', addCustomTopic);
 }
 
+// Snapshot of settings taken when the modal opens, used to detect actual changes
+let _settingsSnapshot = null;
+
 if (settingsBtn) {
     settingsBtn.addEventListener('click', () => {
+        // Snapshot current settings before the user can modify them
+        _settingsSnapshot = {
+            topics: [...selectedTopics].sort().join(','),
+            difficulty: currentDifficulty,
+            learnMode: isLearnMode
+        };
         initSettings();
         settingsModal.style.display = 'flex';
     });
@@ -570,9 +579,22 @@ if (saveSettingsBtn) {
         localStorage.setItem('ochem_selected_topics', JSON.stringify(selectedTopics));
         settingsModal.style.display = 'none';
 
-        // Clear current state and fetch new ones immediately to reflect new settings
-        resetQuestionUI();
-        fetchBatchReactions(true);
+        // Only regenerate questions if settings actually changed
+        const newSnapshot = {
+            topics: [...selectedTopics].sort().join(','),
+            difficulty: currentDifficulty,
+            learnMode: isLearnMode
+        };
+        const changed = !_settingsSnapshot ||
+            newSnapshot.topics !== _settingsSnapshot.topics ||
+            newSnapshot.difficulty !== _settingsSnapshot.difficulty ||
+            newSnapshot.learnMode !== _settingsSnapshot.learnMode;
+
+        if (changed) {
+            resetQuestionUI();
+            fetchBatchReactions(true);
+        }
+        _settingsSnapshot = null;
     });
 }
 
