@@ -889,9 +889,21 @@ function renderReaction(data, showAnswer = false) {
     // Set Instruction (with LaTeX/SMILES support)
     renderRichText(data.instructions || "Predict the major product:", instructionDiv, true);
 
-    // Render Reactants
-    const reactantMolecules = data.reactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
-    renderMolecules(reactantMolecules, moleculeDiv);
+    // Render Reactants (guard against missing or plain-text reactants in gen-chem mode)
+    if (data.reactants) {
+        // Heuristic: if reactants looks like plain text (has spaces and no SMILES chars), render as text
+        const looksLikeSMILES = /[=\(\)#\[\]]/.test(data.reactants) || (!data.reactants.includes(' ') && data.reactants.length < 80);
+        if (looksLikeSMILES) {
+            const reactantMolecules = data.reactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
+            renderMolecules(reactantMolecules, moleculeDiv);
+        } else {
+            // Plain text description — render as rich text above the arrow
+            const reactantText = document.createElement('div');
+            reactantText.style.cssText = 'font-size: 1rem; color: #1c1c1e; margin-bottom: 8px;';
+            renderRichText(data.reactants, reactantText, true);
+            moleculeDiv.appendChild(reactantText);
+        }
+    }
 
     // Render Arrow with Reagents and Conditions
     const arrowContainer = document.createElement('div');
