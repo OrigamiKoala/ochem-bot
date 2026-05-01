@@ -1093,7 +1093,7 @@ MOST IMPORTANT: Make sure the reaction actually occurs to a significant extent, 
    - {H+} for a proton/acid catalyst (H^+)
 2. Write solvents and reagent names as plain text: "EtOH", "THF", "CH2Cl2", "H2", "H+", "H2O". Do NOT wrap them in \\text{}.
 3. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
-4. Make sure the SMILES syntax is correct and proper (no hydrogens)
+4. Make sure the SMILES syntax is strictly valid and uses full atomic representation. Do NOT use any abbreviations like OAc, Ph, Me, Et, Ts, tBu in SMILES strings!
 
 SELF-VERIFICATION (mandatory):
 Before finalizing each reaction, verify:
