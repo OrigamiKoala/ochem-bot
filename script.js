@@ -903,7 +903,7 @@ function renderReaction(data, showAnswer = false) {
     const questionText = data.instructions || data.instruction || data.question || data.text;
     
     console.log("RENDER REACTION CALLED!", {
-        data: data,
+        dataString: JSON.stringify(data),
         questionText: questionText,
         instructionDiv: instructionDiv
     });
