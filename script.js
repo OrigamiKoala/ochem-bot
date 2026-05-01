@@ -928,12 +928,25 @@ function renderReaction(data, showAnswer = false) {
         return trimmed.length > 0 && trimmed !== 'none' && trimmed !== 'n/a' && trimmed !== '-';
     }
 
+    // Helper: clean AI hallucinations of [[SMILES: ... ]] tags from fields that should be pure SMILES
+    function extractPureSmiles(str) {
+        if (!str) return "";
+        let s = str.trim();
+        // If it's wrapped in a SMILES tag, extract just the content
+        const tagMatch = /\[\[\s*SMILES:\s*(.*?)\s*\]\]/i.exec(s);
+        if (tagMatch) return tagMatch[1];
+        // Otherwise remove just the opening/closing tags if they leaked
+        return s.replace(/\[\[\s*SMILES:\s*/gi, '').replace(/\]\]/g, '').trim();
+    }
+
     // Render Reactants (guard against missing or plain-text reactants in gen-chem mode)
     if (hasContent(data.reactants)) {
-        // Heuristic: if reactants looks like plain text (has spaces and no SMILES chars), render as text
-        const looksLikeSMILES = /[=\(\)#\[\]]/.test(data.reactants) || (!data.reactants.includes(' ') && data.reactants.length < 80);
+        let cleanReactants = extractPureSmiles(data.reactants);
+        // Heuristic: pure SMILES shouldn't have spaces (unless part of a list, but usually they use dot-separated)
+        const looksLikeSMILES = !cleanReactants.includes(' ') && (/[=\(\)#\[\]]/.test(cleanReactants) || cleanReactants.length < 80);
+        
         if (looksLikeSMILES) {
-            const reactantMolecules = data.reactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
+            const reactantMolecules = cleanReactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
             renderMolecules(reactantMolecules, moleculeDiv);
         } else {
             // Plain text description — render as rich text
@@ -981,10 +994,12 @@ function renderReaction(data, showAnswer = false) {
     // If MECHANISM mode or showing answer, display the answer
     if (data.qtype === 'mechanism' || showAnswer) {
         if (data.answer) {
-            // Check if answer looks like SMILES or plain text/numeric
-            const answerLooksSMILES = /[=\(\)#\[\]]/.test(data.answer) || (!data.answer.includes(' ') && data.answer.length < 80 && /^[A-Za-z0-9@+\-\[\]\(\)\\/#=.]+$/.test(data.answer));
+            let cleanAnswer = extractPureSmiles(data.answer);
+            // Check if answer looks like pure SMILES (no spaces)
+            const answerLooksSMILES = !cleanAnswer.includes(' ') && (/[=\(\)#\[\]]/.test(cleanAnswer) || cleanAnswer.length < 80) && /^[A-Za-z0-9@+\-\[\]\(\)\\/#=.]+$/.test(cleanAnswer);
+            
             if (answerLooksSMILES) {
-                const answerMolecules = data.answer.split('.').map(s => s.trim()).filter(s => s.length > 0);
+                const answerMolecules = cleanAnswer.split('.').map(s => s.trim()).filter(s => s.length > 0);
                 renderMolecules(answerMolecules, moleculeDiv, "answer");
             } else {
                 // Plain text / numeric / formula answer
