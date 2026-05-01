@@ -436,6 +436,50 @@ if (messageRestoreBtn) {
     });
 }
 
+/**
+ * Helper to handle streaming responses from the server.
+ * Accumulates text and calls onChunk for every update, and onFinish at the end.
+ */
+async function handleStream(response, onChunk, onFinish) {
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = "";
+
+    try {
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            // Gemini API stream chunks are sometimes multiple per event or fragmented
+            const lines = chunk.split('\n');
+            
+            for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed.startsWith('data: ')) continue;
+                
+                try {
+                    const jsonStr = trimmed.replace('data: ', '');
+                    const data = JSON.parse(jsonStr);
+                    
+                    // streamGenerateContent returns candidates in each chunk
+                    if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
+                        const textChunk = data.candidates[0].content.parts[0].text || "";
+                        fullText += textChunk;
+                        if (onChunk) onChunk(fullText);
+                    }
+                } catch (e) {
+                    // Fragmented JSON or heartbeat
+                }
+            }
+        }
+    } catch (e) {
+        console.error("Stream error:", e);
+    } finally {
+        if (onFinish) onFinish(fullText);
+    }
+}
+
 function showMessage(text, className = "") {
     const loadingText = document.getElementById('loading-text');
     if (!loadingText) return;
@@ -572,18 +616,28 @@ Instructions: You are an expert organic chemistry tutor. Answer the student's qu
         const response = await fetch('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, task: 'chat' })
+            body: JSON.stringify({ prompt, task: 'chat', stream: true })
         });
 
         if (!response.ok) throw new Error("API error");
 
-        const result = await response.json();
-        if (result.candidates && result.candidates[0].content.parts[0].text) {
-            const botResponse = result.candidates[0].content.parts[0].text.trim();
-            botMsgDiv.innerText = botResponse;
-        } else {
-            botMsgDiv.innerText = "Sorry, I couldn't process that question.";
-        }
+        await handleStream(
+            response,
+            (text) => {
+                botMsgDiv.innerText = text;
+                // Scroll chat to bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            },
+            (finalText) => {
+                if (finalText) {
+                    // Render final LaTeX/SMILES
+                    renderRichText(finalText, botMsgDiv, true);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                } else {
+                    botMsgDiv.innerText = "Sorry, I couldn't process that question.";
+                }
+            }
+        );
     } catch (e) {
         console.error("Chat error:", e);
         botMsgDiv.innerText = "Oops, I'm having trouble connecting to the lab.";
@@ -1048,8 +1102,6 @@ async function fetchBatchReactions(isExplicit = false) {
 
 
     try {
-
-
         // Use user-selected topics
         const questiontypes = ["predict product", "draw arrow mechanism", "stereochemistry focus"]
         const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
@@ -1063,7 +1115,6 @@ async function fetchBatchReactions(isExplicit = false) {
                 console.log("Loading starter question:", starter.id);
                 reactionQueue.push(starter);
                 displayNextReaction();
-                // Important: We DON'T return here because we still want to fetch the rest of the batch from Gemini
             }
         }
         isInitialLoad = false; // Ensure it's false even if starter fetch failed
@@ -1079,7 +1130,8 @@ Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 33.`;
             body: JSON.stringify({
                 prompt,
                 task: 'generate',
-                responseMimeType: 'application/json'
+                responseMimeType: 'application/json',
+                stream: true
             })
         });
 
@@ -1094,8 +1146,6 @@ Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 33.`;
             }
 
             document.getElementById('message-container').style.display = 'block';
-
-            isFetching = false;
             return;
         }
 
@@ -1105,84 +1155,86 @@ Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 33.`;
             document.getElementById('message-container').style.display = 'block';
         }
 
-        const result = await response.json();
+        await handleStream(
+            response,
+            (text) => {
+                loadingText.innerText = `Generating questions... (${text.length} characters)`;
+            },
+            (finalText) => {
+                if (finalText) {
+                    let rawText = finalText;
+                    try {
+                        // Clean up markdown if model didn't obey JSON-only
+                        if (rawText.includes('```json')) {
+                            rawText = rawText.split('```json')[1].split('```')[0].trim();
+                        } else if (rawText.includes('```')) {
+                            rawText = rawText.split('```')[1].split('```')[0].trim();
+                        }
 
-        if (result.candidates && result.candidates[0].content.parts[0].text) {
-            let rawText = result.candidates[0].content.parts[0].text;
-            try {
-                // In JSON mode, rawText should be pure JSON.
-                // No sanitizer needed — the prompt forbids backslashes entirely
-                // and uses placeholder tokens ({DELTA}, {deg}, {hv}) instead.
-                let data;
-                try {
-                    data = JSON.parse(rawText.trim());
-                } catch (parseErr) {
-                    // JSON was likely truncated by token limit — attempt repair
-                    console.warn("JSON parse failed, attempting repair...", parseErr.message);
-                    data = repairTruncatedJSON(rawText.trim());
-                    if (!data) throw parseErr; // repair failed, surface original error
-                    console.log("JSON repair succeeded, recovered reactions:",
-                        (data.reactions || data).length);
-                }
+                        let data;
+                        try {
+                            data = JSON.parse(rawText.trim());
+                        } catch (parseErr) {
+                            // JSON was likely truncated by token limit — attempt repair
+                            console.warn("JSON parse failed, attempting repair...", parseErr.message);
+                            data = repairTruncatedJSON(rawText.trim());
+                            if (!data) throw parseErr; // repair failed, surface original error
+                            console.log("JSON repair succeeded, recovered reactions:", 
+                                (data.reactions || data).length);
+                        }
 
-                // Convert placeholder tokens to LaTeX in all string fields
-                function applyLatexTokens(obj) {
-                    if (typeof obj === 'string') {
-                        return obj
-                            .replace(/\{DELTA\}/g, '\\Delta')
-                            .replace(/\{deg\}/g, '^{\\circ}')
-                            .replace(/\{hv\}/g, 'h\\nu')
-                            .replace(/\{H2\}/g, 'H_2')
-                            .replace(/\{H\+\}/g, 'H^{+}');
+                        // Convert placeholder tokens to LaTeX in all string fields
+                        function applyLatexTokens(obj) {
+                            if (typeof obj === 'string') {
+                                return obj
+                                    .replace(/\{DELTA\}/g, '\\Delta')
+                                    .replace(/\{deg\}/g, '^{\\circ}')
+                                    .replace(/\{hv\}/g, 'h\\nu')
+                                    .replace(/\{H2\}/g, 'H_2')
+                                    .replace(/\{H\+\}/g, 'H^{+}');
+                            }
+                            if (Array.isArray(obj)) return obj.map(applyLatexTokens);
+                            if (obj && typeof obj === 'object') {
+                                const out = {};
+                                for (const k in obj) out[k] = applyLatexTokens(obj[k]);
+                                return out;
+                            }
+                            return obj;
+                        }
+                        const processedData = applyLatexTokens(data);
+
+                        // Support both {reactions: [...]} and direct [...]
+                        const reactions = Array.isArray(processedData) ? processedData : processedData.reactions;
+
+                        if (reactions && Array.isArray(reactions)) {
+                            reactionQueue = [...reactionQueue, ...reactions];
+                            saveQueueToCache();
+                            updateQueueCount();
+                        }
+                    } catch (e) {
+                        console.error("JSON parse error", e, rawText);
+                        loadingText.innerText = "Error parsing response.";
+                        document.getElementById('message-container').style.display = 'block';
                     }
-                    if (Array.isArray(obj)) return obj.map(applyLatexTokens);
-                    if (obj && typeof obj === 'object') {
-                        const out = {};
-                        for (const k in obj) out[k] = applyLatexTokens(obj[k]);
-                        return out;
-                    }
-                    return obj;
                 }
-                const processedData = applyLatexTokens(data);
-
-                // Support both {reactions: [...]} and direct [...]
-                const reactions = Array.isArray(processedData) ? processedData : processedData.reactions;
-
-                if (reactions && Array.isArray(reactions)) {
-                    reactionQueue = [...reactionQueue, ...reactions];
-                    saveQueueToCache();
-                    updateQueueCount();
-                }
-            } catch (e) {
-                console.error("JSON parse error", e, rawText);
-                loadingText.innerText = "Error parsing response.";
-                document.getElementById('message-container').style.display = 'block';
-
             }
-        }
+        );
     } catch (e) {
         console.error("Fetch error:", e);
         loadingText.innerText = "Oops. Looks like the bot messed up!";
         document.getElementById('message-container').style.display = 'block';
-
     } finally {
         isFetching = false;
 
         // If the user was waiting for this specific batch (queue was empty),
         // display the first reaction from the new batch.
-        // Only auto-display if the user has no active reaction (they're genuinely waiting).
-        // This prevents background prefetches or initial API batches from overwriting
-        // a question the user is currently viewing.
         if (reactionQueue.length > 0 && !currentReaction) {
             displayNextReaction();
         }
 
         // Auto-hide the loading screen if it's not showing a persistent result
-        if (loadingText.innerText === "Generating..." || loadingText.innerText === "Checking...") {
-            // These states are handled by renderReaction/grading
-        } else if (!loadingText.innerText.includes("Oops") && !loadingText.innerText.includes("busy")) {
-            // Hide container if no error/busy message is present
-            // document.getElementById('message-container').style.display = 'none';
+        if (loadingText.innerText.includes("Generating...") || loadingText.innerText.includes("Checking...")) {
+             // Handled by other logic
         }
     }
 }
@@ -1344,7 +1396,8 @@ Explanation: ${currentReaction.explanation || 'N/A'}`;
                 prompt,
                 image: base64Image,
                 task: 'grade',
-                gradeMode: isLearnMode ? 'learn' : 'normal'
+                gradeMode: isLearnMode ? 'learn' : 'normal',
+                stream: true
             })
         });
 
@@ -1369,42 +1422,45 @@ Explanation: ${currentReaction.explanation || 'N/A'}`;
             loadingText.innerText = "Taking a bit longer — switched to a backup model...";
         }
 
-        const result = await response.json();
-        if (result.candidates && result.candidates[0].content.parts[0].text) {
-            const feedback = result.candidates[0].content.parts[0].text.trim();
-            showMessage(feedback);
-            lastFeedback = feedback; // Store for Give Up
-            hasSubmitted = true;
+        await handleStream(
+            response,
+            (text) => {
+                loadingText.innerText = text;
+            },
+            (finalText) => {
+                if (finalText) {
+                    showMessage(finalText); // This handles renderRichText internally
+                    lastFeedback = finalText;
+                    hasSubmitted = true;
 
+                    if (finalText.toLowerCase().trim().startsWith('correct')) {
+                        loadingText.className = "success-text";
+                        isShowingAnswer = true; // Transition "Give up" to "New"
+                        updateButtonState();
 
-            if (feedback.toLowerCase().startsWith('correct')) {
-                loadingText.className = "success-text";
-                isShowingAnswer = true; // Transition "Give up" to "New"
-                updateButtonState();
+                        if (reportBtn) {
+                            reportBtn.innerText = "Report Error";
+                            reportBtn.style.backgroundColor = "#8e8e93";
+                        }
 
-                if (reportBtn) {
-                    reportBtn.innerText = "Report Error";
-                    reportBtn.style.backgroundColor = "#8e8e93";
+                        // Show the actual answer so the user can see it!
+                        if (explanationDisplay) {
+                            explanationDisplay.style.display = 'block';
+                        }
+                        renderReaction(currentReaction, true);
+                    } else {
+                        loadingText.className = "error-text";
+                        if (reportBtn) {
+                            reportBtn.innerText = "I was right";
+                            reportBtn.style.backgroundColor = "#ff9500"; // Orange to indicate appeal
+                        }
+                        // Ensure message is visible if it was manually closed
+                        messageContainer.style.display = 'block';
+                        messageRestoreBtn.style.display = 'none';
+                    }
                 }
-
-                // Show the actual answer so the user can see it!
-                if (explanationDisplay) {
-                    explanationDisplay.style.display = 'block';
-                }
-                renderReaction(currentReaction, true);
-            } else {
-                loadingText.className = "error-text";
-                if (reportBtn) {
-                    reportBtn.innerText = "I was right";
-                    reportBtn.style.backgroundColor = "#ff9500"; // Orange to indicate appeal
-                }
-                // Ensure message is visible if it was manually closed
-                messageContainer.style.display = 'block';
-                messageRestoreBtn.style.display = 'none';
             }
-
-
-        }
+        );
     } catch (e) {
         console.error("Submission error:", e);
         loadingText.innerText = "Oops. Looks like the bot messed up!";
