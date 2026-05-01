@@ -31,7 +31,7 @@ export default async function handler(req, res) {
     // Use higher temperature for generation (variety), low for grading (consistency)
     const temperature = (task === 'generate') ? 1.5 : 0.2;
     const topP = (task === 'generate') ? 0.95 : 0.8;
-    const maxOutputTokens = (task === 'generate') ? 8192 : 256;
+    const maxOutputTokens = (task === 'generate') ? 8192 : 1024;
 
     let lastError = null;
 
