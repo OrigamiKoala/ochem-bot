@@ -1455,6 +1455,10 @@ Explanation: ${currentReaction.explanation || 'N/A'}`;
                         isShowingAnswer = true; // Transition "Give up" to "New"
                         updateButtonState();
 
+                        // Remove the correct question from cache immediately
+                        // (currentReaction stays in memory so the answer can still display)
+                        localStorage.setItem('ochem_reaction_queue', JSON.stringify(reactionQueue));
+
                         if (reportBtn) {
                             reportBtn.innerText = "Report Error";
                             reportBtn.style.backgroundColor = "#8e8e93";
@@ -1536,6 +1540,8 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
                 loadingText.className = "success-text";
                 isShowingAnswer = true;
                 updateButtonState();
+                // Remove the correct question from cache immediately
+                localStorage.setItem('ochem_reaction_queue', JSON.stringify(reactionQueue));
                 if (explanationDisplay) explanationDisplay.style.display = 'block';
                 renderReaction(currentReaction, true);
             } else {
