@@ -1047,7 +1047,7 @@ async function fetchBatchReactions(isExplicit = false) {
 
 
         // Use user-selected topics
-        questiontypes = ["predict product", "draw arrow mechanism", "stereochemistry focus"]
+        const questiontypes = ["predict product", "draw arrow mechanism", "stereochemistry focus"]
         const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
         const questiontype = questiontypes[Math.floor(Math.random() * 3)];
 
