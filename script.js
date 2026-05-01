@@ -453,15 +453,15 @@ async function handleStream(response, onChunk, onFinish) {
             const chunk = decoder.decode(value, { stream: true });
             // Gemini API stream chunks are sometimes multiple per event or fragmented
             const lines = chunk.split('\n');
-            
+
             for (const line of lines) {
                 const trimmed = line.trim();
                 if (!trimmed.startsWith('data: ')) continue;
-                
+
                 try {
                     const jsonStr = trimmed.replace('data: ', '');
                     const data = JSON.parse(jsonStr);
-                    
+
                     // streamGenerateContent returns candidates in each chunk
                     if (data.candidates && data.candidates[0].content && data.candidates[0].content.parts) {
                         const textChunk = data.candidates[0].content.parts[0].text || "";
@@ -1149,7 +1149,7 @@ Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 33.`;
             const errMsg = errorData.error || "";
             console.error('Gemini API Error:', response.status, errorData);
 
-            if (response.status === 503 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity')) {
+            if (response.status === 503 || response.status === 500 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity')) {
                 loadingText.innerText = "The bot is currently at capacity. Please try again in a moment.";
             } else {
                 loadingText.innerText = "Oops. Looks like the bot messed up!";
@@ -1190,7 +1190,7 @@ Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 33.`;
                             console.warn("JSON parse failed, attempting repair...", parseErr.message);
                             data = repairTruncatedJSON(rawText.trim());
                             if (!data) throw parseErr; // repair failed, surface original error
-                            console.log("JSON repair succeeded, recovered reactions:", 
+                            console.log("JSON repair succeeded, recovered reactions:",
                                 (data.reactions || data).length);
                         }
 
@@ -1245,7 +1245,7 @@ Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 33.`;
 
         // Auto-hide the loading screen if it's not showing a persistent result
         if (loadingText.innerText.includes("Generating...") || loadingText.innerText.includes("Checking...")) {
-             // Handled by other logic
+            // Handled by other logic
         }
     }
 }
