@@ -887,17 +887,24 @@ function renderReaction(data, showAnswer = false) {
     if (!data) return;
 
     // Set Instruction (with LaTeX/SMILES support)
-    renderRichText(data.instructions || "Predict the major product:", instructionDiv, true);
+    renderRichText(data.instructions || (isGenChemMode ? "" : "Predict the major product:"), instructionDiv, true);
+
+    // Helper: check if a field has meaningful content (not empty, not "None", etc.)
+    function hasContent(field) {
+        if (!field) return false;
+        const trimmed = field.trim().toLowerCase();
+        return trimmed.length > 0 && trimmed !== 'none' && trimmed !== 'n/a' && trimmed !== '-';
+    }
 
     // Render Reactants (guard against missing or plain-text reactants in gen-chem mode)
-    if (data.reactants) {
+    if (hasContent(data.reactants)) {
         // Heuristic: if reactants looks like plain text (has spaces and no SMILES chars), render as text
         const looksLikeSMILES = /[=\(\)#\[\]]/.test(data.reactants) || (!data.reactants.includes(' ') && data.reactants.length < 80);
         if (looksLikeSMILES) {
             const reactantMolecules = data.reactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
             renderMolecules(reactantMolecules, moleculeDiv);
         } else {
-            // Plain text description — render as rich text above the arrow
+            // Plain text description — render as rich text
             const reactantText = document.createElement('div');
             reactantText.style.cssText = 'font-size: 1rem; color: #1c1c1e; margin-bottom: 8px;';
             renderRichText(data.reactants, reactantText, true);
@@ -905,43 +912,56 @@ function renderReaction(data, showAnswer = false) {
         }
     }
 
-    // Render Arrow with Reagents and Conditions
-    const arrowContainer = document.createElement('div');
-    arrowContainer.className = 'reaction-arrow-container';
+    // Only show the reaction arrow + reagents/conditions if there's meaningful content
+    const hasReagents = hasContent(data.reagents);
+    const hasConditions = hasContent(data.conditions);
 
-    const topRow = document.createElement('div');
-    topRow.className = 'reagents-top';
-    // Backwards compatibility for older starter.json / stored reactions
-    const reagentsText = data.reagents || data.conditions || '';
-    renderRichText(reagentsText.replace(/\\\\/g, '\\'), topRow);
+    if (hasReagents || hasConditions || hasContent(data.reactants)) {
+        const arrowContainer = document.createElement('div');
+        arrowContainer.className = 'reaction-arrow-container';
 
-    const arrowLine = document.createElement('div');
-    arrowLine.className = 'arrow-line';
-    // Remove innerHTML MathJax for the line; we'll use CSS for a better stretching arrow
+        const topRow = document.createElement('div');
+        topRow.className = 'reagents-top';
+        const reagentsText = data.reagents || data.conditions || '';
+        if (hasContent(reagentsText)) {
+            renderRichText(reagentsText.replace(/\\\\/g, '\\'), topRow);
+        }
 
-    const bottomRow = document.createElement('div');
-    bottomRow.className = 'conditions-bottom';
-    if (data.reagents) {
-        renderRichText(data.conditions || '', bottomRow);
-    }
+        const arrowLine = document.createElement('div');
+        arrowLine.className = 'arrow-line';
 
-    arrowContainer.appendChild(topRow);
-    arrowContainer.appendChild(arrowLine);
-    arrowContainer.appendChild(bottomRow);
-    moleculeDiv.appendChild(arrowContainer);
+        const bottomRow = document.createElement('div');
+        bottomRow.className = 'conditions-bottom';
+        if (hasReagents && hasConditions) {
+            renderRichText(data.conditions, bottomRow);
+        }
 
+        arrowContainer.appendChild(topRow);
+        arrowContainer.appendChild(arrowLine);
+        arrowContainer.appendChild(bottomRow);
+        moleculeDiv.appendChild(arrowContainer);
 
-
-    // If MECHANISM mode, show the final product as a target
-    if (data.qtype === 'mechanism' || showAnswer) {
-        if (data.answer) {
-            const answerMolecules = data.answer.split('.').map(s => s.trim()).filter(s => s.length > 0);
-            renderMolecules(answerMolecules, moleculeDiv, "answer");
+        if (window.MathJax && MathJax.typesetPromise) {
+            MathJax.typesetPromise([arrowContainer]).catch(err => console.error('MathJax error:', err));
         }
     }
 
-    if (window.MathJax && MathJax.typesetPromise) {
-        MathJax.typesetPromise([arrowContainer]).catch(err => console.error('MathJax error:', err));
+    // If MECHANISM mode or showing answer, display the answer
+    if (data.qtype === 'mechanism' || showAnswer) {
+        if (data.answer) {
+            // Check if answer looks like SMILES or plain text/numeric
+            const answerLooksSMILES = /[=\(\)#\[\]]/.test(data.answer) || (!data.answer.includes(' ') && data.answer.length < 80 && /^[A-Za-z0-9@+\-\[\]\(\)\\/#=.]+$/.test(data.answer));
+            if (answerLooksSMILES) {
+                const answerMolecules = data.answer.split('.').map(s => s.trim()).filter(s => s.length > 0);
+                renderMolecules(answerMolecules, moleculeDiv, "answer");
+            } else {
+                // Plain text / numeric / formula answer
+                const answerDiv = document.createElement('div');
+                answerDiv.style.cssText = 'font-size: 1.1rem; font-weight: 600; color: #34c759; margin-top: 10px; padding: 8px 12px; background: #f0faf0; border-radius: 8px;';
+                renderRichText(data.answer, answerDiv, true);
+                moleculeDiv.appendChild(answerDiv);
+            }
+        }
     }
 }
 

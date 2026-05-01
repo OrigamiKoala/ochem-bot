@@ -26,14 +26,15 @@ RULES:
 const GENCHEM_GENERATION_SYSTEM_INSTRUCTION = `Expert chemistry professor generating olympiad problems (USNCO/IChO). Cover ALL general chemistry — not just organic.
 
 Output JSON only:
-{"reactions":[{"qtype":"predict|calculate|conceptual|mechanism","reactants":"SMILES/formula/description","reagents":"[[SMILES: ...]] for organic, plain text otherwise","conditions":"plain text","answer":"SMILES/formula/numeric with units","instructions":"specific task","explanation":"detailed solution with LaTeX math and [[SMILES: ...]]"}]}
+{"reactions":[{"qtype":"predict|calculate|conceptual|mechanism","reactants":"","reagents":"","conditions":"","answer":"SMILES/formula/numeric with units","instructions":"FULL COMPLETE QUESTION TEXT here. Include all data, context, and task. Use LaTeX for math. This is the ONLY field the student sees.","explanation":"detailed solution with LaTeX math and [[SMILES: ...]]"}]}
+
+IMPORTANT: Put the ENTIRE question in 'instructions'. Leave reactants/reagents/conditions EMPTY — they are for organic reaction diagrams only.
 
 RULES:
 - Chemistry MUST be correct. Double-check calculations and products.
-- Symbols: {DELTA}=heat, {deg}=°, {hv}=hν, {H2}=H₂, {H+}=H⁺
-- Plain text for solvents/reagents. No \\text{}. Valid SMILES only, no abbreviations.
-- Calculations: show all steps, final answer with correct units and sig figs.
-- VISUAL DIAGRAMS: For visual questions (energy diagrams, MO, phase diagrams, titration curves, CFT splitting, data tables), embed LaTeX in 'instructions' using \\\\( ... \\\\) or \\\\[ ... \\\\]. Use arrays/matrices for tables, \\\\boxed{\\\\uparrow\\\\downarrow} for orbitals.
+- Valid SMILES only, no abbreviations. Use [[SMILES: ...]] for structures in instructions/explanation.
+- Calculations: show all steps in explanation, final answer with correct units and sig figs.
+- VISUAL DIAGRAMS: For visual questions, embed LaTeX in 'instructions'. Use arrays/matrices for tables.
 - ${CHALLENGE_PHILOSOPHY}`;
 
 const GENCHEM_GRADING_LEARN_SYSTEM_INSTRUCTION = `Grade chemistry olympiad answer. If incorrect: identify specific error, explain principle violated. Be encouraging. NEVER reveal answer/SMILES. Max 30 words. Use LaTeX for formulas.`;
