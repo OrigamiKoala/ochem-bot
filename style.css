@@ -53,11 +53,12 @@ body {
 }
 
 #question-instruction {
-    font-size: 1.1rem;
+    font-family: "Latin Modern", "Computer Modern", "Cambria Math", "Georgia", "Times New Roman", serif;
+    font-size: 1.15rem; /* slightly larger for readability with serif */
     font-weight: 400; /* unbolded */
     color: #000000; /* black text */
     margin-bottom: 12px;
-    width: 100%;
+    line-height: 1.5; /* improved line height for math paragraphs */
 }
 
 #explanation-display {
