@@ -439,7 +439,11 @@ if (messageRestoreBtn) {
 function showMessage(text, className = "") {
     const loadingText = document.getElementById('loading-text');
     if (!loadingText) return;
-    loadingText.innerText = text;
+
+    // Use renderRichText to support LaTeX and SMILES diagrams in bot replies
+    // We treat this as an explanation-style text for better formatting
+    renderRichText(text, loadingText, true);
+
     loadingText.className = className;
     messageContainer.style.display = 'block';
     messageRestoreBtn.style.display = 'none';
@@ -720,8 +724,8 @@ function renderReaction(data, showAnswer = false) {
 
     if (!data) return;
 
-    // Set Instruction
-    instructionDiv.innerText = data.instructions || "Predict the major product:";
+    // Set Instruction (with LaTeX/SMILES support)
+    renderRichText(data.instructions || "Predict the major product:", instructionDiv, true);
 
     // Render Reactants
     const reactantMolecules = data.reactants.split('.').map(s => s.trim()).filter(s => s.length > 0);

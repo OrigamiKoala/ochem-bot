@@ -56,12 +56,14 @@ Identify if the user's drawing matches the correct answer.
 Act as a supportive organic chemistry tutor.
 1. If 'Incorrect', identify the specific chemical error (e.g., regio/stereo, steric clash, valency, or incorrect mechanism step) and explain the principle/rule being violated.
 2. Be encouraging.
-3. STATED RULE: NEVER give the answer or SMILES. Be extremely concise (max 30 words).`;
+3. STATED RULE: NEVER give the answer or SMILES. Be extremely concise (max 30 words).
+4. Use LaTeX (e.g. \\( \\ce{H2SO4} \\)) for chemical formulas and math in your response.`;
 
 const GRADING_NORMAL_SYSTEM_INSTRUCTION = `You are grading a student's organic chemistry drawing.
 Identify if the user's drawing matches the correct answer.
 
-Output ONLY 'Correct' or 'Incorrect: [Subtle hint (max 10 words)]'. Be extremely concise. NEVER reveal the answer or structure.`;
+Output ONLY 'Correct' or 'Incorrect: [Subtle hint (max 10 words)]'. Be extremely concise. NEVER reveal the answer or structure.
+Use LaTeX (e.g. \\( \\ce{H2SO4} \\)) for chemical formulas and math in your response.`;
 
 const CACHE_TTL_SECONDS = 3600; // 1 hour
 
