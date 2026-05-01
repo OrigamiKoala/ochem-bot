@@ -899,8 +899,23 @@ function renderReaction(data, showAnswer = false) {
 
     if (!data) return;
 
+    // AI sometimes renames 'instructions' to 'instruction' or 'question'
+    const questionText = data.instructions || data.instruction || data.question || data.text;
+    
+    console.log("RENDER REACTION CALLED!", {
+        data: data,
+        questionText: questionText,
+        instructionDiv: instructionDiv
+    });
+    
+    // TEMPORARY DEBUG: outline the div so we can see if it's there
+    if (instructionDiv) {
+        instructionDiv.style.border = "2px solid red";
+        instructionDiv.style.minHeight = "50px";
+    }
+
     // Set Instruction (with LaTeX/SMILES support)
-    renderRichText(data.instructions || (isGenChemMode ? "" : "Predict the major product:"), instructionDiv, true);
+    renderRichText(questionText || (isGenChemMode ? "" : "Predict the major product:"), instructionDiv, true);
 
     // Helper: check if a field has meaningful content (not empty, not "None", etc.)
     function hasContent(field) {
