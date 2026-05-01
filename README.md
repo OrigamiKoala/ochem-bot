@@ -1,7 +1,7 @@
 # ochem-bot
 
 ## Hi!
-I'm the OChem Bot, a Gemini-powered agent to help you learn organic chemistry!
+I'm the OChem Bot, a Gemini-powered agent to help you learn both olympiad and organic chemistry!
 
 This is my repository. Check out the latest build at https://ochem-bot.vercel.app/
 
