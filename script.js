@@ -49,7 +49,23 @@ function loadQueueFromCache() {
         if (cached) {
             const parsed = JSON.parse(cached);
             if (Array.isArray(parsed) && parsed.length > 0) {
-                return parsed;
+                // Flatten out any AI-hallucinated nested {reactions: [...]} objects that got cached
+                let flattenedQueue = [];
+                parsed.forEach(item => {
+                    if (item && Array.isArray(item.reactions)) {
+                        flattenedQueue = flattenedQueue.concat(item.reactions);
+                    } else if (item && item.qtype) {
+                        flattenedQueue.push(item);
+                    }
+                });
+                
+                // If flattening produced no valid objects, clear cache and return empty to force a new fetch
+                if (flattenedQueue.length === 0) {
+                    localStorage.removeItem(getQueueCacheKey());
+                    return [];
+                }
+                
+                return flattenedQueue;
             }
         }
     } catch (e) {
