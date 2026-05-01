@@ -100,6 +100,29 @@ export default async function handler(req, res) {
     const maxOutputTokens = (task === 'generate') ? 8192 : 1024;
     const serviceTier = "priority";
 
+    // Build URL correctly — streaming endpoint already has ?, non-streaming needs ?
+    function buildUrl(modelId) {
+        if (stream) {
+            return `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse&key=${API_KEY}`;
+        }
+        return `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${API_KEY}`;
+    }
+
+    // Pipe a Web ReadableStream to a Node.js ServerResponse (Vercel compatible)
+    async function pipeStreamToResponse(webStream, res) {
+        const reader = webStream.getReader();
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                res.write(value);
+            }
+        } finally {
+            reader.releaseLock();
+            res.end();
+        }
+    }
+
     let lastError = null;
     let attemptIndex = 0;
 
@@ -107,11 +130,12 @@ export default async function handler(req, res) {
         try {
             const isFallback = attemptIndex > 0;
             attemptIndex++;
-            console.log(`[${task || 'chat'}] Trying model: ${modelId}${isFallback ? ' (fallback)' : ''}`);
+            console.log(`[${task || 'chat'}] Trying model ${attemptIndex}/${models.length}: ${modelId}${isFallback ? ' (fallback)' : ''}`);
 
             const parts = [{ text: prompt }];
             if (image) parts.push({ inline_data: { mime_type: 'image/jpeg', data: image } });
 
+            // Determine cache config
             let cacheLabel = null, cacheSystemText = null, cacheState = null;
             if (task === 'generate') {
                 cacheLabel = 'generation';
@@ -123,77 +147,100 @@ export default async function handler(req, res) {
                 cacheState = (gradeMode === 'learn') ? gradingLearnCacheState : gradingNormalCacheState;
             }
 
-            const getPayload = (cachedName) => ({
-                contents: [{ parts, role: 'user' }],
-                ...(cachedName ? { cachedContent: cachedName } : {}),
-                generationConfig: { maxOutputTokens, temperature, topP, topK: 40, response_mime_type: responseMimeType || "text/plain" },
-                service_tier: serviceTier
-            });
-
-            const endpoint = stream ? 'streamGenerateContent?alt=sse' : 'generateContent';
-            const getUrl = (mid) => `https://generativelanguage.googleapis.com/v1beta/models/${mid}:${endpoint}&key=${API_KEY}`;
+            const genConfig = { maxOutputTokens, temperature, topP, topK: 40, response_mime_type: responseMimeType || "text/plain" };
 
             // --- Try cached path first ---
             if (cacheState) {
-                const cacheName = await ensureCache(cacheLabel, modelId, API_KEY, cacheSystemText, cacheState);
+                let cacheName = null;
+                try {
+                    cacheName = await ensureCache(cacheLabel, modelId, API_KEY, cacheSystemText, cacheState);
+                } catch (cacheErr) {
+                    console.warn(`[cache:${cacheLabel}] ensureCache threw for ${modelId}:`, cacheErr.message);
+                }
+
                 if (cacheName) {
-                    const response = await fetch(getUrl(modelId), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(getPayload(cacheName)) });
+                    const payload = {
+                        contents: [{ parts, role: 'user' }],
+                        cachedContent: cacheName,
+                        generationConfig: genConfig,
+                        service_tier: serviceTier
+                    };
+
+                    const response = await fetch(buildUrl(modelId), {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
 
                     if (response.ok) {
+                        console.log(`[${task}] Success with ${modelId} (cached path)`);
                         if (isFallback) res.setHeader('X-Model-Fallback', 'true');
                         if (stream) {
                             res.setHeader('Content-Type', 'text/event-stream');
                             res.setHeader('Cache-Control', 'no-cache');
                             res.setHeader('Connection', 'keep-alive');
-                            return response.body.pipe(res);
+                            return await pipeStreamToResponse(response.body, res);
                         }
                         return res.status(200).json(await response.json());
                     }
 
-                    // Cached request failed — invalidate cache
-                    const errorData = await response.json().catch(() => ({}));
-                    console.warn(`[cache:${cacheLabel}] Model ${modelId} failed (${response.status}), invalidating cache`, errorData);
-                    cacheState.name = null; cacheState.expiry = 0;
-                    lastError = { status: response.status, data: errorData };
+                    // Cached request failed — invalidate and try next approach
+                    const errBody = await response.json().catch(() => ({}));
+                    console.warn(`[cache:${cacheLabel}] ${modelId} returned ${response.status}, invalidating cache`, errBody);
+                    cacheState.name = null;
+                    cacheState.expiry = 0;
+                    lastError = { status: response.status, data: errBody };
 
-                    // For rate limits / server errors, skip to next model immediately
-                    if (response.status === 429 || response.status === 503 || response.status >= 500) {
+                    // Server errors → skip to next model entirely
+                    if (response.status >= 500 || response.status === 429) {
                         continue;
                     }
-                    // For other errors (4xx), fall through to non-cached path for this model
+                    // 4xx → fall through to non-cached path for same model
                 }
             }
 
-            // --- Non-cached path (fallback or no cache) ---
-            const fallbackParts = cacheSystemText ? [{ text: cacheSystemText + "\n\n" + prompt }, ...parts.slice(1)] : parts;
-            const response = await fetch(getUrl(modelId), {
+            // --- Non-cached path ---
+            const fallbackParts = cacheSystemText
+                ? [{ text: cacheSystemText + "\n\n" + prompt }, ...parts.slice(1)]
+                : parts;
+
+            const response = await fetch(buildUrl(modelId), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: fallbackParts }], generationConfig: { maxOutputTokens, temperature, topP, topK: 40, response_mime_type: responseMimeType || "text/plain" }, service_tier: serviceTier })
+                body: JSON.stringify({
+                    contents: [{ parts: fallbackParts }],
+                    generationConfig: genConfig,
+                    service_tier: serviceTier
+                })
             });
 
             if (response.ok) {
+                console.log(`[${task}] Success with ${modelId} (non-cached path)`);
                 if (isFallback) res.setHeader('X-Model-Fallback', 'true');
                 if (stream) {
                     res.setHeader('Content-Type', 'text/event-stream');
                     res.setHeader('Cache-Control', 'no-cache');
                     res.setHeader('Connection', 'keep-alive');
-                    return response.body.pipe(res);
+                    return await pipeStreamToResponse(response.body, res);
                 }
                 return res.status(200).json(await response.json());
             }
 
-            // Non-OK: log and try next model
-            const errorData = await response.json().catch(() => ({}));
-            console.warn(`Model ${modelId} failed (${response.status}). Trying next model...`, errorData);
-            lastError = { status: response.status, data: errorData };
+            // Failed — log and try next model
+            const errBody = await response.json().catch(() => ({}));
+            console.warn(`[${task}] ${modelId} returned ${response.status}, trying next model...`, errBody);
+            lastError = { status: response.status, data: errBody };
             continue;
 
         } catch (error) {
-            console.error(`Fetch error with model ${modelId}:`, error);
-            lastError = { status: 500, data: { error: { message: 'Failed to reach Gemini' } } };
+            console.error(`[${task}] Exception with ${modelId}:`, error.message);
+            lastError = { status: 500, data: { error: { message: error.message || 'Failed to reach Gemini' } } };
             continue;
         }
     }
-    res.status(lastError?.status || 500).json({ error: lastError?.data?.error?.message || 'All models are currently at capacity. Please try again later.' });
+
+    console.error(`[${task}] All ${models.length} models exhausted. Last error:`, lastError);
+    res.status(lastError?.status || 500).json({
+        error: lastError?.data?.error?.message || 'All models are currently at capacity. Please try again later.'
+    });
 }
