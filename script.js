@@ -1382,7 +1382,7 @@ async function submitDrawing() {
         }
 
 
-        const prompt = `Evaluate drawing.
+        const prompt = `Identify if the user's drawing matches the correct answer.
 Task: ${currentReaction.qtype}
 Instructions: ${currentReaction.instructions || 'Predict the major product'}
 Reaction: ${currentReaction.reactants} + [${currentReaction.reagents || ''}] under [${currentReaction.conditions || ''}]
