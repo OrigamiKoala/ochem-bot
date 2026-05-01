@@ -1095,6 +1095,12 @@ Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 33.`;
             return;
         }
 
+        // Notify user if the server had to switch models
+        if (response.headers.get('X-Model-Fallback')) {
+            loadingText.innerText = "Taking a bit longer — switched to a backup model...";
+            document.getElementById('message-container').style.display = 'block';
+        }
+
         const result = await response.json();
 
         if (result.candidates && result.candidates[0].content.parts[0].text) {
@@ -1352,6 +1358,11 @@ Explanation: ${currentReaction.explanation || 'N/A'}`;
 
             loadingText.className = "error-text";
             throw new Error(`API error: ${response.status}`);
+        }
+
+        // Notify user if the server had to switch models
+        if (response.headers.get('X-Model-Fallback')) {
+            loadingText.innerText = "Taking a bit longer — switched to a backup model...";
         }
 
         const result = await response.json();

@@ -152,10 +152,13 @@ export default async function handler(req, res) {
     const maxOutputTokens = (task === 'generate') ? 8192 : 1024;
 
     let lastError = null;
+    let attemptIndex = 0;
 
     for (const modelId of models) {
         try {
-            console.log(`[${task || 'unknown'}] Attempting request with model: ${modelId}`);
+            const isFallback = attemptIndex > 0;
+            attemptIndex++;
+            console.log(`[${task || 'unknown'}] Attempting request with model: ${modelId}${isFallback ? ' (fallback)' : ''}`);
 
             const parts = [{ text: prompt }];
             if (image) {
@@ -231,6 +234,7 @@ export default async function handler(req, res) {
                     } else {
                         const data = await response.json();
                         console.log(`[cache:${cacheLabel}] Cache hit tokens:`, data.usageMetadata?.cachedContentTokenCount || 'N/A');
+                        if (isFallback) res.setHeader('X-Model-Fallback', 'true');
                         return res.status(200).json(data);
                     }
                 }
@@ -276,6 +280,7 @@ export default async function handler(req, res) {
 
             // Success!
             const data = await response.json();
+            if (isFallback) res.setHeader('X-Model-Fallback', 'true');
             return res.status(200).json(data);
 
         } catch (error) {
