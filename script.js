@@ -338,6 +338,19 @@ function cleanSmiles(smiles) {
 // Attempt to salvage truncated JSON from the AI response.
 // The typical structure is {"reactions": [{...}, {...}, ...]}
 // If the response was cut off mid-object, we find the last complete object and close the array/object.
+
+// Fix bare LaTeX backslashes in JSON text before parsing.
+// AI outputs \frac, \sqrt, \cdot etc. inside JSON strings without escaping,
+// causing \f (form feed), \t (tab), \s (invalid), \c (invalid) parse errors.
+function fixLatexEscapes(text) {
+    return text.replace(/(\\+)([a-zA-Z])/g, (match, slashes, letter) => {
+        // If odd number of backslashes, the last one is bare — add one to make it even
+        if (slashes.length % 2 === 1) {
+            return slashes + '\\' + letter;
+        }
+        return match;
+    });
+}
 function repairTruncatedJSON(raw) {
     try {
         // Strip markdown code fences if present
@@ -560,6 +573,22 @@ function removeCustomTopic(topicToRemove) {
 
 if (addCustomTopicBtn) {
     addCustomTopicBtn.addEventListener('click', addCustomTopic);
+}
+
+// Live-preview topics when gen-chem toggle changes (before Save)
+if (genchemModeToggle) {
+    genchemModeToggle.addEventListener('change', () => {
+        // Temporarily update mode so getActiveBaseTopics/getCustomTopicsKey resolve correctly
+        const previewMode = genchemModeToggle.checked;
+        const prevMode = isGenChemMode;
+        isGenChemMode = previewMode;
+        userCustomTopics = JSON.parse(localStorage.getItem(getCustomTopicsKey())) || [];
+        // Load that mode's saved selections, or default to all
+        selectedTopics = JSON.parse(localStorage.getItem(getSelectedTopicsKey())) || [...getActiveBaseTopics(), ...userCustomTopics];
+        initSettings();
+        // Restore actual mode (it only commits on Save)
+        isGenChemMode = prevMode;
+    });
 }
 
 // Snapshot of settings taken when the modal opens, used to detect actual changes
@@ -1255,11 +1284,11 @@ async function fetchBatchReactions(isExplicit = false) {
 
                         let data;
                         try {
-                            data = JSON.parse(rawText.trim());
+                            data = JSON.parse(fixLatexEscapes(rawText.trim()));
                         } catch (parseErr) {
                             // JSON was likely truncated by token limit — attempt repair
                             console.warn("JSON parse failed, attempting repair...", parseErr.message);
-                            data = repairTruncatedJSON(rawText.trim());
+                            data = repairTruncatedJSON(fixLatexEscapes(rawText.trim()));
                             if (!data) throw parseErr; // repair failed, surface original error
                             console.log("JSON repair succeeded, recovered reactions:",
                                 (data.reactions || data).length);
