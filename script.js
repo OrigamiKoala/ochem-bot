@@ -563,7 +563,7 @@ Explanation: ${currentReaction.explanation}
 
 Student Question: ${question}
 
-Instructions: You are an expert organic chemistry tutor. Answer the student's question concisely (max 30 words) based on the reaction context above. Focus on mechanistic logic and principles.`;
+Instructions: You are an expert organic chemistry tutor. Answer the student's question concisely based on the reaction context above. Focus on mechanistic logic and principles. Make sure to draw out any arrow-pushing mechanisms described with SMILES.`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -1018,8 +1018,9 @@ async function getStarterQuestion(targetTopic, targetDifficulty) {
 
     if (!starterQuestionsBuffer || starterQuestionsBuffer.length === 0) return null;
 
-    const diffMap = { 1: "beginner", 2: "intermediate", 3: "collegiate" };
-    const difficultyKey = diffMap[targetDifficulty];
+    let difficultyKey = "beginner";
+    if (targetDifficulty > 33 && targetDifficulty <= 66) difficultyKey = "intermediate";
+    else if (targetDifficulty > 66) difficultyKey = "collegiate";
     // Handle spaces as underscores (e.g. "on rings" -> "on_rings")
     const topicKey = targetTopic.replace(/\s+/g, '_');
 
@@ -1052,14 +1053,12 @@ async function fetchBatchReactions(isExplicit = false) {
 
 
     try {
-        const difficultyMap = {
-            1: "Beginner: standard functional transformations (S_N1, S_N2, E1, E2, simple additions). Single step preferred.",
-            2: "USNCO level: competitive chemistry. Regioselectivity, basic named reactions (Wittig, Robinson), some rearrangements. Can be 1-2 steps.",
-            3: "IChO/Advanced Collegiate: total synthesis segments, advanced stereocontrol, complex pericyclics, obscure reagents (e.g. DDQ, DCC, specialized organometallics). Can be 2-3 step sequences."
-        };
+
 
         // Use user-selected topics
+        questiontypes = ["predict product", "draw arrow mechanism", "stereochemistry focus"]
         const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
+        const questiontype = questiontypes[Math.floor(Math.random() * 3)];
 
         // Immediate gratification: If this is the VERY first ever question request, try starter.json first
         if (isInitialLoad && !currentReaction && reactionQueue.length === 0) {
@@ -1074,10 +1073,9 @@ async function fetchBatchReactions(isExplicit = false) {
         }
         isInitialLoad = false; // Ensure it's false even if starter fetch failed
 
-        const prompt = `Generate 5 random organic chemistry questions (Topic: ${topic}). Difficulty: ${difficultyMap[currentDifficulty]}. JSON only.
+        const prompt = `Generate 5 random unique organic chemistry questions (Topic: ${topic}). Difficulty: ${currentDifficulty}/100 (where 1 is Beginner and 100 is Advanced IChO/Collegiate). Type: ${questiontype}. JSON only.
 
-Type Mix: randomly use "predict" (Predict product), "mechanism" (Draw arrow mechanism), or "stereo" (stereochemistry focus).
-Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 1.
+        Multistep: Allow '1. reagent, 2. reagent' in conditions if difficulty > 33.
 
 Structure:
 {
@@ -1096,19 +1094,15 @@ Structure:
 
 RULES:
 MOST IMPORTANT: Make sure the reaction actually occurs to a significant extent, and make sure reactants/reagents are correct.
-1. SMILES: NO hydrogens.
-2. NO BACKSLASHES: NEVER use backslash commands (\\Delta, \\circ, \\text, etc.) anywhere in JSON. They break parsing.
-3. SPECIAL SYMBOLS — use these exact placeholder tokens instead:
+1. SPECIAL SYMBOLS — use these exact placeholder tokens instead:
    - {DELTA} for the heat/reflux triangle symbol
    - {deg} for the degree sign (e.g. "0 {deg}C", "-78 {deg}C")
    - {hv} for photochemical light (h nu)
    - {H2} for hydrogen gas (H_2)
    - {H+} for a proton/acid catalyst (H^+)
-4. Write solvents and reagent names as plain text: "EtOH", "THF", "CH2Cl2", "H2", "H+", "H2O". Do NOT wrap them in \\text{}.
-5. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
-6. HYDROGENS: Do NOT use [[SMILES: ...]] for simple reagents like H2 or H+. Use plain text or the tokens above.
-7. JSON RULES: NO actual newlines inside JSON strings. NO trailing commas. NO backslashes.
-9. Make sure the SMILES syntax is correct and proper.
+2. Write solvents and reagent names as plain text: "EtOH", "THF", "CH2Cl2", "H2", "H+", "H2O". Do NOT wrap them in \\text{}.
+3. ORGANIC REAGENTS: ALWAYS use [[SMILES: ...]] in the 'reagents' field for organic molecules.
+4. Make sure the SMILES syntax is correct and proper (no hydrogens)
 
 SELF-VERIFICATION (mandatory):
 Before finalizing each reaction, verify:
@@ -1116,7 +1110,7 @@ Before finalizing each reaction, verify:
 - Is the product the MAJOR product (not a minor side product)?
 - Is the SMILES for both reactant and product chemically valid and balanced?
 - Are the reagents compatible with each other (no unwanted side reactions)?
-If any check fails, replace that reaction with a well-known, textbook-verified transformation.`;
+Replace failed reactions with a correct one.`;
 
 
         const response = await fetch('/api/chat', {
