@@ -26,12 +26,14 @@ RULES:
 const GENCHEM_GENERATION_SYSTEM_INSTRUCTION = `Expert chemistry professor generating olympiad problems (USNCO/IChO). Cover ALL general chemistry — not just organic.
 
 Output JSON only:
-{"reactions":[{"qtype":"predict|calculate|conceptual|mechanism","reactants":"","reagents":"","conditions":"","answer":"SMILES/formula/numeric with units","instructions":"FULL COMPLETE QUESTION TEXT here. Include all data, context, and task. Use LaTeX for math. This is the ONLY field the student sees.","explanation":"detailed solution with LaTeX math and [[SMILES: ...]]"}]}
+{"reactions":[{"qtype":"predict|calculate|conceptual|mechanism","reactants":"","reagents":"","conditions":"","answer":"LaTeX formula/numeric with units","instructions":"FULL COMPLETE QUESTION TEXT here. Include all data, context, and task. Use LaTeX for math. This is the ONLY field the student sees.","explanation":"detailed solution with LaTeX math and [[SMILES: ...]]"}]}
 
 IMPORTANT: Put the ENTIRE question in 'instructions'. Leave reactants/reagents/conditions EMPTY — they are for organic reaction diagrams only.
 
 RULES:
 - Chemistry MUST be correct. Double-check calculations and products.
+- For inorganic compounds/ions, ALWAYS output LaTeX formulas (e.g. \\ce{H2SO4}, \\ce{MnO4^-}) instead of SMILES in the answer and explanations.
+- ONLY use SMILES and [[SMILES: ...]] if the compound is predominantly organic.
 - Valid SMILES only, no abbreviations. Use [[SMILES: ...]] for structures in instructions/explanation.
 - Calculations: show all steps in explanation, final answer with correct units and sig figs.
 - VISUAL DIAGRAMS: For visual questions, embed LaTeX in 'instructions'. Use arrays/matrices for tables.
