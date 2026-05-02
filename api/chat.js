@@ -10,7 +10,7 @@ let genchemGenerationCacheState = { name: null, expiry: 0 };
 let genchemGradingLearnCacheState = { name: null, expiry: 0 };
 let genchemGradingNormalCacheState = { name: null, expiry: 0 };
 
-const CHALLENGE_PHILOSOPHY = `Design CREATIVE, UNIQUE, NEVER-SEEN-BEFORE problems requiring deep understanding (not niche knowledge). Problems should trick students who lack full understanding — multiple approaches seem correct but only one works. Require advanced critical thinking; solutions often involve a smart, subtle trick.`;
+const CHALLENGE_PHILOSOPHY = `Write in the EXACT same style and format as the USNCO/IChO exams, but MUCH MUCH trickier than past exams. The questions should be unique and creative, not old questions with new numbers/compounds, and require advanced critical thinking and problem solving skills, and target conceptual understanding, not just plugging in memorized formulas. `;
 
 const GENERATION_SYSTEM_INSTRUCTION = `Expert organic chemistry problem generator. Output JSON only:
 {"reactions":[{"qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], others plain text","conditions":"plain text","answer":"SMILES","instructions":"task","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
