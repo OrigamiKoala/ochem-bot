@@ -58,13 +58,13 @@ function loadQueueFromCache() {
                         flattenedQueue.push(item);
                     }
                 });
-                
+
                 // If flattening produced no valid objects, clear cache and return empty to force a new fetch
                 if (flattenedQueue.length === 0) {
                     localStorage.removeItem(getQueueCacheKey());
                     return [];
                 }
-                
+
                 return flattenedQueue;
             }
         }
@@ -944,7 +944,7 @@ function renderReaction(data, showAnswer = false) {
         let cleanReactants = extractPureSmiles(data.reactants);
         // Heuristic: pure SMILES shouldn't have spaces (unless part of a list, but usually they use dot-separated)
         const looksLikeSMILES = !cleanReactants.includes(' ') && (/[=\(\)#\[\]]/.test(cleanReactants) || cleanReactants.length < 80);
-        
+
         if (looksLikeSMILES) {
             const reactantMolecules = cleanReactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
             renderMolecules(reactantMolecules, moleculeDiv);
@@ -997,7 +997,7 @@ function renderReaction(data, showAnswer = false) {
             let cleanAnswer = extractPureSmiles(data.answer);
             // Check if answer looks like pure SMILES (no spaces)
             const answerLooksSMILES = !cleanAnswer.includes(' ') && (/[=\(\)#\[\]]/.test(cleanAnswer) || cleanAnswer.length < 80) && /^[A-Za-z0-9@+\-\[\]\(\)\\/#=.]+$/.test(cleanAnswer);
-            
+
             if (answerLooksSMILES) {
                 const answerMolecules = cleanAnswer.split('.').map(s => s.trim()).filter(s => s.length > 0);
                 renderMolecules(answerMolecules, moleculeDiv, "answer");
@@ -1300,9 +1300,10 @@ async function fetchBatchReactions(isExplicit = false) {
         }
         isInitialLoad = false; // Ensure it's false even if starter fetch failed
 
+        const diffExplanation = "(1=beginner/introductory, 50=intermediate/USNCO level, 100=advanced/IChO level)";
         const prompt = isGenChemMode
-            ? `5 chemistry olympiad questions. Topic: ${topic}. Difficulty: ${currentDifficulty}/100. Type: ${questiontype}. JSON only. ${currentDifficulty > 33 ? 'Allow multi-part calculations.' : ''}`
-            : `5 organic chemistry questions. Topic: ${topic}. Difficulty: ${currentDifficulty}/100. Type: ${questiontype}. JSON only. ${currentDifficulty > 33 ? 'Allow multistep reagents.' : ''}`;
+            ? `5 chemistry olympiad questions. Topic: ${topic}. Difficulty: ${currentDifficulty}/100 ${diffExplanation}. Type: ${questiontype}. JSON only. ${currentDifficulty > 33 ? 'Allow multi-part calculations.' : ''}`
+            : `5 organic chemistry questions. Topic: ${topic}. Difficulty: ${currentDifficulty}/100 ${diffExplanation}. Type: ${questiontype}. JSON only. ${currentDifficulty > 33 ? 'Allow multistep reagents.' : ''}`;
 
 
         const response = await fetch('/api/chat', {
