@@ -1,6 +1,9 @@
+import { jsonrepair } from 'https://cdn.jsdelivr.net/npm/jsonrepair@3/lib/esm/index.js';
+
 // script.js
 console.log("hi!");
 const canvasEl = document.getElementById('whiteboard');
+
 const clearBtn = document.getElementById('clear-btn');
 const eraseBtn = document.getElementById('eraser-btn');
 const generateBtn = document.getElementById('generate-btn');
@@ -351,98 +354,9 @@ function cleanSmiles(smiles) {
     return s;
 }
 
-// Attempt to salvage truncated JSON from the AI response.
-// The typical structure is {"reactions": [{...}, {...}, ...]}
-// If the response was cut off mid-object, we find the last complete object and close the array/object.
-
-// Fix bare LaTeX backslashes in JSON text before parsing.
-// AI outputs \frac, \sqrt, \cdot etc. inside JSON strings without escaping,
-// causing \f (form feed), \t (tab), \s (invalid), \c (invalid) parse errors.
-function fixLatexEscapes(text) {
-    return text.replace(/(\\+)(.)/g, (match, slashes, letter, offset, string) => {
-        // If slashes count is even, they are already paired/escaped properly.
-        if (slashes.length % 2 === 0) return match;
-
-        // Do not escape valid JSON structural characters
-        if (letter === '"' || letter === '\\' || letter === '/') {
-            return match;
-        }
-
-        // Handle Unicode escapes (\uXXXX) vs LaTeX commands starting with u (\uparrow, \under)
-        if (letter === 'u') {
-            const next4 = string.substring(offset + slashes.length + 1, offset + slashes.length + 5);
-            if (/^[0-9a-fA-F]{4}$/.test(next4)) {
-                // Valid Unicode escape sequence, leave it alone
-                return match;
-            }
-        }
-
-        // For all other cases (LaTeX symbols, commands like \frac, \text, \(, \[),
-        // we add an extra backslash to escape it properly for JSON string encoding.
-        return slashes + '\\' + letter;
-    });
-}
-function repairTruncatedJSON(raw) {
-    try {
-        // Strip markdown code fences if present
-        let text = raw.replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
-
-        // Strategy: find the last complete reaction object by locating the last "},"
-        // or the last "}" that closes a complete object before the truncation point.
-
-        // Find the opening bracket of the array
-        let arrayStart = text.indexOf('[');
-        if (arrayStart === -1) return null;
-
-        const isWrapped = text.indexOf('"reactions"') !== -1 && text.indexOf('"reactions"') < arrayStart;
-
-        // Walk through and collect complete objects
-        let depth = 0;
-        let lastCompleteEnd = -1;
-        let inString = false;
-        let escapeNext = false;
-
-        for (let i = arrayStart + 1; i < text.length; i++) {
-            const ch = text[i];
-
-            if (escapeNext) {
-                escapeNext = false;
-                continue;
-            }
-
-            if (ch === '\\') {
-                if (inString) escapeNext = true;
-                continue;
-            }
-
-            if (ch === '"') {
-                inString = !inString;
-                continue;
-            }
-
-            if (inString) continue;
-
-            if (ch === '{') {
-                depth++;
-            } else if (ch === '}') {
-                depth--;
-                if (depth === 0) {
-                    // We've closed a top-level object in the array
-                    lastCompleteEnd = i;
-                }
-            }
-        }
-
-        if (lastCompleteEnd === -1) return null; // No complete objects found
-
-        // Reconstruct valid JSON: everything up to the last complete object, then close array (+ object if wrapped)
-        const repaired = text.substring(0, lastCompleteEnd + 1) + (isWrapped ? ']}' : ']');
-        return JSON.parse(repaired);
-    } catch (e) {
-        console.error("JSON repair failed:", e);
-        return null;
-    }
-}
+// JSON repair is handled by the `jsonrepair` library (imported at the top).
+// It handles truncated JSON, unescaped backslashes (e.g. LaTeX \frac),
+// missing closing brackets, markdown code fences, and more.
 
 
 // About Modal Elements
@@ -1349,22 +1263,16 @@ async function fetchBatchReactions(isExplicit = false) {
                 if (finalText) {
                     let rawText = finalText;
                     try {
-                        // Clean up markdown if model didn't obey JSON-only
-                        if (rawText.includes('```json')) {
-                            rawText = rawText.split('```json')[1].split('```')[0].trim();
-                        } else if (rawText.includes('```')) {
-                            rawText = rawText.split('```')[1].split('```')[0].trim();
-                        }
-
+                        // Use jsonrepair to fix truncated JSON, unescaped backslashes,
+                        // markdown code fences, missing brackets, etc.
                         let data;
                         try {
-                            data = JSON.parse(fixLatexEscapes(rawText.trim()));
+                            data = JSON.parse(rawText.trim());
                         } catch (parseErr) {
-                            // JSON was likely truncated by token limit — attempt repair
-                            console.warn("JSON parse failed, attempting repair...", parseErr.message);
-                            data = repairTruncatedJSON(fixLatexEscapes(rawText.trim()));
-                            if (!data) throw parseErr; // repair failed, surface original error
-                            console.log("JSON repair succeeded, recovered reactions:",
+                            console.warn("JSON parse failed, attempting jsonrepair...", parseErr.message);
+                            const repaired = jsonrepair(rawText.trim());
+                            data = JSON.parse(repaired);
+                            console.log("jsonrepair succeeded, recovered reactions:",
                                 (data.reactions || data).length);
                         }
 
