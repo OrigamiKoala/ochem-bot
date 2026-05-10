@@ -82,6 +82,41 @@ let isSubmitting = false;
 let starterQuestionsBuffer = null;
 let isInitialLoad = true;
 
+// ------ Safe MathJax Typesetting ------
+// MathJax loads asynchronously and may not be ready on slow connections (especially iPhone).
+// This helper queues elements and typesets them once MathJax is available.
+const _mathJaxQueue = [];
+let _mathJaxReady = false;
+
+function safeTypeset(element) {
+    if (_mathJaxReady && window.MathJax && MathJax.typesetPromise) {
+        MathJax.typesetPromise([element]).catch(err => console.error('MathJax error:', err));
+    } else {
+        _mathJaxQueue.push(element);
+    }
+}
+
+// Wait for MathJax to finish loading, then flush the queue
+function initMathJaxReadyHook() {
+    if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
+        MathJax.startup.promise.then(() => {
+            _mathJaxReady = true;
+            // Flush queued elements
+            while (_mathJaxQueue.length > 0) {
+                const el = _mathJaxQueue.shift();
+                // Only typeset if element is still in the DOM
+                if (document.body.contains(el)) {
+                    MathJax.typesetPromise([el]).catch(err => console.error('MathJax error:', err));
+                }
+            }
+        });
+    } else {
+        // MathJax script tag hasn't been parsed yet — retry shortly
+        setTimeout(initMathJaxReadyHook, 200);
+    }
+}
+initMathJaxReadyHook();
+
 // Monochrome theme for colorless SMILES
 const monochromeTheme = {
     C: '#000', O: '#000', N: '#000', P: '#000', S: '#000', B: '#000',
@@ -900,13 +935,11 @@ function renderReaction(data, showAnswer = false) {
         arrowContainer.appendChild(bottomRow);
         moleculeDiv.appendChild(arrowContainer);
 
-        if (window.MathJax && MathJax.typesetPromise) {
-            MathJax.typesetPromise([arrowContainer]).catch(err => console.error('MathJax error:', err));
-        }
+        safeTypeset(arrowContainer);
     }
 
-    // If MECHANISM mode or showing answer, display the answer
-    if (data.qtype === 'mechanism' || showAnswer) {
+    // Show the answer only when explicitly requested (give-up or correct submission)
+    if (showAnswer) {
         if (data.answer) {
             let cleanAnswer = extractPureSmiles(data.answer);
             // Check if answer looks like pure SMILES (no spaces)
@@ -1139,9 +1172,7 @@ function renderRichText(text, container, isExplanation = false) {
         }
     });
 
-    if (window.MathJax && MathJax.typesetPromise) {
-        MathJax.typesetPromise([container]).catch(err => console.error('MathJax error:', err));
-    }
+    safeTypeset(container);
 }
 
 
