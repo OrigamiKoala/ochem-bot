@@ -34,6 +34,7 @@ let reactionQueue = [];
 // ------ Queue Cache (localStorage) ------
 // Use separate cache keys for ochem vs genchem mode
 function getQueueCacheKey() {
+    if (isFreeDraw) return 'freedraw_reaction_queue';
     return isGenChemMode ? 'genchem_reaction_queue' : 'ochem_reaction_queue';
 }
 
@@ -217,6 +218,12 @@ const genchemBaseTopics = ["stoichiometry", "thermodynamics", "kinetics", "equil
 // Gen-chem mode state
 let isGenChemMode = localStorage.getItem('ochem_genchem_mode') === 'true';
 const genchemModeToggle = document.getElementById('genchem-mode-toggle');
+
+// Free Draw mode state
+let isFreeDraw = localStorage.getItem('ochem_freedraw_mode') === 'true';
+const freedrawModeToggle = document.getElementById('freedraw-mode-toggle');
+// If free draw is on, gen-chem must be off (and vice versa)
+if (isFreeDraw && isGenChemMode) { isGenChemMode = false; localStorage.setItem('ochem_genchem_mode', 'false'); }
 
 function getActiveBaseTopics() {
     return isGenChemMode ? genchemBaseTopics : baseTopics;
@@ -556,16 +563,45 @@ if (addCustomTopicBtn) {
 // Live-preview topics when gen-chem toggle changes (before Save)
 if (genchemModeToggle) {
     genchemModeToggle.addEventListener('change', () => {
+        // Enforce mutual exclusivity: GenChem ON → FreeDraw OFF
+        if (genchemModeToggle.checked && freedrawModeToggle) {
+            freedrawModeToggle.checked = false;
+        }
         // Temporarily update mode so getActiveBaseTopics/getCustomTopicsKey resolve correctly
         const previewMode = genchemModeToggle.checked;
         const prevMode = isGenChemMode;
+        const prevFreeDraw = isFreeDraw;
         isGenChemMode = previewMode;
+        isFreeDraw = false; // GenChem toggle changed → not free draw
         userCustomTopics = JSON.parse(localStorage.getItem(getCustomTopicsKey())) || [];
         // Load that mode's saved selections, or default to all
         selectedTopics = JSON.parse(localStorage.getItem(getSelectedTopicsKey())) || [...getActiveBaseTopics(), ...userCustomTopics];
         initSettings();
         // Restore actual mode (it only commits on Save)
         isGenChemMode = prevMode;
+        isFreeDraw = prevFreeDraw;
+    });
+}
+
+// Live-preview when free-draw toggle changes (before Save)
+if (freedrawModeToggle) {
+    freedrawModeToggle.addEventListener('change', () => {
+        // Enforce mutual exclusivity: FreeDraw ON → GenChem OFF
+        if (freedrawModeToggle.checked && genchemModeToggle) {
+            genchemModeToggle.checked = false;
+        }
+        // When FreeDraw is active, hide topics list (they don't apply)
+        const topicsSection = document.querySelector('#settings-modal .modal-content > p');
+        const customSection = document.getElementById('custom-topic-container');
+        if (freedrawModeToggle.checked) {
+            if (topicsListDiv) topicsListDiv.style.display = 'none';
+            if (topicsSection) topicsSection.style.display = 'none';
+            if (customSection) customSection.style.display = 'none';
+        } else {
+            if (topicsListDiv) topicsListDiv.style.display = '';
+            if (topicsSection) topicsSection.style.display = '';
+            if (customSection) customSection.style.display = '';
+        }
     });
 }
 
@@ -579,12 +615,30 @@ if (settingsBtn) {
             topics: [...selectedTopics].sort().join(','),
             difficulty: currentDifficulty,
             learnMode: isLearnMode,
-            genChemMode: isGenChemMode
+            genChemMode: isGenChemMode,
+            freeDrawMode: isFreeDraw
         };
 
         // Set gen-chem toggle state
         if (genchemModeToggle) {
             genchemModeToggle.checked = isGenChemMode;
+        }
+        // Set free-draw toggle state
+        if (freedrawModeToggle) {
+            freedrawModeToggle.checked = isFreeDraw;
+        }
+
+        // Show/hide topics based on current free draw state
+        const topicsSection = document.querySelector('#settings-modal .modal-content > p');
+        const customSection = document.getElementById('custom-topic-container');
+        if (isFreeDraw) {
+            if (topicsListDiv) topicsListDiv.style.display = 'none';
+            if (topicsSection) topicsSection.style.display = 'none';
+            if (customSection) customSection.style.display = 'none';
+        } else {
+            if (topicsListDiv) topicsListDiv.style.display = '';
+            if (topicsSection) topicsSection.style.display = '';
+            if (customSection) customSection.style.display = '';
         }
 
         initSettings();
@@ -594,20 +648,37 @@ if (settingsBtn) {
 
 if (saveSettingsBtn) {
     saveSettingsBtn.addEventListener('click', () => {
+        // --- Save current queue to OLD mode's cache BEFORE switching ---
+        const oldCacheKey = getQueueCacheKey();
+        const queueToSave = currentReaction ? [currentReaction, ...reactionQueue] : [...reactionQueue];
+        try { localStorage.setItem(oldCacheKey, JSON.stringify(queueToSave)); } catch(e) {}
+
         // Save gen-chem mode first (it affects which topics are available)
         const prevGenChemMode = isGenChemMode;
+        const prevFreeDraw = isFreeDraw;
         if (genchemModeToggle) {
             isGenChemMode = genchemModeToggle.checked;
             localStorage.setItem('ochem_genchem_mode', isGenChemMode);
         }
+        // Save free-draw mode (mutual exclusivity already enforced by toggle listeners)
+        if (freedrawModeToggle) {
+            isFreeDraw = freedrawModeToggle.checked;
+            localStorage.setItem('ochem_freedraw_mode', isFreeDraw);
+            // Enforce: if free draw is on, gen chem must be off
+            if (isFreeDraw && isGenChemMode) {
+                isGenChemMode = false;
+                localStorage.setItem('ochem_genchem_mode', 'false');
+            }
+        }
 
-        // If gen-chem mode changed, load that mode's saved topics (or defaults)
-        const genChemModeChanged = prevGenChemMode !== isGenChemMode;
-        if (genChemModeChanged) {
+        const modeChanged = (prevGenChemMode !== isGenChemMode) || (prevFreeDraw !== isFreeDraw);
+
+        // If mode changed, load that mode's saved topics (or defaults)
+        if (modeChanged && !isFreeDraw) {
             // Load the new mode's custom topics and selections from cache
             userCustomTopics = JSON.parse(localStorage.getItem(getCustomTopicsKey())) || [];
             selectedTopics = JSON.parse(localStorage.getItem(getSelectedTopicsKey())) || [...getActiveBaseTopics(), ...userCustomTopics];
-        } else {
+        } else if (!isFreeDraw) {
             const checkboxes = topicsListDiv.querySelectorAll('input[type="checkbox"]');
             selectedTopics = Array.from(checkboxes)
                 .filter(cb => cb.checked)
@@ -625,9 +696,9 @@ if (saveSettingsBtn) {
         }
 
         // Default to all if none selected to prevent errors
-        if (selectedTopics.length === 0) selectedTopics = [...getActiveBaseTopics(), ...userCustomTopics];
+        if (!isFreeDraw && selectedTopics.length === 0) selectedTopics = [...getActiveBaseTopics(), ...userCustomTopics];
 
-        localStorage.setItem(getSelectedTopicsKey(), JSON.stringify(selectedTopics));
+        if (!isFreeDraw) localStorage.setItem(getSelectedTopicsKey(), JSON.stringify(selectedTopics));
         settingsModal.style.display = 'none';
 
         // Only regenerate questions if settings actually changed
@@ -635,17 +706,35 @@ if (saveSettingsBtn) {
             topics: [...selectedTopics].sort().join(','),
             difficulty: currentDifficulty,
             learnMode: isLearnMode,
-            genChemMode: isGenChemMode
+            genChemMode: isGenChemMode,
+            freeDrawMode: isFreeDraw
         };
         const changed = !_settingsSnapshot ||
             newSnapshot.topics !== _settingsSnapshot.topics ||
             newSnapshot.difficulty !== _settingsSnapshot.difficulty ||
             newSnapshot.learnMode !== _settingsSnapshot.learnMode ||
-            newSnapshot.genChemMode !== _settingsSnapshot.genChemMode;
+            newSnapshot.genChemMode !== _settingsSnapshot.genChemMode ||
+            newSnapshot.freeDrawMode !== _settingsSnapshot.freeDrawMode;
 
         if (changed) {
-            resetQuestionUI();
-            fetchBatchReactions(true);
+            if (modeChanged) {
+                // Restore queue from the NEW mode's cache instead of wiping
+                currentReaction = null;
+                reactionQueue = loadQueueFromCache();
+                updateFreeDrawUI();
+                if (isFreeDraw) {
+                    enterFreeDrawMode();
+                } else if (reactionQueue.length > 0) {
+                    displayNextReaction();
+                    if (reactionQueue.length <= 2) fetchBatchReactions(false);
+                } else {
+                    resetQuestionUI();
+                    fetchBatchReactions(true);
+                }
+            } else {
+                resetQuestionUI();
+                if (!isFreeDraw) fetchBatchReactions(true);
+            }
         }
         _settingsSnapshot = null;
     });
@@ -1378,6 +1467,44 @@ async function fetchBatchReactions(isExplicit = false) {
     }
 }
 
+// ------ Free Draw Mode Helpers ------
+function enterFreeDrawMode() {
+    const instructionDiv = document.getElementById('question-instruction');
+    const moleculeDiv = document.getElementById('molecule-display');
+
+    currentReaction = null;
+    hasSubmitted = false;
+    lastFeedback = '';
+    isShowingAnswer = false;
+
+    if (instructionDiv) instructionDiv.innerText = 'Free Draw Mode — draw any mechanism and submit for grading.';
+    if (moleculeDiv) moleculeDiv.innerHTML = '';
+    if (explanationDisplay) explanationDisplay.style.display = 'none';
+    if (chatMessages) chatMessages.innerHTML = '';
+
+    // Clear whiteboard
+    fabricCanvas.clear(); fabricCanvas.backgroundColor = 'transparent';
+    isCanvasBlank = true;
+    updateSubmitDisabled();
+    updateButtonState();
+
+    // Hide loading
+    document.getElementById('message-container').style.display = 'none';
+}
+
+function updateFreeDrawUI() {
+    // Show/hide UI elements based on free draw state
+    const helpBtnEl = document.getElementById('help-btn');
+    const reportBtnEl = document.getElementById('report-btn');
+    if (isFreeDraw) {
+        if (helpBtnEl) helpBtnEl.style.display = 'none';
+        if (reportBtnEl) reportBtnEl.style.display = 'none';
+    } else {
+        if (helpBtnEl) helpBtnEl.style.display = '';
+        if (reportBtnEl) reportBtnEl.style.display = '';
+    }
+}
+
 // ------ Reset UI for new questions ------
 function resetQuestionUI() {
     currentReaction = null;
@@ -1460,7 +1587,9 @@ function updateQueueCount() {
 }
 
 function updateButtonState() {
-    if (!currentReaction) {
+    if (isFreeDraw) {
+        generateBtn.innerText = 'Clear';
+    } else if (!currentReaction) {
         generateBtn.innerText = "New";
     } else if (isShowingAnswer) {
         generateBtn.innerText = "New";
@@ -1499,7 +1628,18 @@ function handleGiveUp() {
 }
 generateBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    if (!currentReaction || isShowingAnswer) {
+    if (isFreeDraw) {
+        // In free draw, just clear the whiteboard
+        fabricCanvas.clear(); fabricCanvas.backgroundColor = 'transparent';
+        isCanvasBlank = true;
+        hasSubmitted = false;
+        lastFeedback = '';
+        isShowingAnswer = false;
+        updateSubmitDisabled();
+        updateButtonState();
+        document.getElementById('message-container').style.display = 'none';
+        if (explanationDisplay) explanationDisplay.style.display = 'none';
+    } else if (!currentReaction || isShowingAnswer) {
         displayNextReaction();
     } else {
         handleGiveUp();
@@ -1508,7 +1648,7 @@ generateBtn.addEventListener('click', (e) => {
 
 // ------ Submit and Evaluate ------
 async function submitDrawing() {
-    if (!currentReaction || isSubmitting) return;
+    if ((!currentReaction && !isFreeDraw) || isSubmitting) return;
 
     const loadingText = document.getElementById('loading-text');
     loadingText.innerText = "Checking...";
@@ -1521,7 +1661,9 @@ async function submitDrawing() {
     try {
         const base64Image = await getOptimizedImage();
 
-        const prompt = `Task: ${currentReaction.qtype} | ${currentReaction.instructions || 'Predict the major product'}
+        const prompt = isFreeDraw
+            ? `The student has drawn a chemistry mechanism on a whiteboard. There is no specific question — the student chose to draw this freely. Please evaluate the mechanism drawing for chemical plausibility, correctness of arrow-pushing notation, proper formal charges, and reasonable intermediates/products. Identify the reaction type if you recognize it.`
+            : `Task: ${currentReaction.qtype} | ${currentReaction.instructions || 'Predict the major product'}
 Reaction: ${currentReaction.reactants} + [${currentReaction.reagents || ''}] / [${currentReaction.conditions || ''}]
 Answer: ${currentReaction.answer}`;
 
@@ -1534,7 +1676,7 @@ Answer: ${currentReaction.answer}`;
                 task: 'grade',
                 gradeMode: isLearnMode ? 'learn' : 'normal',
                 stream: true,
-                mode: isGenChemMode ? 'genchem' : 'ochem'
+                mode: isFreeDraw ? 'freedraw' : (isGenChemMode ? 'genchem' : 'ochem')
             })
         });
 
@@ -1571,14 +1713,16 @@ Answer: ${currentReaction.answer}`;
                     lastFeedback = finalText;
                     hasSubmitted = true;
 
-                    if (finalText.toLowerCase().trim().startsWith('correct')) {
+                    if (finalText.toLowerCase().trim().startsWith('correct') || (isFreeDraw && finalText.toLowerCase().trim().startsWith('plausible'))) {
                         loadingText.className = "success-text";
                         isShowingAnswer = true; // Transition "Give up" to "New"
                         updateButtonState();
 
-                        // Remove the correct question from cache immediately
-                        // (currentReaction stays in memory so the answer can still display)
-                        localStorage.setItem(getQueueCacheKey(), JSON.stringify(reactionQueue));
+                        if (!isFreeDraw) {
+                            // Remove the correct question from cache immediately
+                            // (currentReaction stays in memory so the answer can still display)
+                            localStorage.setItem(getQueueCacheKey(), JSON.stringify(reactionQueue));
+                        }
 
                         if (reportBtn) {
                             reportBtn.innerText = "Report Error";
@@ -1586,13 +1730,13 @@ Answer: ${currentReaction.answer}`;
                         }
 
                         // Show the actual answer so the user can see it!
-                        if (explanationDisplay) {
+                        if (explanationDisplay && !isFreeDraw) {
                             explanationDisplay.style.display = 'block';
                         }
-                        renderReaction(currentReaction, true);
+                        if (!isFreeDraw) renderReaction(currentReaction, true);
                     } else {
                         loadingText.className = "error-text";
-                        if (reportBtn) {
+                        if (reportBtn && !isFreeDraw) {
                             reportBtn.innerText = "I was right";
                             reportBtn.style.backgroundColor = "#ff9500"; // Orange to indicate appeal
                         }
@@ -1692,15 +1836,19 @@ if (reportBtn) {
 }
 
 // Initial load — restore cached questions first, then fetch if needed
-const cachedQueue = loadQueueFromCache();
-if (cachedQueue.length > 0) {
-    reactionQueue = cachedQueue;
-    displayNextReaction();
-    // Still fetch more in the background if running low
-    if (reactionQueue.length <= 2) {
-        fetchBatchReactions(false);
-    }
+updateFreeDrawUI();
+if (isFreeDraw) {
+    enterFreeDrawMode();
 } else {
-    fetchBatchReactions(true);
+    const cachedQueue = loadQueueFromCache();
+    if (cachedQueue.length > 0) {
+        reactionQueue = cachedQueue;
+        displayNextReaction();
+        // Still fetch more in the background if running low
+        if (reactionQueue.length <= 2) {
+            fetchBatchReactions(false);
+        }
+    } else {
+        fetchBatchReactions(true);
+    }
 }
-

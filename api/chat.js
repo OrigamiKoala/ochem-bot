@@ -10,6 +10,10 @@ let genchemGenerationCacheState = { name: null, expiry: 0 };
 let genchemGradingLearnCacheState = { name: null, expiry: 0 };
 let genchemGradingNormalCacheState = { name: null, expiry: 0 };
 
+// --- Free Draw mode caches ---
+let freedrawGradingLearnCacheState = { name: null, expiry: 0 };
+let freedrawGradingNormalCacheState = { name: null, expiry: 0 };
+
 const CHALLENGE_PHILOSOPHY = `Write in the EXACT same style and format as the USNCO/IChO exams, with the appropriate difficulty. The questions should be unique and creative, not old questions with new numbers/compounds, and require advanced critical thinking and problem solving skills, and target conceptual understanding, not just plugging in memorized formulas. `;
 
 const GENERATION_SYSTEM_INSTRUCTION = `Expert organic chemistry problem generator. Output JSON only:
@@ -42,6 +46,15 @@ RULES:
 const GENCHEM_GRADING_LEARN_SYSTEM_INSTRUCTION = `Grade chemistry olympiad answer. If incorrect: identify specific error, explain principle violated. Be encouraging. NEVER reveal answer/SMILES. Max 30 words. Use LaTeX for formulas.`;
 
 const GENCHEM_GRADING_NORMAL_SYSTEM_INSTRUCTION = `Grade chemistry olympiad answer. Output ONLY 'Correct' or 'Incorrect: [hint max 10 words]'. NEVER reveal answer. Use LaTeX for formulas.`;
+
+const FREEDRAW_GRADING_LEARN_SYSTEM_INSTRUCTION = `You are evaluating a chemistry mechanism drawing submitted WITHOUT a specific question prompt. The student drew a mechanism of their choosing. Evaluate it for:
+1. Chemical plausibility (do the electron-pushing arrows make sense?)
+2. Correct use of formal charges and lone pairs
+3. Reasonable intermediates and products
+4. Proper arrow notation
+Identify the reaction type if recognizable. Point out specific errors (e.g. impossible bond formation, incorrect electron flow, valency violations). Be encouraging and educational. Max 50 words. Use LaTeX for formulas and [[SMILES: ...]] for structures.`;
+
+const FREEDRAW_GRADING_NORMAL_SYSTEM_INSTRUCTION = `You are evaluating a chemistry mechanism drawing submitted WITHOUT a specific question prompt. The student drew a mechanism of their choosing. Assess chemical plausibility. Output ONLY: 'Plausible: [brief comment]' or 'Implausible: [brief reason]'. Max 15 words. Use LaTeX for formulas.`;
 
 const GRADING_LEARN_SYSTEM_INSTRUCTION = `Grade organic chemistry drawing. If incorrect: identify specific error (regio/stereo/valency/mechanism), explain principle violated. Be encouraging. NEVER reveal answer/SMILES. Max 30 words. Use LaTeX for formulas.`;
 
@@ -79,6 +92,7 @@ export default async function handler(req, res) {
 
     const { prompt, image, responseMimeType, task, gradeMode, stream, mode } = req.body;
     const isGenChem = mode === 'genchem';
+    const isFreeDraw = mode === 'freedraw';
     const API_KEY = isGenChem ? process.env.GEN_CHEM_API_KEY : process.env.GEMINI_API_KEY;
     if (!API_KEY) return res.status(500).json({ error: isGenChem ? 'GEN_CHEM_API_KEY missing' : 'GEMINI_API_KEY missing' });
 
@@ -133,11 +147,16 @@ export default async function handler(req, res) {
                 cacheSystemText = isGenChem ? GENCHEM_GENERATION_SYSTEM_INSTRUCTION : GENERATION_SYSTEM_INSTRUCTION;
                 cacheState = isGenChem ? genchemGenerationCacheState : generationCacheState;
             } else if (task === 'grade' && gradeMode) {
-                cacheLabel = isGenChem ? `genchem-grading-${gradeMode}` : `grading-${gradeMode}`;
-                if (isGenChem) {
+                if (isFreeDraw) {
+                    cacheLabel = `freedraw-grading-${gradeMode}`;
+                    cacheSystemText = (gradeMode === 'learn') ? FREEDRAW_GRADING_LEARN_SYSTEM_INSTRUCTION : FREEDRAW_GRADING_NORMAL_SYSTEM_INSTRUCTION;
+                    cacheState = (gradeMode === 'learn') ? freedrawGradingLearnCacheState : freedrawGradingNormalCacheState;
+                } else if (isGenChem) {
+                    cacheLabel = `genchem-grading-${gradeMode}`;
                     cacheSystemText = (gradeMode === 'learn') ? GENCHEM_GRADING_LEARN_SYSTEM_INSTRUCTION : GENCHEM_GRADING_NORMAL_SYSTEM_INSTRUCTION;
                     cacheState = (gradeMode === 'learn') ? genchemGradingLearnCacheState : genchemGradingNormalCacheState;
                 } else {
+                    cacheLabel = `grading-${gradeMode}`;
                     cacheSystemText = (gradeMode === 'learn') ? GRADING_LEARN_SYSTEM_INSTRUCTION : GRADING_NORMAL_SYSTEM_INSTRUCTION;
                     cacheState = (gradeMode === 'learn') ? gradingLearnCacheState : gradingNormalCacheState;
                 }
