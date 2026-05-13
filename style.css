@@ -176,6 +176,32 @@ body {
     margin-right: 20px; /* Space for close btn */
 }
 
+#freedraw-explain-btn {
+    margin-top: 12px;
+    padding: 10px 28px;
+    background: #ff9500;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+#freedraw-explain-btn:hover {
+    background: #e08600;
+}
+
+#freedraw-explain-btn:active {
+    transform: scale(0.95);
+}
+
+#freedraw-explain-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 #message-close-btn {
     position: absolute;
     top: 12px;

@@ -135,6 +135,7 @@ const smilesOptions = {
 let hasSubmitted = false;
 let lastFeedback = "";
 let isShowingAnswer = false;
+let lastSubmittedImage = null; // Store for Free Draw explain requests
 
 const submitBtn = document.getElementById('submit-btn');
 
@@ -258,6 +259,7 @@ const explanationDisplay = document.getElementById('explanation-display');
 const explanationContent = document.getElementById('explanation-text-content');
 const difficultySlider = document.getElementById('difficulty-slider');
 const reportBtn = document.getElementById('report-btn');
+const freedrawExplainBtn = document.getElementById('freedraw-explain-btn');
 
 
 // ---- SMILES-to-formula conversion for simple reagents ----
@@ -1476,6 +1478,8 @@ function enterFreeDrawMode() {
     hasSubmitted = false;
     lastFeedback = '';
     isShowingAnswer = false;
+    lastSubmittedImage = null;
+    if (freedrawExplainBtn) freedrawExplainBtn.style.display = 'none';
 
     if (instructionDiv) instructionDiv.innerText = 'Free Draw Mode — draw any mechanism and submit for grading.';
     if (moleculeDiv) moleculeDiv.innerHTML = '';
@@ -1639,6 +1643,8 @@ generateBtn.addEventListener('click', (e) => {
         updateButtonState();
         document.getElementById('message-container').style.display = 'none';
         if (explanationDisplay) explanationDisplay.style.display = 'none';
+        if (freedrawExplainBtn) freedrawExplainBtn.style.display = 'none';
+        lastSubmittedImage = null;
     } else if (!currentReaction || isShowingAnswer) {
         displayNextReaction();
     } else {
@@ -1660,6 +1666,7 @@ async function submitDrawing() {
 
     try {
         const base64Image = await getOptimizedImage();
+        if (isFreeDraw) lastSubmittedImage = base64Image;
 
         const prompt = isFreeDraw
             ? `The student has drawn a chemistry mechanism on a whiteboard. There is no specific question — the student chose to draw this freely. Please evaluate the mechanism drawing for chemical plausibility, correctness of arrow-pushing notation, proper formal charges, and reasonable intermediates/products. Identify the reaction type if you recognize it.`
@@ -1740,6 +1747,10 @@ Answer: ${currentReaction.answer}`;
                             reportBtn.innerText = "I was right";
                             reportBtn.style.backgroundColor = "#ff9500"; // Orange to indicate appeal
                         }
+                        // Show Explain button for Free Draw implausible results
+                        if (isFreeDraw && freedrawExplainBtn) {
+                            freedrawExplainBtn.style.display = 'inline-block';
+                        }
                         // Ensure message is visible if it was manually closed
                         messageContainer.style.display = 'block';
                         messageRestoreBtn.style.display = 'none';
@@ -1761,6 +1772,72 @@ submitBtn.addEventListener('click', (e) => {
     e.preventDefault();
     submitDrawing();
 });
+
+// ------ Free Draw Explain Logic ------
+async function explainFreeDrawFeedback() {
+    if (!lastSubmittedImage || !lastFeedback || isSubmitting) return;
+
+    const loadingText = document.getElementById('loading-text');
+    if (freedrawExplainBtn) {
+        freedrawExplainBtn.disabled = true;
+        freedrawExplainBtn.innerText = 'Explaining...';
+    }
+
+    try {
+        const prompt = `The student drew a chemistry mechanism on a whiteboard (image attached). Your previous evaluation was:\n\n"${lastFeedback}"\n\nNow provide a detailed explanation of WHY this mechanism is chemically implausible or incorrect. Specifically:\n1. Identify what reaction the student appears to be attempting\n2. Point out each specific error in the arrow-pushing, electron flow, or products\n3. Explain the correct mechanism or approach\n4. Use [[SMILES: ...]] for any molecular structures you reference\n\nBe thorough, educational, and encouraging.`;
+
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                prompt,
+                image: lastSubmittedImage,
+                task: 'chat',
+                stream: true,
+                mode: 'freedraw'
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            const errMsg = errorData.error || '';
+            if (response.status === 503 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity')) {
+                loadingText.innerText = 'The bot is currently at capacity. Please try again in a moment.';
+            } else {
+                loadingText.innerText = 'Oops. Could not generate explanation.';
+            }
+            return;
+        }
+
+        await handleStream(
+            response,
+            (text) => {
+                loadingText.innerText = text;
+            },
+            (finalText) => {
+                if (finalText) {
+                    renderRichText(finalText, loadingText, true);
+                    loadingText.className = '';
+                } else {
+                    loadingText.innerText = 'Sorry, could not generate explanation.';
+                }
+            }
+        );
+    } catch (e) {
+        console.error('Free Draw explain error:', e);
+        loadingText.innerText = 'Error generating explanation.';
+    } finally {
+        if (freedrawExplainBtn) {
+            freedrawExplainBtn.style.display = 'none';
+            freedrawExplainBtn.disabled = false;
+            freedrawExplainBtn.innerText = 'Explain';
+        }
+    }
+}
+
+if (freedrawExplainBtn) {
+    freedrawExplainBtn.addEventListener('click', explainFreeDrawFeedback);
+}
 
 // ------ Report Error / I was right logic ------
 async function reevaluateDrawing() {
