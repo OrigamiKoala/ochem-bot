@@ -216,15 +216,23 @@ if (eraseBtn) {
 const baseTopics = ["addition", "substitution", "elimination", "on rings", "Grignard", "redox", "protecting groups", "cycloadditions", "electrocyclic", "rearrangements", "radicals", "carbenes", "stereochemistry", "regioselectivity"];
 const genchemBaseTopics = ["stoichiometry", "thermodynamics", "kinetics", "equilibrium", "acid-base", "electrochemistry", "atomic structure", "bonding & VSEPR", "solutions & colligative", "gas laws", "nuclear chemistry", "coordination chemistry", "descriptive inorganic", "organic reactions"];
 
-// Gen-chem mode state
-let isGenChemMode = localStorage.getItem('ochem_genchem_mode') === 'true';
-const genchemModeToggle = document.getElementById('genchem-mode-toggle');
-
-// Free Draw mode state
-let isFreeDraw = localStorage.getItem('ochem_freedraw_mode') === 'true';
-const freedrawModeToggle = document.getElementById('freedraw-mode-toggle');
-// If free draw is on, gen-chem must be off (and vice versa)
-if (isFreeDraw && isGenChemMode) { isGenChemMode = false; localStorage.setItem('ochem_genchem_mode', 'false'); }
+// Practice mode state — single source of truth
+// Migrate old boolean flags to the new unified key on first load
+(function migrateModeFlags() {
+    if (!localStorage.getItem('ochem_practice_mode')) {
+        if (localStorage.getItem('ochem_freedraw_mode') === 'true') {
+            localStorage.setItem('ochem_practice_mode', 'freedraw');
+        } else if (localStorage.getItem('ochem_genchem_mode') === 'true') {
+            localStorage.setItem('ochem_practice_mode', 'all');
+        } else {
+            localStorage.setItem('ochem_practice_mode', 'organic');
+        }
+    }
+})();
+let practiceMode = localStorage.getItem('ochem_practice_mode') || 'organic';
+let isGenChemMode = practiceMode === 'all';
+let isFreeDraw = practiceMode === 'freedraw';
+const practiceModeSelect = document.getElementById('practice-mode-select');
 
 function getActiveBaseTopics() {
     return isGenChemMode ? genchemBaseTopics : baseTopics;
@@ -562,48 +570,36 @@ if (addCustomTopicBtn) {
     addCustomTopicBtn.addEventListener('click', addCustomTopic);
 }
 
-// Live-preview topics when gen-chem toggle changes (before Save)
-if (genchemModeToggle) {
-    genchemModeToggle.addEventListener('change', () => {
-        // Enforce mutual exclusivity: GenChem ON → FreeDraw OFF
-        if (genchemModeToggle.checked && freedrawModeToggle) {
-            freedrawModeToggle.checked = false;
-        }
+// Live-preview topics when practice-mode dropdown changes (before Save)
+if (practiceModeSelect) {
+    practiceModeSelect.addEventListener('change', () => {
+        const val = practiceModeSelect.value;
         // Temporarily update mode so getActiveBaseTopics/getCustomTopicsKey resolve correctly
-        const previewMode = genchemModeToggle.checked;
         const prevMode = isGenChemMode;
         const prevFreeDraw = isFreeDraw;
-        isGenChemMode = previewMode;
-        isFreeDraw = false; // GenChem toggle changed → not free draw
-        userCustomTopics = JSON.parse(localStorage.getItem(getCustomTopicsKey())) || [];
-        // Load that mode's saved selections, or default to all
-        selectedTopics = JSON.parse(localStorage.getItem(getSelectedTopicsKey())) || [...getActiveBaseTopics(), ...userCustomTopics];
-        initSettings();
-        // Restore actual mode (it only commits on Save)
-        isGenChemMode = prevMode;
-        isFreeDraw = prevFreeDraw;
-    });
-}
-
-// Live-preview when free-draw toggle changes (before Save)
-if (freedrawModeToggle) {
-    freedrawModeToggle.addEventListener('change', () => {
-        // Enforce mutual exclusivity: FreeDraw ON → GenChem OFF
-        if (freedrawModeToggle.checked && genchemModeToggle) {
-            genchemModeToggle.checked = false;
-        }
-        // When FreeDraw is active, hide topics list (they don't apply)
+        isGenChemMode = val === 'all';
+        isFreeDraw = val === 'freedraw';
+        // Show/hide topics list based on mode
         const topicsSection = document.querySelector('#settings-modal .modal-content > p');
         const customSection = document.getElementById('custom-topic-container');
-        if (freedrawModeToggle.checked) {
+        const difficultySection = document.getElementById('settings-difficulty-container');
+        if (isFreeDraw) {
             if (topicsListDiv) topicsListDiv.style.display = 'none';
             if (topicsSection) topicsSection.style.display = 'none';
             if (customSection) customSection.style.display = 'none';
+            if (difficultySection) difficultySection.style.display = 'none';
         } else {
             if (topicsListDiv) topicsListDiv.style.display = '';
             if (topicsSection) topicsSection.style.display = '';
             if (customSection) customSection.style.display = '';
+            if (difficultySection) difficultySection.style.display = '';
+            userCustomTopics = JSON.parse(localStorage.getItem(getCustomTopicsKey())) || [];
+            selectedTopics = JSON.parse(localStorage.getItem(getSelectedTopicsKey())) || [...getActiveBaseTopics(), ...userCustomTopics];
+            initSettings();
         }
+        // Restore actual mode (it only commits on Save)
+        isGenChemMode = prevMode;
+        isFreeDraw = prevFreeDraw;
     });
 }
 
@@ -617,30 +613,28 @@ if (settingsBtn) {
             topics: [...selectedTopics].sort().join(','),
             difficulty: currentDifficulty,
             learnMode: isLearnMode,
-            genChemMode: isGenChemMode,
-            freeDrawMode: isFreeDraw
+            practiceMode: practiceMode
         };
 
-        // Set gen-chem toggle state
-        if (genchemModeToggle) {
-            genchemModeToggle.checked = isGenChemMode;
-        }
-        // Set free-draw toggle state
-        if (freedrawModeToggle) {
-            freedrawModeToggle.checked = isFreeDraw;
+        // Set dropdown to current practice mode
+        if (practiceModeSelect) {
+            practiceModeSelect.value = practiceMode;
         }
 
         // Show/hide topics based on current free draw state
         const topicsSection = document.querySelector('#settings-modal .modal-content > p');
         const customSection = document.getElementById('custom-topic-container');
+        const difficultySection = document.getElementById('settings-difficulty-container');
         if (isFreeDraw) {
             if (topicsListDiv) topicsListDiv.style.display = 'none';
             if (topicsSection) topicsSection.style.display = 'none';
             if (customSection) customSection.style.display = 'none';
+            if (difficultySection) difficultySection.style.display = 'none';
         } else {
             if (topicsListDiv) topicsListDiv.style.display = '';
             if (topicsSection) topicsSection.style.display = '';
             if (customSection) customSection.style.display = '';
+            if (difficultySection) difficultySection.style.display = '';
         }
 
         initSettings();
@@ -655,25 +649,16 @@ if (saveSettingsBtn) {
         const queueToSave = currentReaction ? [currentReaction, ...reactionQueue] : [...reactionQueue];
         try { localStorage.setItem(oldCacheKey, JSON.stringify(queueToSave)); } catch(e) {}
 
-        // Save gen-chem mode first (it affects which topics are available)
-        const prevGenChemMode = isGenChemMode;
-        const prevFreeDraw = isFreeDraw;
-        if (genchemModeToggle) {
-            isGenChemMode = genchemModeToggle.checked;
-            localStorage.setItem('ochem_genchem_mode', isGenChemMode);
-        }
-        // Save free-draw mode (mutual exclusivity already enforced by toggle listeners)
-        if (freedrawModeToggle) {
-            isFreeDraw = freedrawModeToggle.checked;
-            localStorage.setItem('ochem_freedraw_mode', isFreeDraw);
-            // Enforce: if free draw is on, gen chem must be off
-            if (isFreeDraw && isGenChemMode) {
-                isGenChemMode = false;
-                localStorage.setItem('ochem_genchem_mode', 'false');
-            }
+        // Save practice mode from dropdown
+        const prevPracticeMode = practiceMode;
+        if (practiceModeSelect) {
+            practiceMode = practiceModeSelect.value;
+            localStorage.setItem('ochem_practice_mode', practiceMode);
+            isGenChemMode = practiceMode === 'all';
+            isFreeDraw = practiceMode === 'freedraw';
         }
 
-        const modeChanged = (prevGenChemMode !== isGenChemMode) || (prevFreeDraw !== isFreeDraw);
+        const modeChanged = prevPracticeMode !== practiceMode;
 
         // If mode changed, load that mode's saved topics (or defaults)
         if (modeChanged && !isFreeDraw) {
@@ -708,15 +693,13 @@ if (saveSettingsBtn) {
             topics: [...selectedTopics].sort().join(','),
             difficulty: currentDifficulty,
             learnMode: isLearnMode,
-            genChemMode: isGenChemMode,
-            freeDrawMode: isFreeDraw
+            practiceMode: practiceMode
         };
         const changed = !_settingsSnapshot ||
             newSnapshot.topics !== _settingsSnapshot.topics ||
             newSnapshot.difficulty !== _settingsSnapshot.difficulty ||
             newSnapshot.learnMode !== _settingsSnapshot.learnMode ||
-            newSnapshot.genChemMode !== _settingsSnapshot.genChemMode ||
-            newSnapshot.freeDrawMode !== _settingsSnapshot.freeDrawMode;
+            newSnapshot.practiceMode !== _settingsSnapshot.practiceMode;
 
         if (changed) {
             if (modeChanged) {

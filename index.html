@@ -90,23 +90,14 @@
       <div id="settings-mode-container" style="margin-top: 20px;">
         <div class="mode-row">
           <div class="mode-info">
-            <h3>🧪 General Chemistry</h3>
-            <p style="font-size: 0.85rem; color: #8e8e93; margin: 0;">Switch to chemistry olympiad topics — covers all areas of chemistry, not just organic.</p>
+            <h3>Practice Mode</h3>
+            <p style="font-size: 0.85rem; color: #8e8e93; margin: 0;">Choose which type of practice questions to generate.</p>
           </div>
-          <label class="switch">
-            <input type="checkbox" id="genchem-mode-toggle">
-            <span class="slider round"></span>
-          </label>
-        </div>
-        <div class="mode-row">
-          <div class="mode-info">
-            <h3>🎨 Free Draw</h3>
-            <p style="font-size: 0.85rem; color: #8e8e93; margin: 0;">No question — draw any mechanism and the AI will grade it for plausibility.</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="freedraw-mode-toggle">
-            <span class="slider round"></span>
-          </label>
+          <select id="practice-mode-select">
+            <option value="organic">🧪 Organic</option>
+            <option value="all">🔬 All Chemistry</option>
+            <option value="freedraw">🎨 Free Draw</option>
+          </select>
         </div>
         <div class="mode-row">
           <div class="mode-info">
