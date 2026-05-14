@@ -1271,7 +1271,7 @@ function renderRichText(text, container, isExplanation = false) {
                     const fallbackFormula = smilesToFormula(smiles);
                     const fallbackEl = document.createElement('span');
                     if (fallbackFormula) {
-                        fallbackEl.innerHTML = `\\( \\ce{${fallbackFormula}} \\)`;
+                        fallbackEl.innerHTML = `$ \\ce{${fallbackFormula}} $`;
                     } else {
                         fallbackEl.innerText = smiles;
                         fallbackEl.style.fontSize = '0.8rem';
@@ -1284,7 +1284,7 @@ function renderRichText(text, container, isExplanation = false) {
                 const fallbackFormula = smilesToFormula(smiles);
                 const fallbackEl = document.createElement('span');
                 if (fallbackFormula) {
-                    fallbackEl.innerHTML = `\\( \\ce{${fallbackFormula}} \\)`;
+                    fallbackEl.innerHTML = `$ \\ce{${fallbackFormula}} $`;
                 } else {
                     fallbackEl.innerText = smiles;
                     fallbackEl.style.fontSize = '0.8rem';
@@ -1308,14 +1308,14 @@ function renderRichText(text, container, isExplanation = false) {
             if (!content.includes('\\(') && !content.includes('\\[') && !content.includes('$')) {
                 if (content.includes('\\ce{')) {
                     // AI provided \ce but forgot math delimiters. Wrap JUST the \ce parts.
-                    content = content.replace(/\\ce\{.*?\}/g, match => `\\(${match}\\)`);
+                    content = content.replace(/\\ce\{.*?\}/g, match => `$${match}$`);
                 } 
                 
                 if (!isExplanation) {
                     if (/[_^{}\\+\-]/.test(content) || content.length >= 2) {
                         // For short labels on arrows/reagents, wrap the whole thing if not already math
-                        if (!content.includes('\\(')) {
-                            content = `\\( \\ce{${content}} \\)`;
+                        if (!content.includes('$')) {
+                            content = `$ \\ce{${content}} $`;
                         }
                     }
                 }
