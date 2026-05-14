@@ -151,30 +151,99 @@ fabricCanvas.on('path:created', function () {
     }
 });
 
-// Handle window resizing correctly
+// The workspace is larger than the visible container so the user can scroll
+const WORKSPACE_HEIGHT_MULTIPLIER = 3;
+
 function resizeCanvas() {
     const container = document.getElementById('whiteboard-container');
     const width = container.clientWidth;
-    const height = container.clientHeight;
+    const visibleHeight = container.clientHeight;
+    const workspaceHeight = visibleHeight * WORKSPACE_HEIGHT_MULTIPLIER;
 
     fabricCanvas.setWidth(width);
-    fabricCanvas.setHeight(height);
+    fabricCanvas.setHeight(workspaceHeight);
     fabricCanvas.renderAll();
+
+    // Store visible height for pan clamping
+    fabricCanvas._visibleHeight = visibleHeight;
+    fabricCanvas._workspaceHeight = workspaceHeight;
 }
 
 window.addEventListener('resize', resizeCanvas);
 // Give the browser a tiny bit of time to layout before initial sizing
 setTimeout(resizeCanvas, 0);
 
+// ------ Two-finger pan / one-finger draw ------
+let _isPanning = false;
+let _lastPanY = 0;
+let _lastPanX = 0;
+
+// Clamp viewport transform so the user can't scroll past the workspace edges
+function clampViewport() {
+    const vpt = fabricCanvas.viewportTransform;
+    const visH = fabricCanvas._visibleHeight || fabricCanvas.getHeight();
+    const wsH = fabricCanvas._workspaceHeight || fabricCanvas.getHeight();
+    const maxPanY = 0;
+    const minPanY = -(wsH - visH);
+
+    if (vpt[5] > maxPanY) vpt[5] = maxPanY;
+    if (vpt[5] < minPanY) vpt[5] = minPanY;
+    // Don't allow horizontal panning
+    vpt[4] = 0;
+}
+
+// Touch events on the Fabric.js upper canvas
+const upperCanvas = fabricCanvas.upperCanvasEl || fabricCanvas.wrapperEl;
+
+upperCanvas.addEventListener('touchstart', function (e) {
+    if (e.touches.length >= 2) {
+        // Two-finger: start panning, disable drawing
+        _isPanning = true;
+        fabricCanvas.isDrawingMode = false;
+        _lastPanY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        _lastPanX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+        e.preventDefault();
+    }
+}, { passive: false });
+
+upperCanvas.addEventListener('touchmove', function (e) {
+    if (_isPanning && e.touches.length >= 2) {
+        const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+        const deltaY = midY - _lastPanY;
+        _lastPanY = midY;
+        _lastPanX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+
+        const vpt = fabricCanvas.viewportTransform;
+        vpt[5] += deltaY;
+        clampViewport();
+        fabricCanvas.setViewportTransform(vpt);
+        fabricCanvas.requestRenderAll();
+        e.preventDefault();
+    }
+}, { passive: false });
+
+upperCanvas.addEventListener('touchend', function (e) {
+    if (_isPanning && e.touches.length < 2) {
+        _isPanning = false;
+        fabricCanvas.isDrawingMode = true;
+    }
+});
+
+// Mouse wheel scrolling on the whiteboard
+const wbContainer = document.getElementById('whiteboard-container');
+wbContainer.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    const vpt = fabricCanvas.viewportTransform;
+    vpt[5] -= e.deltaY;
+    clampViewport();
+    fabricCanvas.setViewportTransform(vpt);
+    fabricCanvas.requestRenderAll();
+}, { passive: false });
+
 // Intercept global touch events to strictly prevent "pull to refresh" reloads
 document.body.addEventListener('touchmove', function (e) {
     // Allow touch scrolling on specific scrollable containers
-    if (e.target.closest('#about-content') || e.target.closest('#topics-list') || e.target.closest('#explanation-display') || e.target.closest('#molecule-display')) {
-        return;
-    }
-
-    // Allow vertical scrolling on #app (for whiteboard scroll) when not drawing on canvas
-    if (e.target.closest('#app') && !e.target.closest('.canvas-container')) {
+    if (e.target.closest('#about-content') || e.target.closest('#topics-list') || e.target.closest('#explanation-display') || e.target.closest('#molecule-display') || e.target.closest('#reaction-container') || e.target.closest('.modal-content')) {
         return;
     }
 
