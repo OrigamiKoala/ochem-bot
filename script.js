@@ -244,7 +244,10 @@ wbContainer.addEventListener('wheel', function (e) {
 // Intercept global touch events to strictly prevent "pull to refresh" reloads
 document.body.addEventListener('touchmove', function (e) {
     // Allow touch scrolling on specific scrollable containers
-    if (e.target.closest('#about-content') || e.target.closest('#topics-list') || e.target.closest('#explanation-display') || e.target.closest('#molecule-display') || e.target.closest('#reaction-container') || e.target.closest('.modal-content')) {
+    if (e.target.closest('#about-content') || e.target.closest('#topics-list') || 
+        e.target.closest('#explanation-display') || e.target.closest('#molecule-display') || 
+        e.target.closest('#reaction-container') || e.target.closest('.modal-content') ||
+        e.target.closest('#toolbar') || e.target.closest('#settings-modal')) {
         return;
     }
 
