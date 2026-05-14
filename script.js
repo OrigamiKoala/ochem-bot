@@ -1760,11 +1760,15 @@ submitBtn.addEventListener('click', (e) => {
 async function explainFreeDrawFeedback() {
     if (!lastSubmittedImage || !lastFeedback || isSubmitting) return;
 
-    const loadingText = document.getElementById('loading-text');
     if (freedrawExplainBtn) {
         freedrawExplainBtn.disabled = true;
         freedrawExplainBtn.innerText = 'Explaining...';
     }
+
+    // Show the explanation panel below the question area (same as other modes)
+    if (explanationDisplay) explanationDisplay.style.display = 'block';
+    if (explanationContent) explanationContent.innerText = 'Generating explanation...';
+    if (chatMessages) chatMessages.innerHTML = '';
 
     try {
         const prompt = `The student drew a chemistry mechanism on a whiteboard (image attached). Your previous evaluation was:\n\n"${lastFeedback}"\n\nNow provide a detailed explanation of WHY this mechanism is chemically implausible or incorrect. Specifically:\n1. Identify what reaction the student appears to be attempting\n2. Point out each specific error in the arrow-pushing, electron flow, or products\n3. Explain the correct mechanism or approach\n4. Use [[SMILES: ...]] for any molecular structures you reference\n\nBe thorough, educational, and encouraging.`;
@@ -1785,9 +1789,9 @@ async function explainFreeDrawFeedback() {
             const errorData = await response.json();
             const errMsg = errorData.error || '';
             if (response.status === 503 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity')) {
-                loadingText.innerText = 'The bot is currently at capacity. Please try again in a moment.';
+                if (explanationContent) explanationContent.innerText = 'The bot is currently at capacity. Please try again in a moment.';
             } else {
-                loadingText.innerText = 'Oops. Could not generate explanation.';
+                if (explanationContent) explanationContent.innerText = 'Oops. Could not generate explanation.';
             }
             return;
         }
@@ -1795,20 +1799,19 @@ async function explainFreeDrawFeedback() {
         await handleStream(
             response,
             (text) => {
-                loadingText.innerText = text;
+                if (explanationContent) explanationContent.innerText = text;
             },
             (finalText) => {
                 if (finalText) {
-                    renderRichText(finalText, loadingText, true);
-                    loadingText.className = '';
+                    renderRichText(finalText, explanationContent, true);
                 } else {
-                    loadingText.innerText = 'Sorry, could not generate explanation.';
+                    if (explanationContent) explanationContent.innerText = 'Sorry, could not generate explanation.';
                 }
             }
         );
     } catch (e) {
         console.error('Free Draw explain error:', e);
-        loadingText.innerText = 'Error generating explanation.';
+        if (explanationContent) explanationContent.innerText = 'Error generating explanation.';
     } finally {
         if (freedrawExplainBtn) {
             freedrawExplainBtn.style.display = 'none';

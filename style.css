@@ -38,6 +38,7 @@ body {
     min-width: 320px;
     width: auto;
     max-width: 80vw;
+    max-height: 80vh;
     min-height: 110px;
     height: auto;
     background-color: #ffffff;
@@ -50,6 +51,7 @@ body {
     padding: 15px 20px;
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
     z-index: 10;
+    overflow-y: auto;
 }
 
 #question-instruction {
@@ -72,6 +74,8 @@ body {
     display: none;
     background: #fdfdfd;
     border-radius: 12px;
+    max-height: 50vh;
+    overflow-y: auto;
 }
 
 #explanation-text-content {
