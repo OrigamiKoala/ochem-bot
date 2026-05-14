@@ -1305,10 +1305,10 @@ function renderRichText(text, container, isExplanation = false) {
             // Explanation text: 
             // We rely on the AI's math delimiters ($...$ or \[...\]) to render LaTeX properly,
             // as auto-wrapping breaks existing delimiters and generates MathJax errors.
-            if (!content.includes('\\(') && !content.includes('\\[')) {
+            if (!content.includes('\\(') && !content.includes('\\[') && !content.includes('$')) {
                 if (content.includes('\\ce{')) {
                     // AI provided \ce but forgot math delimiters. Wrap JUST the \ce parts.
-                    content = content.replace(/\\ce\{.*?\}/g, match => `\\( ${match} \\)`);
+                    content = content.replace(/\\ce\{.*?\}/g, match => `\\(${match}\\)`);
                 } 
                 
                 if (!isExplanation) {
