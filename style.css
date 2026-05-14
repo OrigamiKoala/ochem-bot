@@ -437,7 +437,7 @@ body {
     align-items: flex-end;
     justify-content: center;
     gap: 12px;
-    z-index: 20;
+    z-index: 30;
 }
 
 
@@ -468,7 +468,8 @@ body {
 /* Whiteboard canvas (Fabric.js wraps it in .canvas-container) */
 #whiteboard-container .canvas-container {
     width: 100% !important;
-    height: 100% !important;
+    /* Don't force height — canvas is intentionally taller than container for scrolling */
+    z-index: 1;
 }
 
 #whiteboard-container canvas {
