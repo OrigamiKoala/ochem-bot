@@ -253,6 +253,7 @@ document.body.addEventListener('touchmove', function (e) {
 
 // ------ Toolbar Actions ------
 clearBtn.addEventListener('click', () => {
+    if (!isCanvasBlank && !confirm('Are you sure? This will clear your drawing.')) return;
     fabricCanvas.clear();
     fabricCanvas.backgroundColor = 'transparent';
     isCanvasBlank = true;
