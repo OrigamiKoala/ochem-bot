@@ -37,7 +37,7 @@ IMPORTANT: Put the ENTIRE question in 'instructions'. Leave reactants/reagents/c
 RULES:
 - Chemistry MUST be correct. Double-check calculations and products.
 - For inorganic compounds/ions, ALWAYS output LaTeX formulas (e.g. \\ce{H2SO4}, \\ce{MnO4^-}) instead of SMILES in the answer and explanations.
-- ONLY use SMILES and [[SMILES: ...]] if the compound is organic.
+- ONLY use SMILES and [[SMILES: ...]] if the compound is organic (3 or more carbon atoms).
 - Valid SMILES only, no abbreviations. Use [[SMILES: ...]] for structures in instructions/explanation.
 - Calculations: show all steps in explanation, final answer with correct units and sig figs.
 - VISUAL DIAGRAMS: For visual questions, embed LaTeX in 'instructions'. Use arrays/matrices for tables.
