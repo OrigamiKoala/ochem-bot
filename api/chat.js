@@ -17,13 +17,13 @@ let freedrawGradingNormalCacheState = { name: null, expiry: 0 };
 const CHALLENGE_PHILOSOPHY = `Write questions using the EXACT same language, style, difficulty, and type of knowledge base as the USNCO/IChO exams, with the appropriate difficulty. The questions should be unique and creative, not old questions with new numbers/compounds, and require advanced critical thinking and problem solving skills, and target conceptual understanding, not memorization ability.`;
 
 const GENERATION_SYSTEM_INSTRUCTION = `Expert organic chemistry problem generator. Output JSON only:
-{"reactions":[{"qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], others plain text","conditions":"plain text","answer":"SMILES","instructions":"task","hint":"a brief helpful hint that nudges the student toward the right approach WITHOUT revealing the answer — e.g. mention a key reagent role, or highlight a functional group to focus on","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
+{"reactions":[{"qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], inorganic as LaTeX","conditions":"plain text","answer":"SMILES","instructions":"task","hint":"a brief helpful hint that nudges the student toward the right approach WITHOUT revealing the answer — e.g. mention a key reagent role, or highlight a functional group to focus on","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
 
 RULES:
 - Reactions MUST actually occur. Verify against Clayden/Wade/McMurry.
 - Symbols: {DELTA}=heat, {deg}=°, {hv}=hν, {H2}=H₂, {H+}=H⁺
 - Plain text for solvents/reagents (EtOH, THF, H2O). No \\text{}.
-- [[SMILES: ...]] for organic reagents. Valid SMILES only — no abbreviations (Ph, Me, Et, OAc, Ts, tBu).
+- [[SMILES: ...]] for organic compounds and LaTeX for inorganic compounds/ions. Valid SMILES only — no abbreviations (Ph, Me, Et, OAc, Ts, tBu).
 - Product must be MAJOR product. SMILES must be valid and balanced.
 - ${CHALLENGE_PHILOSOPHY}`;
 
@@ -37,7 +37,7 @@ IMPORTANT: Put the ENTIRE question in 'instructions'. Leave reactants/reagents/c
 RULES:
 - Chemistry MUST be correct. Double-check calculations and products.
 - For inorganic compounds/ions, ALWAYS output LaTeX formulas (e.g. \\ce{H2SO4}, \\ce{MnO4^-}) instead of SMILES in the answer and explanations.
-- ONLY use SMILES and [[SMILES: ...]] if the compound is predominantly organic.
+- ONLY use SMILES and [[SMILES: ...]] if the compound is organic.
 - Valid SMILES only, no abbreviations. Use [[SMILES: ...]] for structures in instructions/explanation.
 - Calculations: show all steps in explanation, final answer with correct units and sig figs.
 - VISUAL DIAGRAMS: For visual questions, embed LaTeX in 'instructions'. Use arrays/matrices for tables.
