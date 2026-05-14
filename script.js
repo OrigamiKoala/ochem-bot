@@ -1552,12 +1552,15 @@ function updateFreeDrawUI() {
     // Show/hide UI elements based on free draw state
     const helpBtnEl = document.getElementById('help-btn');
     const reportBtnEl = document.getElementById('report-btn');
+    const clearBtnEl = document.getElementById('clear-btn');
     if (isFreeDraw) {
         if (helpBtnEl) helpBtnEl.style.display = 'none';
         if (reportBtnEl) reportBtnEl.style.display = 'none';
+        if (clearBtnEl) clearBtnEl.style.display = 'none';
     } else {
         if (helpBtnEl) helpBtnEl.style.display = '';
         if (reportBtnEl) reportBtnEl.style.display = '';
+        if (clearBtnEl) clearBtnEl.style.display = '';
     }
 }
 
