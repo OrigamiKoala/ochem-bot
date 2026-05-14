@@ -1626,10 +1626,7 @@ function displayNextReaction() {
 
     // Reset report button
 
-    if (reportBtn) {
-        reportBtn.innerText = "Report Error";
-        reportBtn.style.backgroundColor = "#8e8e93";
-    }
+    if (reportBtn) reportBtn.style.display = 'none';
 
     renderReaction(nextReaction);
 
@@ -1676,10 +1673,7 @@ function handleGiveUp() {
         explanationDiv.style.display = 'block';
     }
 
-    if (reportBtn) {
-        reportBtn.innerText = "Report Error";
-        reportBtn.style.backgroundColor = "#8e8e93";
-    }
+    if (reportBtn) reportBtn.style.display = 'none';
 
     renderReaction(currentReaction, true);
 
@@ -1786,10 +1780,7 @@ Answer: ${currentReaction.answer}`;
                             localStorage.setItem(getQueueCacheKey(), JSON.stringify(reactionQueue));
                         }
 
-                        if (reportBtn) {
-                            reportBtn.innerText = "Report Error";
-                            reportBtn.style.backgroundColor = "#8e8e93";
-                        }
+                        if (reportBtn) reportBtn.style.display = 'none';
 
                         // Show the actual answer so the user can see it!
                         if (explanationDisplay && !isFreeDraw) {
@@ -1799,8 +1790,7 @@ Answer: ${currentReaction.answer}`;
                     } else {
                         loadingText.className = "error-text";
                         if (reportBtn && !isFreeDraw) {
-                            reportBtn.innerText = "I was right";
-                            reportBtn.style.backgroundColor = "#ff9500"; // Orange to indicate appeal
+                            reportBtn.style.display = '';
                         }
                         // Show Explain button for Free Draw implausible results
                         if (isFreeDraw && freedrawExplainBtn) {
@@ -1953,20 +1943,13 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
         loadingText.innerText = "Error re-evaluating.";
     } finally {
         isSubmitting = false;
-        if (reportBtn) {
-            reportBtn.innerText = "Report Error";
-            reportBtn.style.backgroundColor = "#8e8e93";
-        }
+        if (reportBtn) reportBtn.style.display = 'none';
     }
 }
 
 if (reportBtn) {
     reportBtn.addEventListener('click', () => {
-        if (reportBtn.innerText === "Report Error") {
-            displayNextReaction();
-        } else {
-            reevaluateDrawing();
-        }
+        reevaluateDrawing();
     });
 }
 
