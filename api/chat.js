@@ -17,7 +17,7 @@ let freedrawGradingNormalCacheState = { name: null, expiry: 0 };
 const CHALLENGE_PHILOSOPHY = `Write in the EXACT same style and format as the USNCO/IChO exams, with the appropriate difficulty. The questions should be unique and creative, not old questions with new numbers/compounds, and require advanced critical thinking and problem solving skills, and target conceptual understanding, not just plugging in memorized formulas. `;
 
 const GENERATION_SYSTEM_INSTRUCTION = `Expert organic chemistry problem generator. Output JSON only:
-{"reactions":[{"qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], others plain text","conditions":"plain text","answer":"SMILES","instructions":"task","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
+{"reactions":[{"qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], others plain text","conditions":"plain text","answer":"SMILES","instructions":"task","hint":"a brief helpful hint that nudges the student toward the right approach WITHOUT revealing the answer — e.g. name the reaction type, mention a key reagent role, or highlight a functional group to focus on","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
 
 RULES:
 - Reactions MUST actually occur. Verify against Clayden/Wade/McMurry.
@@ -30,7 +30,7 @@ RULES:
 const GENCHEM_GENERATION_SYSTEM_INSTRUCTION = `Expert chemistry professor generating olympiad problems (USNCO/IChO). Cover ALL general chemistry — not just organic.
 
 Output JSON only:
-{"reactions":[{"qtype":"predict|calculate|conceptual|mechanism","reactants":"","reagents":"","conditions":"","answer":"LaTeX formula/numeric with units","instructions":"FULL COMPLETE QUESTION TEXT here. Include all data, context, and task. Use LaTeX for math. This is the ONLY field the student sees.","explanation":"detailed solution with LaTeX math and [[SMILES: ...]]"}]}
+{"reactions":[{"qtype":"predict|calculate|conceptual|mechanism","reactants":"","reagents":"","conditions":"","answer":"LaTeX formula/numeric with units","instructions":"FULL COMPLETE QUESTION TEXT here. Include all data, context, and task. Use LaTeX for math. This is the ONLY field the student sees.","hint":"a brief helpful hint that nudges the student toward the right approach WITHOUT revealing the answer — e.g. name a relevant law, suggest a starting equation, or highlight a key concept","explanation":"detailed solution with LaTeX math and [[SMILES: ...]]"}]}
 
 IMPORTANT: Put the ENTIRE question in 'instructions'. Leave reactants/reagents/conditions EMPTY — they are for organic reaction diagrams only.
 

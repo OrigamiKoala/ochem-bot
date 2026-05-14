@@ -131,10 +131,11 @@ const smilesOptions = {
 
 
 
-// State for "Give Up" logic
+// State for "Hint" / "Give Up" logic
 let hasSubmitted = false;
 let lastFeedback = "";
 let isShowingAnswer = false;
+let hasUsedHint = false;
 let lastSubmittedImage = null; // Store for Free Draw explain requests
 
 const submitBtn = document.getElementById('submit-btn');
@@ -1610,6 +1611,7 @@ function displayNextReaction() {
     hasSubmitted = false;
     lastFeedback = "";
     isShowingAnswer = false;
+    hasUsedHint = false;
     isCanvasBlank = true;
 
     // Clear the board for the new reaction
@@ -1650,9 +1652,35 @@ function updateButtonState() {
         generateBtn.innerText = "New";
     } else if (isShowingAnswer) {
         generateBtn.innerText = "New";
+    } else if (!hasUsedHint) {
+        generateBtn.innerText = "Hint";
     } else {
         generateBtn.innerText = "Give Up";
     }
+}
+
+function handleHint() {
+    if (!currentReaction) return;
+
+    hasUsedHint = true;
+    const explanationDiv = document.getElementById('explanation-display');
+    const hintText = currentReaction.hint || 'No hint available for this question.';
+
+    if (explanationDiv) {
+        explanationDiv.style.display = 'block';
+    }
+    if (explanationContent) {
+        explanationContent.innerHTML = '';
+        const hintLabel = document.createElement('strong');
+        hintLabel.textContent = '💡 Hint: ';
+        const hintSpan = document.createElement('span');
+        hintSpan.textContent = hintText;
+        explanationContent.appendChild(hintLabel);
+        explanationContent.appendChild(hintSpan);
+        renderRichText(hintText, explanationContent, true);
+    }
+
+    updateButtonState();
 }
 
 function handleGiveUp() {
@@ -1697,6 +1725,8 @@ generateBtn.addEventListener('click', (e) => {
         lastSubmittedImage = null;
     } else if (!currentReaction || isShowingAnswer) {
         displayNextReaction();
+    } else if (!hasUsedHint) {
+        handleHint();
     } else {
         handleGiveUp();
     }
