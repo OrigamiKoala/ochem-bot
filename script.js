@@ -1307,11 +1307,16 @@ function renderRichText(text, container, isExplanation = false) {
             // as auto-wrapping breaks existing delimiters and generates MathJax errors.
             if (!content.includes('\\(') && !content.includes('\\[')) {
                 if (content.includes('\\ce{')) {
-                    // AI provided \ce but forgot math delimiters
-                    content = `\\( ${content} \\)`;
-                } else if (!isExplanation) {
+                    // AI provided \ce but forgot math delimiters. Wrap JUST the \ce parts.
+                    content = content.replace(/\\ce\{.*?\}/g, match => `\\( ${match} \\)`);
+                } 
+                
+                if (!isExplanation) {
                     if (/[_^{}\\+\-]/.test(content) || content.length >= 2) {
-                        content = `\\( \\ce{${content}} \\)`;
+                        // For short labels on arrows/reagents, wrap the whole thing if not already math
+                        if (!content.includes('\\(')) {
+                            content = `\\( \\ce{${content}} \\)`;
+                        }
                     }
                 }
             }
