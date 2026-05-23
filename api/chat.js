@@ -103,7 +103,7 @@ export default async function handler(req, res) {
     const { prompt, image, responseMimeType, task, gradeMode, stream, mode } = req.body;
     const isGenChem = mode === 'genchem';
     const isFreeDraw = mode === 'freedraw';
-    const API_KEY = isGenChem ? process.env.GEN_CHEM_API_KEY : process.env.GEMINI_API_KEY;
+    const API_KEY = isGenChem ? process.env.GEN_CHEM_API_KEY : process.env.GEN_CHEM_API_KEY;
     if (!API_KEY) return res.status(500).json({ error: isGenChem ? 'GEN_CHEM_API_KEY missing' : 'GEMINI_API_KEY missing' });
 
     const GENERATION_MODELS = ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-3.1-flash-lite"];
