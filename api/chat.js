@@ -14,7 +14,7 @@ let genchemGradingNormalCacheState = { name: null, expiry: 0 };
 let freedrawGradingLearnCacheState = { name: null, expiry: 0 };
 let freedrawGradingNormalCacheState = { name: null, expiry: 0 };
 
-const CHALLENGE_PHILOSOPHY = `Write questions using the EXACT same language, style, difficulty, and type of knowledge base as the USNCO/IChO exams, with the appropriate difficulty. The questions should be unique and creative, not old questions with new numbers/compounds, and require advanced critical thinking and problem solving skills, and target conceptual understanding, not memorization ability.`;
+const CHALLENGE_PHILOSOPHY = `Generate questions so close to the style of the USNCO/IChO that it would be impossible to tell this was not the official test. The questions should be unique ones that require advanced critical thinking and problem solving skills to solve, and targeting conceptual understanding, not problem grinding ability. They should have the same language, style, difficulty, and type of knowledge base as past exams. Most questions should be never-seen-before questions, but can be solved with a similar knowledge base as the past tests.`;
 
 const GENERATION_SYSTEM_INSTRUCTION = `Expert organic chemistry problem generator. Output JSON only:
 {"reactions":[{"qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], inorganic as LaTeX","conditions":"plain text","answer":"SMILES","instructions":"task","hint":"a brief helpful hint that nudges the student toward the right approach WITHOUT revealing the answer — e.g. mention a key reagent role, or highlight a functional group to focus on","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
