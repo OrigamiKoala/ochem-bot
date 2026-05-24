@@ -172,7 +172,24 @@ export default async function handler(req, res) {
                 }
             }
 
-            const genConfig = { maxOutputTokens, temperature, topP, topK: 40, response_mime_type: responseMimeType || "text/plain" };
+            const genConfig = {
+                maxOutputTokens,
+                temperature,
+                topP,
+                topK: 40,
+                response_mime_type: responseMimeType || "text/plain"
+            };
+
+            // Set thinking config based on model generation to prioritize gemini-3.5-flash with low thinking budget
+            if (modelId.startsWith("gemini-3")) {
+                genConfig.thinkingConfig = {
+                    thinkingLevel: "LOW"
+                };
+            } else if (modelId.startsWith("gemini-2.5")) {
+                genConfig.thinkingConfig = {
+                    thinkingBudget: 1024
+                };
+            }
 
             // --- Try cached path first ---
             if (cacheState) {
