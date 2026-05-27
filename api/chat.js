@@ -27,13 +27,14 @@ const CHALLENGE_PHILOSOPHY = `System Prompt: You are an elite author for the Int
 - Distractor Integrity: For multiple-choice formats, every incorrect option must correspond to a specific, logical misconception or a common algebraic oversight. Randomly generated numbers are strictly prohibited.`;
 
 const GENERATION_SYSTEM_INSTRUCTION = `Expert organic chemistry problem generator. Output JSON only:
-{"reactions":[{"qtype":"predict|mechanism|stereo","reaction_smiles":"reactants>reagents>products","instructions":"task","hint":"a brief helpful hint that nudges the student toward the right approach WITHOUT revealing the answer — e.g. mention a key reagent role, or highlight a functional group to focus on","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
+{"reactions":[{"qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], inorganic as LaTeX","conditions":"plain text","answer":"SMILES","instructions":"task","hint":"a brief helpful hint that nudges the student toward the right approach WITHOUT revealing the answer — e.g. mention a key reagent role, or highlight a functional group to focus on","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
 
 RULES:
 - Reactions MUST actually occur. Verify against Clayden/Wade/McMurry.
-- The 'reaction_smiles' field must be a valid reaction SMILES string in the format 'reactants>reagents>products' where multiple reactants, reagents/solvents/conditions, or products are separated by dots (e.g., 'CC(=O)O.OCC>C[O-].[Na+]>CCOC(=O)C'). Do NOT wrap 'reaction_smiles' in [[SMILES: ...]] tags; it must be a pure reaction SMILES. All molecules in 'reaction_smiles' must be fully drawn valid SMILES without abbreviations (like Ph, Me, Et, OAc).
 - Symbols: {DELTA}=heat, {deg}=°, {hv}=hν, {H2}=H₂, {H+}=H⁺
-- Product must be MAJOR product.
+- Plain text for solvents/reagents (EtOH, THF, H2O). No \\text{}.
+- [[SMILES: ...]] for organic compounds and LaTeX for inorganic compounds/ions. Valid SMILES only — no abbreviations (Ph, Me, Et, OAc, Ts, tBu).
+- Product must be MAJOR product. SMILES must be valid and balanced.
 - ${CHALLENGE_PHILOSOPHY}`;
 
 const GENCHEM_GENERATION_SYSTEM_INSTRUCTION = `Expert chemistry professor generating olympiad problems (USNCO/IChO). Cover ALL general chemistry — not just organic.
