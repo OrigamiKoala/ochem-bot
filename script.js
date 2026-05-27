@@ -1036,73 +1036,142 @@ function renderReaction(data, showAnswer = false) {
         return s.replace(/\[\[\s*SMILES:\s*/gi, '').replace(/\]\]/g, '').trim();
     }
 
-    // Render Reactants (guard against missing or plain-text reactants in gen-chem mode)
-    if (hasContent(data.reactants)) {
-        let cleanReactants = extractPureSmiles(data.reactants);
-        // Heuristic: pure SMILES shouldn't have spaces (unless part of a list, but usually they use dot-separated)
-        const looksLikeSMILES = !cleanReactants.includes(' ') && (/[=\(\)#\[\]]/.test(cleanReactants) || cleanReactants.length < 80);
-
-        if (looksLikeSMILES) {
-            const reactantMolecules = cleanReactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
-            renderMolecules(reactantMolecules, moleculeDiv);
-        } else {
+    if (isGenChemMode) {
+        // Render Reactants (guard against missing or plain-text reactants in gen-chem mode)
+        if (hasContent(data.reactants)) {
             // Plain text description — render as rich text
             const reactantText = document.createElement('div');
             reactantText.style.cssText = 'font-size: 1rem; color: #1c1c1e; margin-bottom: 8px;';
             renderRichText(data.reactants, reactantText, true);
             moleculeDiv.appendChild(reactantText);
         }
-    }
 
-    // Only show the reaction arrow + reagents/conditions if there's meaningful content
-    const hasReagents = hasContent(data.reagents);
-    const hasConditions = hasContent(data.conditions);
+        // Only show the reaction arrow + reagents/conditions if there's meaningful content
+        const hasReagents = hasContent(data.reagents);
+        const hasConditions = hasContent(data.conditions);
 
-    if (hasReagents || hasConditions || hasContent(data.reactants)) {
-        const arrowContainer = document.createElement('div');
-        arrowContainer.className = 'reaction-arrow-container';
+        if (hasReagents || hasConditions || hasContent(data.reactants)) {
+            const arrowContainer = document.createElement('div');
+            arrowContainer.className = 'reaction-arrow-container';
 
-        const topRow = document.createElement('div');
-        topRow.className = 'reagents-top';
-        const reagentsText = data.reagents || data.conditions || '';
-        if (hasContent(reagentsText)) {
-            renderRichText(reagentsText.replace(/\\\\/g, '\\'), topRow);
+            const topRow = document.createElement('div');
+            topRow.className = 'reagents-top';
+            const reagentsText = data.reagents || data.conditions || '';
+            if (hasContent(reagentsText)) {
+                renderRichText(reagentsText.replace(/\\\\/g, '\\'), topRow);
+            }
+
+            const arrowLine = document.createElement('div');
+            arrowLine.className = 'arrow-line';
+
+            const bottomRow = document.createElement('div');
+            bottomRow.className = 'conditions-bottom';
+            if (hasReagents && hasConditions) {
+                renderRichText(data.conditions, bottomRow);
+            }
+
+            arrowContainer.appendChild(topRow);
+            arrowContainer.appendChild(arrowLine);
+            arrowContainer.appendChild(bottomRow);
+            moleculeDiv.appendChild(arrowContainer);
+
+            safeTypeset(arrowContainer);
         }
 
-        const arrowLine = document.createElement('div');
-        arrowLine.className = 'arrow-line';
-
-        const bottomRow = document.createElement('div');
-        bottomRow.className = 'conditions-bottom';
-        if (hasReagents && hasConditions) {
-            renderRichText(data.conditions, bottomRow);
-        }
-
-        arrowContainer.appendChild(topRow);
-        arrowContainer.appendChild(arrowLine);
-        arrowContainer.appendChild(bottomRow);
-        moleculeDiv.appendChild(arrowContainer);
-
-        safeTypeset(arrowContainer);
-    }
-
-    // Show the answer only when explicitly requested (give-up or correct submission)
-    if (showAnswer) {
-        if (data.answer) {
-            let cleanAnswer = extractPureSmiles(data.answer);
-            // Check if answer looks like pure SMILES (no spaces)
-            const answerLooksSMILES = !cleanAnswer.includes(' ') && (/[=\(\)#\[\]]/.test(cleanAnswer) || cleanAnswer.length < 80) && /^[A-Za-z0-9@+\-\[\]\(\)\\/#=.]+$/.test(cleanAnswer);
-
-            if (answerLooksSMILES) {
-                const answerMolecules = cleanAnswer.split('.').map(s => s.trim()).filter(s => s.length > 0);
-                renderMolecules(answerMolecules, moleculeDiv, "answer");
-            } else {
+        // Show the answer only when explicitly requested (give-up or correct submission)
+        if (showAnswer) {
+            if (data.answer) {
                 // Plain text / numeric / formula answer
                 const answerDiv = document.createElement('div');
                 answerDiv.style.cssText = 'font-size: 1.1rem; font-weight: 600; color: #34c759; margin-top: 10px; padding: 8px 12px; background: #f0faf0; border-radius: 8px;';
                 renderRichText(data.answer, answerDiv, true);
                 moleculeDiv.appendChild(answerDiv);
             }
+        }
+    } else {
+        // Render Organic Chem Reaction in One Go using EPAM Ketcher Standalone
+        let reactionSmiles = data.reaction_smiles;
+        if (!reactionSmiles && data.reactants) {
+            const reactants = extractPureSmiles(data.reactants);
+            const reagents = extractPureSmiles(data.reagents || '');
+            const answer = extractPureSmiles(data.answer || '');
+            reactionSmiles = `${reactants}>${reagents}>${answer}`;
+        }
+
+        if (reactionSmiles) {
+            const parts = reactionSmiles.split('>');
+            const reactants = parts[0] || '';
+            const reagents = parts[1] || '';
+            const products = parts[2] || '';
+
+            // If showAnswer is false, hide products by omitting them from the reaction SMILES string
+            const activeReactionSmiles = showAnswer
+                ? `${reactants}>${reagents}>${products}`
+                : `${reactants}>${reagents}>`;
+
+            const iframe = document.createElement('iframe');
+            iframe.id = 'ketcher-iframe';
+            iframe.src = '/ketcher/index.html';
+            iframe.style.cssText = 'width: 100%; height: 350px; border: 1px solid #e2e8f0; border-radius: 16px; background: white; margin-top: 10px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);';
+            moleculeDiv.appendChild(iframe);
+
+            iframe.onload = () => {
+                let attempts = 0;
+                const checkKetcher = setInterval(() => {
+                    attempts++;
+                    if (iframe.contentWindow && iframe.contentWindow.ketcher) {
+                        clearInterval(checkKetcher);
+                        const ketcher = iframe.contentWindow.ketcher;
+
+                        // 1. Configure to view-only mode to prevent editing/hotkeys
+                        if (ketcher.editor && typeof ketcher.editor.options === 'function') {
+                            ketcher.editor.options({ viewOnlyMode: true });
+                        }
+
+                        // 2. Hide all toolbars using same-origin CSS injection
+                        if (iframe.contentDocument) {
+                            const style = iframe.contentDocument.createElement('style');
+                            style.textContent = `
+                                div[class*="Menu-root"], 
+                                div[class*="top-toolbar"], 
+                                div[class*="left-toolbar"], 
+                                div[class*="right-toolbar"], 
+                                div[class*="bottom-toolbar"],
+                                div[class*="struct-menu"],
+                                div[class*="Ketcher-Menu"],
+                                div[class*="Ketcher-Toolbar"],
+                                header, 
+                                aside,
+                                .Menu-root,
+                                [role="toolbar"] {
+                                    display: none !important;
+                                }
+                                div[class*="Canvas-root"], 
+                                div[class*="editor-canvas"],
+                                #root > div > div {
+                                    top: 0 !important;
+                                    left: 0 !important;
+                                    right: 0 !important;
+                                    bottom: 0 !important;
+                                    width: 100% !important;
+                                    height: 100% !important;
+                                    padding: 0 !important;
+                                    margin: 0 !important;
+                                }
+                            `;
+                            iframe.contentDocument.head.appendChild(style);
+                        }
+
+                        // 3. Load the reaction SMILES in one go
+                        ketcher.setMolecule(activeReactionSmiles)
+                            .catch(err => console.error("Ketcher setMolecule failed:", activeReactionSmiles, err));
+
+                    } else if (attempts > 50) {
+                        clearInterval(checkKetcher);
+                        console.error("Timeout waiting for Ketcher instance in iframe");
+                    }
+                }, 100);
+            };
         }
     }
 }
