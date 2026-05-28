@@ -131,7 +131,7 @@ export default async function handler(req, res) {
     if (!API_KEY) return res.status(500).json({ error: isGenChem ? 'GEN_CHEM_API_KEY missing' : 'GEMINI_API_KEY missing' });
 
     const GENERATION_MODELS = ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-3.1-flash-lite"];
-    const GRADING_MODELS = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-2.5-flash"];
+    const GRADING_MODELS = ["gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-2.5-flash"];
     const models = (task === 'generate') ? GENERATION_MODELS : GRADING_MODELS;
 
     const temperature = (task === 'generate') ? 1.5 : 0.2;
