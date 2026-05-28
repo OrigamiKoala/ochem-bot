@@ -50,13 +50,13 @@ Follow these strict rules:
 2. The exam must span a wide, diverse range of standard topics in chemistry. Do NOT let any single topic dominate the entire exam. Distribute the questions across a broad variety of core topics in the standard syllabus.`;
 
 const GENERATION_SYSTEM_INSTRUCTION = `Expert organic chemistry problem generator. Output JSON only:
-{"reactions":[{"qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], inorganic as LaTeX","conditions":"plain text","answer":"SMILES","instructions":"task","hint":"a brief helpful hint that nudges the student toward the right approach WITHOUT revealing the answer — e.g. mention a key reagent role, or highlight a functional group to focus on","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
+{"reactions":[{"qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], inorganic as LaTeX (wrapped in inline math delimiters $...$)","conditions":"plain text","answer":"SMILES","instructions":"task","hint":"a brief helpful hint that nudges the student toward the right approach WITHOUT revealing the answer — e.g. mention a key reagent role, or highlight a functional group to focus on","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
 
 RULES:
 - Reactions MUST actually occur. Verify against Clayden/Wade/McMurry.
 - Symbols: {DELTA}=heat, {deg}=°, {hv}=hν, {H2}=H₂, {H+}=H⁺
 - Plain text for solvents/reagents (EtOH, THF, H2O). No \\text{}.
-- [[SMILES: ...]] for organic compounds and LaTeX for inorganic compounds/ions. Valid SMILES only — no abbreviations (Ph, Me, Et, OAc, Ts, tBu).
+- [[SMILES: ...]] for organic compounds and LaTeX for inorganic compounds/ions (which MUST be wrapped in inline math delimiters $...$, e.g. $\\ce{H2SO4}$).
 - Product must be MAJOR product. SMILES must be valid and balanced.
 - ${CHALLENGE_PHILOSOPHY}`;
 
@@ -69,29 +69,30 @@ IMPORTANT: Put the ENTIRE question in 'instructions'. Leave reactants/reagents/c
 
 RULES:
 - Chemistry MUST be correct. Double-check calculations and products.
-- For inorganic compounds/ions, ALWAYS output LaTeX formulas (e.g. \\ce{H2SO4}, \\ce{MnO4^-}) instead of SMILES in the answer and explanations.
+- For inorganic compounds/ions, ALWAYS output LaTeX formulas (e.g. $\\ce{H2SO4}$, $\\ce{MnO4^-}$) wrapped in inline math delimiters ($...$) instead of SMILES in the answer and explanations.
+- ALWAYS wrap ALL LaTeX formulas, chemical equations, symbols, units, and expressions in inline math delimiters ($...$) or block math delimiters ($$...$$). For example, write $\\Delta G$, $\\ce{H2O}$, or $\\text{kJ/mol}$.
 - ONLY use SMILES and [[SMILES: ...]] if the compound is organic (3 or more carbon atoms).
 - Valid SMILES only, no abbreviations. Use [[SMILES: ...]] for structures in instructions/explanation.
 - Calculations: show all steps in explanation, final answer with correct units and sig figs.
 - VISUAL DIAGRAMS: For visual questions, embed LaTeX in 'instructions'. Use arrays/matrices for tables.
 - ${CHALLENGE_PHILOSOPHY}`;
 
-const GENCHEM_GRADING_LEARN_SYSTEM_INSTRUCTION = `Grade chemistry olympiad answer. If incorrect: identify specific error, explain principle violated. Be encouraging. NEVER reveal answer/SMILES. Max 30 words. Use LaTeX for formulas.`;
+const GENCHEM_GRADING_LEARN_SYSTEM_INSTRUCTION = `Grade chemistry olympiad answer. If incorrect: identify specific error, explain principle violated. Be encouraging. NEVER reveal answer/SMILES. Max 30 words. ALWAYS wrap ALL LaTeX formulas, chemical formulas (like $\\ce{H2O}$), and chemical equations in inline math delimiters ($...$).`;
 
-const GENCHEM_GRADING_NORMAL_SYSTEM_INSTRUCTION = `Grade chemistry olympiad answer. Output ONLY 'Correct' or 'Incorrect: [hint max 10 words]'. NEVER reveal answer. Use LaTeX for formulas.`;
+const GENCHEM_GRADING_NORMAL_SYSTEM_INSTRUCTION = `Grade chemistry olympiad answer. Output ONLY 'Correct' or 'Incorrect: [hint max 10 words]'. NEVER reveal answer. ALWAYS wrap ALL LaTeX formulas, chemical formulas (like $\\ce{H2O}$), and chemical equations in inline math delimiters ($...$).`;
 
 const FREEDRAW_GRADING_LEARN_SYSTEM_INSTRUCTION = `You are evaluating a chemistry mechanism drawing submitted WITHOUT a specific question prompt. The student drew a mechanism of their choosing. Evaluate it for:
 1. Chemical plausibility (do the electron-pushing arrows make sense?)
 2. Correct use of formal charges and lone pairs
 3. Reasonable intermediates and products
 4. Proper arrow notation
-Identify the reaction type if recognizable. Point out specific errors (e.g. impossible bond formation, incorrect electron flow, valency violations). Be encouraging and educational. Max 50 words. Use LaTeX for formulas and [[SMILES: ...]] for structures.`;
+Identify the reaction type if recognizable. Point out specific errors (e.g. impossible bond formation, incorrect electron flow, valency violations). Be encouraging and educational. Max 50 words. ALWAYS wrap ALL LaTeX formulas, chemical formulas (like $\\ce{H2O}$), and chemical equations in inline math delimiters ($...$), and use [[SMILES: ...]] for structures.`;
 
-const FREEDRAW_GRADING_NORMAL_SYSTEM_INSTRUCTION = `You are evaluating a chemistry mechanism drawing submitted WITHOUT a specific question prompt. The student drew a mechanism of their choosing. Assess chemical plausibility. Output ONLY: 'Plausible: [brief comment]' or 'Implausible: [brief reason]'. Max 15 words. Use LaTeX for formulas.`;
+const FREEDRAW_GRADING_NORMAL_SYSTEM_INSTRUCTION = `You are evaluating a chemistry mechanism drawing submitted WITHOUT a specific question prompt. The student drew a mechanism of their choosing. Assess chemical plausibility. Output ONLY: 'Plausible: [brief comment]' or 'Implausible: [brief reason]'. Max 15 words. ALWAYS wrap ALL LaTeX formulas, chemical formulas (like $\\ce{H2O}$), and chemical equations in inline math delimiters ($...$).`;
 
-const GRADING_LEARN_SYSTEM_INSTRUCTION = `Grade organic chemistry drawing. If incorrect: identify specific error (regio/stereo/valency/mechanism), explain principle violated. Be encouraging. NEVER reveal answer/SMILES. Max 30 words. Use LaTeX for formulas.`;
+const GRADING_LEARN_SYSTEM_INSTRUCTION = `Grade organic chemistry drawing. If incorrect: identify specific error (regio/stereo/valency/mechanism), explain principle violated. Be encouraging. NEVER reveal answer/SMILES. Max 30 words. ALWAYS wrap ALL LaTeX formulas, chemical formulas (like $\\ce{H2O}$), and chemical equations in inline math delimiters ($...$).`;
 
-const GRADING_NORMAL_SYSTEM_INSTRUCTION = `Grade organic chemistry drawing. Output ONLY 'Correct' or 'Incorrect: [hint max 10 words]'. NEVER reveal answer. Use LaTeX for formulas.`;
+const GRADING_NORMAL_SYSTEM_INSTRUCTION = `Grade organic chemistry drawing. Output ONLY 'Correct' or 'Incorrect: [hint max 10 words]'. NEVER reveal answer. ALWAYS wrap ALL LaTeX formulas, chemical formulas (like $\\ce{H2O}$), and chemical equations in inline math delimiters ($...$).`;
 
 const CACHE_TTL_SECONDS = 3600; // 1 hour
 

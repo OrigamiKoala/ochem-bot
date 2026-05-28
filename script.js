@@ -836,7 +836,7 @@ Explanation: ${currentReaction.explanation}
 
 Student asks: ${question}
 
-Answer concisely as ${isGenChemMode ? 'chemistry' : 'organic chemistry'} tutor. Use [[SMILES: ...]] for structures.`;
+Answer concisely as ${isGenChemMode ? 'chemistry' : 'organic chemistry'} tutor. Use [[SMILES: ...]] for structures. ALWAYS wrap ALL LaTeX formulas, chemical formulas (like $\ce{H2O}$), equations, and expressions in inline math delimiters ($...$) or block math delimiters ($$...$$).`;
 
         const response = await fetch('/api/chat', {
             method: 'POST',
@@ -1309,11 +1309,12 @@ function renderRichText(text, container, isExplanation = false) {
             // We rely on the AI's math delimiters ($...$ or \[...\]) to render LaTeX properly,
             // as auto-wrapping breaks existing delimiters and generates MathJax errors.
             if (!content.includes('\\(') && !content.includes('\\[') && !content.includes('$')) {
-                if (content.includes('\\ce{')) {
-                    // AI provided \ce but forgot math delimiters. Wrap JUST the \ce parts.
-                    content = content.replace(/\\ce\{.*?\}/g, match => `$${match}$`);
-                } 
+                // AI provided \ce but forgot math delimiters. Wrap JUST the \ce parts.
+                content = content.replace(/\\ce\{.*?\}/g, match => `$${match}$`);
                 
+                // Wrap common unwrapped LaTeX symbols (like \Delta, \rightarrow, \alpha, \beta, etc.)
+                content = content.replace(/\\(Delta|alpha|beta|gamma|theta|mu|pi|sigma|phi|lambda|rightarrow|leftrightarrow|leftharpoons|deg)\b/g, match => `$${match}$`);
+
                 if (!isExplanation) {
                     if (/[_^{}\\+\-]/.test(content) || content.length >= 2) {
                         // For short labels on arrows/reagents, wrap the whole thing if not already math
