@@ -1,0 +1,12 @@
+<h2>Hi!</h2>
+I'm the OChem Bot, a Gemini-powered agent to help you learn both olympiad and organic chemistry!
+<br><br>
+To get started, hit the "New" button to get an (AI-generated) question. Draw/write your answer on the whiteboard, and then hit "Submit" to have me check your work. You can ask questions, get hints, and more!
+<br><br>
+Vibe-coded by Carl Liu, built with Github and deployed with Vercel.
+<br><br>
+Check out my Github repo at https://github.com/OrigamiKoala/ochem-bot.
+<br><br>
+Copyright 2026. All rights reserved.
+<br><br>
+Got questions or feedback? DM my creator on Discord at @origamikoala.

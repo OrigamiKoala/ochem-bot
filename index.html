@@ -5,7 +5,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Organic Chemistry Mechanism Practice</title>
-  <link rel="stylesheet" href="style.css">
 
   <!-- Vercel Analytics -->
   <script>
@@ -34,119 +33,8 @@
 </head>
 
 <body>
-  <div id="app">
-
-    <div id="reaction-container">
-      <div id="question-instruction"></div>
-      <div id="molecule-display"></div>
-      <div id="explanation-display" style="display: none;">
-        <div id="explanation-text-content"></div>
-        <div id="chat-interface">
-          <div id="chat-messages"></div>
-          <div class="chat-input-row">
-            <input type="text" id="followup-input" placeholder="Still confused? Ask Gemini...">
-            <button id="send-followup-btn">Send</button>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div id="whiteboard-container">
-      <div id="toolbar">
-        <button type="button" id="about-btn">About</button>
-        <button type="button" id="generate-btn">New</button>
-        <button type="button" id="submit-btn" style="background-color: #34c759;">Submit</button>
-        <button type="button" id="eraser-btn" style="background-color: #ff3b30;">Eraser</button>
-        <button type="button" id="clear-btn">Clear</button>
-        <button type="button" id="report-btn" style="background-color: #8e8e93; display: none;">I was right</button>
-        <button type="button" id="settings-btn" style="background-color: #5856d6;">Settings</button>
-      </div>
-      <canvas id="whiteboard"></canvas>
-    </div>
-  </div>
-
-  <div id="message-container" style="display: none;">
-    <button id="message-close-btn">&times;</button>
-    <div id="loading-text">Loading...</div>
-    <button id="freedraw-explain-btn" style="display: none;">Explain</button>
-  </div>
-
-  <div id="message-restore-btn" style="display: none;">
-    💬
-  </div>
-
-
-  <div id="settings-modal" class="modal" style="display: none;">
-    <div class="modal-content">
-      <h2>Practice Settings</h2>
-      <div id="settings-difficulty-container">
-        <h3>Practice Difficulty</h3>
-        <div class="difficulty-slider-row">
-          <input type="range" id="difficulty-slider" min="1" max="100" value="1">
-          <div class="difficulty-labels">
-            <span>Beginner</span>
-            <span>USNCO</span>
-            <span>IChO/Collegiate</span>
-          </div>
-        </div>
-      </div>
-
-      <div id="settings-mode-container" style="margin-top: 20px;">
-        <div class="mode-row">
-          <div class="mode-info">
-            <h3>Practice Mode</h3>
-            <p style="font-size: 0.85rem; color: #8e8e93; margin: 0;">Choose which type of practice questions to generate.</p>
-          </div>
-          <select id="practice-mode-select">
-            <option value="organic">🧪 Organic</option>
-            <option value="all">🔬 All Chemistry</option>
-            <option value="freedraw">🎨 Free Draw</option>
-          </select>
-        </div>
-        <div class="mode-row">
-          <div class="mode-info">
-            <h3>Learn Mode</h3>
-            <p style="font-size: 0.85rem; color: #8e8e93; margin: 0;">AI acts as a tutor, explaining chemical principles
-              and providing guided feedback.</p>
-          </div>
-          <label class="switch">
-            <input type="checkbox" id="learn-mode-toggle">
-            <span class="slider round"></span>
-          </label>
-        </div>
-      </div>
-
-      <p>Select reaction types to focus on:</p>
-      <div id="topics-list">
-        <!-- Topics will be injected here by JS -->
-      </div>
-      <div id="custom-topic-container">
-        <h3>Add Custom Topic</h3>
-        <div class="custom-topic-input-row">
-          <input type="text" id="custom-topic-input" placeholder="e.g., Peptides, Alkaloids...">
-          <button id="add-custom-topic-btn">Add</button>
-        </div>
-      </div>
-      <div class="modal-actions">
-        <button id="save-settings-btn">Save & Close</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="about-modal" class="modal" style="display: none;">
-    <div class="modal-content">
-      <div id="about-content">
-        <!-- Loaded from intro.txt -->
-      </div>
-      <div class="modal-actions">
-        <button id="close-about-btn"
-          style="width: 100%; padding: 15px; background: #007aff; color: white; border: none; border-radius: 16px; font-size: 1.1rem; font-weight: 600; cursor: pointer;">Got
-          it!</button>
-      </div>
-    </div>
-  </div>
-
-
-  <script type="module" src="script.js"></script>
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
 </body>
 
 </html>
