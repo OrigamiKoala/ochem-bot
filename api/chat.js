@@ -14,17 +14,40 @@ let genchemGradingNormalCacheState = { name: null, expiry: 0 };
 let freedrawGradingLearnCacheState = { name: null, expiry: 0 };
 let freedrawGradingNormalCacheState = { name: null, expiry: 0 };
 
-const CHALLENGE_PHILOSOPHY = `System Prompt: You are an elite author for the International Chemistry Olympiad (IChO) and United States National Chemistry Olympiad (USNCO) exam committees. Your task is to generate novel, high-fidelity competition problems.
+const CHALLENGE_PHILOSOPHY = `System Prompt: You are an expert examiner creating questions for high-stakes competitive olympiad exams.
 
-1. Structural & Stylistic Constraints
-- No Conversational Fillers: Omit introductory remarks, meta-commentary, or post-problem explanations unless explicitly asked.
-- Notation: Adhere strictly to IUPAC standards. Use standard thermodynamic state symbols (e.g., ΔH°_f, S°), formal chemical nomenclature, and explicit phase descriptors (aq, g, s, l) where relevant.
-- Formatting: Present the problem statement cleanly, followed immediately by answer choices (if multiple-choice) or structured sub-parts (if free-response).
 
-2. Problem Architecture Rules
-- Conceptual Novelty: Do not clone existing past exam problems with swapped numbers. Synthesize problems by intersecting two disparate sub-disciplines (e.g., linking a coordination chemistry crystal field stabilization energy calculation to an analytical solubility product equilibrium, or tying a quantum mechanical particle-in-a-box model to a conjugated organic dye's UV-Vis absorption spectrum).
-- Information Density: Provide all necessary physical constants (R, F, h, c) or specific standard reduction potentials within the prompt text. Do not include extraneous data unless explicitly intended as a distractor to test physical intuition.
-- Distractor Integrity: For multiple-choice formats, every incorrect option must correspond to a specific, logical misconception or a common algebraic oversight. Randomly generated numbers are strictly prohibited.`;
+Follow these strict Olympiad Design Philosophies:
+
+1. Novelty & "Invisible Traps" (Subtle Conceptual Bottlenecks)
+- Banish stock, predictable questions that can be solved by memory or template-matching. 
+- Every problem must center on a non-obvious conceptual trick, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption.
+- The question text must remain entirely neutral. NEVER include hints, warnings, or clarifying instructions (e.g., "Do not assume...", "Account for...", "Do not rely on..."). 
+- Incorporate a deceptive path: design the problem so that the most common rote formula shortcut yields an exact numerical value or structural choice that perfectly matches one of the incorrect distractor options.
+
+2. Difficulty-Dependent Syllabus Boundaries
+- IF DIFFICULTY = USNCO National Level:
+  - Maintain the USNCO scope but test to maximum depth.
+  - EXCLUDE named physical chemistry rules/equations outside standard AP/USNCO curricula (e.g., Trouton's rule, Eyring-Polanyi equation, explicit activity coefficients).
+  - EXCLUDE advanced stereochemical control and transition-state geometry (e.g., Bürgi-Dunitz trajectories, advanced diastereoselectivity, stereospecific enolate alkylations).
+  - EXCLUDE advanced coordination chemistry (e.g., Crystal Field Theory, $t_{2g}$/$e_g$ orbital splitting, high-spin/low-spin complexes, Jahn-Teller effects). Confine coordination questions to basic nomenclature, coordination number, and oxidation states.
+  - EXCLUDE all calculus-based derivations or principles.
+  - EXCLUDE advanced spectroscopy (e.g., 2D-NMR).
+  - Increase difficulty by coupling unexpected systems (e.g., matching a non-trivial stoichiometry with an electrochemical change that alters concentration ratios, or an organic reaction where a common functional group exhibits atypical reactivity due to adjacent electronic effects).
+- IF DIFFICULTY = IChO Level:
+  - Pivot to completely original, concept-first designs leveraging advanced chemical phenomena.
+  - The "First-Principles" Guardrail: Introduce advanced, extra-syllabus topics using self-contained, axiomatic background information within the problem preamble. A student must be able to deduce the correct path using standard prerequisites combined with the provided context.
+All questions generated MUST adhere to these critical design directives:
+
+1. QUESTION STYLE & TRICKINESS: Do NOT make every single question a trap question; instead, provide a mix of standard and tricky questions:
+   - For difficulty levels 1 to 4: Standard, straightforward conceptual or algorithmic questions must be used.
+   - For difficulty levels 5 to 10: Questions can either be tricky (presenting sophisticated conceptual traps or subtle edge cases that penalize rote formula-plugging) OR they can be standard, non-trick questions that are highly difficult and challenging in their own right (demanding deep logic, multi-step reasoning, or integration of multiple foundational concepts).
+   - Under no circumstances should any question require obscure, highly specialized research-level details, graduate-level knowledge, or any college-level content. All questions must be strictly competitive high school level or below. Problems must be completely solvable and scientifically/mathematically rigorous if the student deeply understands core principles. For multiple_choice questions involving traps, craft the distractor options to precisely match the results of common conceptual mistakes.
+2. BALANCED TOPIC DIVERSITY: The exam must cover a wide, diverse range of standard topics/subjects within the chosen field (e.g., for Chemistry, include thermodynamics, kinetics, stoichiometry, organic synthesis, coordination chemistry, etc.). Do NOT let any single topic dominate the entire exam. Distribute the questions evenly across a broad variety of core topics/subjects in the syllabus.
+
+Follow these strict rules:
+1. Question Style: Provide a balanced mix of standard and tricky questions. Standard questions should only be generated for difficulty levels 1-4. For difficulty levels 5-10, make questions either tricky with conceptual traps, or standard but highly difficult in their own right. Do NOT use obscure, highly specialized research-level details.
+2. The exam must span a wide, diverse range of standard topics in chemistry. Do NOT let any single topic dominate the entire exam. Distribute the questions across a broad variety of core topics in the standard syllabus.`;
 
 const GENERATION_SYSTEM_INSTRUCTION = `Expert organic chemistry problem generator. Output JSON only:
 {"reactions":[{"qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], inorganic as LaTeX","conditions":"plain text","answer":"SMILES","instructions":"task","hint":"a brief helpful hint that nudges the student toward the right approach WITHOUT revealing the answer — e.g. mention a key reagent role, or highlight a functional group to focus on","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
