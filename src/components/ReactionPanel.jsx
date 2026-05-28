@@ -51,6 +51,88 @@ export default function ReactionPanel({
     return s.replace(/\[\[\s*SMILES:\s*/gi, '').replace(/\]\]/g, '').trim();
   }
 
+  function cleanTextForSvg(text) {
+    if (!text) return "";
+    let clean = text.trim();
+    clean = clean.replace(/\\ce\{([^\}]+)\}/g, '$1');
+    clean = clean.replace(/\\cdot\b/g, '·')
+                 .replace(/\\Delta\b/g, 'Δ')
+                 .replace(/\\deg\b/g, '°')
+                 .replace(/\{\\circ\}/g, '°')
+                 .replace(/\^\{\\circ\}/g, '°')
+                 .replace(/\^\\circ/g, '°')
+                 .replace(/\\rightarrow\b/g, '→')
+                 .replace(/\\leftrightarrow\b/g, '↔')
+                 .replace(/\\leftharpoons\b/g, '⇌')
+                 .replace(/\\to\b/g, '→')
+                 .replace(/\\beta\b/g, 'β')
+                 .replace(/\\alpha\b/g, 'α');
+    clean = clean.replace(/\\\\/g, '').replace(/\\/g, '').replace(/[\{\}]/g, '');
+    return clean;
+  }
+
+  function renderReactionOneStep(data, container, showAnswer = false) {
+    container.innerHTML = '';
+
+    let cleanReactants = extractPureSmiles(data.reactants);
+    let cleanAnswer = showAnswer && data.answer ? extractPureSmiles(data.answer) : "";
+
+    const reactantMolecules = cleanReactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
+    const answerMolecules = cleanAnswer.split('.').map(s => s.trim()).filter(s => s.length > 0);
+
+    const cleanReactantMols = reactantMolecules.map(m => cleanSmiles(m)).filter(Boolean);
+    const cleanAnswerMols = answerMolecules.map(m => cleanSmiles(m)).filter(Boolean);
+
+    if (cleanReactantMols.length === 0) {
+      return false;
+    }
+
+    const reactionSmiles = cleanReactantMols.join('.') + '>>' + cleanAnswerMols.join('.');
+
+    const dpr = window.devicePixelRatio || 1;
+    const svgElement = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+    container.appendChild(svgElement);
+
+    const molOpts = {
+      width: 120 * dpr,
+      height: 120 * dpr,
+      bondLength: 15,
+      ...smilesOptions
+    };
+    
+    const reactionDrawer = new window.SmilesDrawer.ReactionDrawer({ scale: 1 }, molOpts);
+
+    let textAbove = "";
+    let textBelow = "";
+
+    if (hasContent(data.reagents) && hasContent(data.conditions)) {
+      textAbove = cleanTextForSvg(data.reagents);
+      textBelow = cleanTextForSvg(data.conditions);
+    } else if (hasContent(data.reagents)) {
+      textAbove = cleanTextForSvg(data.reagents);
+    } else if (hasContent(data.conditions)) {
+      textAbove = cleanTextForSvg(data.conditions);
+    }
+
+    try {
+      let success = false;
+      window.SmilesDrawer.parseReaction(reactionSmiles, function (reaction) {
+        reactionDrawer.draw(reaction, svgElement, 'monochrome', textAbove, textBelow, false);
+        svgElement.style.maxWidth = '100%';
+        svgElement.style.height = 'auto';
+        svgElement.style.display = 'block';
+        svgElement.style.margin = '0 auto';
+        success = true;
+      }, function (err) {
+        console.error("Reaction SMILES parse error:", reactionSmiles, err);
+      });
+      return success;
+    } catch (e) {
+      console.error("ReactionDrawer drawing exception:", e);
+      return false;
+    }
+  }
+
   function renderMolecules(molecules, container, suffix = "") {
     molecules.forEach((mol, index) => {
       const newCanvas = document.createElement('canvas');
@@ -109,67 +191,79 @@ export default function ReactionPanel({
     const questionText = data.instructions || data.instruction || data.question || data.text;
     renderRichText(questionText || (isGenChemMode ? "" : "Predict the major product:"), instructionDiv, true);
 
-    // Render Reactants
-    if (hasContent(data.reactants)) {
+    // Try rendering as a single-step reaction!
+    let renderedOneStep = false;
+    if (!isGenChemMode && hasContent(data.reactants)) {
       let cleanReactants = extractPureSmiles(data.reactants);
       const looksLikeSMILES = !cleanReactants.includes(' ') && (/[=\(\)#\[\]]/.test(cleanReactants) || cleanReactants.length < 80);
-
       if (looksLikeSMILES) {
-        const reactantMolecules = cleanReactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
-        renderMolecules(reactantMolecules, moleculeDiv);
-      } else {
-        const reactantText = document.createElement('div');
-        reactantText.style.cssText = 'font-size: 1rem; color: #1c1c1e; margin-bottom: 8px;';
-        renderRichText(data.reactants, reactantText, true);
-        moleculeDiv.appendChild(reactantText);
+        renderedOneStep = renderReactionOneStep(data, moleculeDiv, showAnswer);
       }
     }
 
-    // Arrow + reagents/conditions
-    const hasReagents = hasContent(data.reagents);
-    const hasConditions = hasContent(data.conditions);
+    if (!renderedOneStep) {
+      // Render Reactants
+      if (hasContent(data.reactants)) {
+        let cleanReactants = extractPureSmiles(data.reactants);
+        const looksLikeSMILES = !cleanReactants.includes(' ') && (/[=\(\)#\[\]]/.test(cleanReactants) || cleanReactants.length < 80);
 
-    if (hasReagents || hasConditions || hasContent(data.reactants)) {
-      const arrowContainer = document.createElement('div');
-      arrowContainer.className = 'reaction-arrow-container';
-
-      const topRow = document.createElement('div');
-      topRow.className = 'reagents-top';
-      const reagentsText = data.reagents || data.conditions || '';
-      if (hasContent(reagentsText)) {
-        renderRichText(reagentsText.replace(/\\\\/g, '\\'), topRow);
+        if (looksLikeSMILES) {
+          const reactantMolecules = cleanReactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
+          renderMolecules(reactantMolecules, moleculeDiv);
+        } else {
+          const reactantText = document.createElement('div');
+          reactantText.style.cssText = 'font-size: 1rem; color: #1c1c1e; margin-bottom: 8px;';
+          renderRichText(data.reactants, reactantText, true);
+          moleculeDiv.appendChild(reactantText);
+        }
       }
 
-      const arrowLine = document.createElement('div');
-      arrowLine.className = 'arrow-line';
+      // Arrow + reagents/conditions
+      const hasReagents = hasContent(data.reagents);
+      const hasConditions = hasContent(data.conditions);
 
-      const bottomRow = document.createElement('div');
-      bottomRow.className = 'conditions-bottom';
-      if (hasReagents && hasConditions) {
-        renderRichText(data.conditions, bottomRow);
+      if (hasReagents || hasConditions || hasContent(data.reactants)) {
+        const arrowContainer = document.createElement('div');
+        arrowContainer.className = 'reaction-arrow-container';
+
+        const topRow = document.createElement('div');
+        topRow.className = 'reagents-top';
+        const reagentsText = data.reagents || data.conditions || '';
+        if (hasContent(reagentsText)) {
+          renderRichText(reagentsText.replace(/\\\\/g, '\\'), topRow);
+        }
+
+        const arrowLine = document.createElement('div');
+        arrowLine.className = 'arrow-line';
+
+        const bottomRow = document.createElement('div');
+        bottomRow.className = 'conditions-bottom';
+        if (hasReagents && hasConditions) {
+          renderRichText(data.conditions, bottomRow);
+        }
+
+        arrowContainer.appendChild(topRow);
+        arrowContainer.appendChild(arrowLine);
+        arrowContainer.appendChild(bottomRow);
+        moleculeDiv.appendChild(arrowContainer);
+
+        safeTypeset(arrowContainer);
       }
 
-      arrowContainer.appendChild(topRow);
-      arrowContainer.appendChild(arrowLine);
-      arrowContainer.appendChild(bottomRow);
-      moleculeDiv.appendChild(arrowContainer);
+      // Show answer
+      if (showAnswer && data.answer) {
+        let cleanAnswer = extractPureSmiles(data.answer);
+        const answerLooksSMILES = !cleanAnswer.includes(' ') && (/[=\(\)#\[\]]/.test(cleanAnswer) || cleanAnswer.length < 80) && /^[A-Za-z0-9@+\-\[\]\(\)\\/#=.]+$/.test(cleanAnswer);
 
-      safeTypeset(arrowContainer);
-    }
-
-    // Show answer
-    if (showAnswer && data.answer) {
-      let cleanAnswer = extractPureSmiles(data.answer);
-      const answerLooksSMILES = !cleanAnswer.includes(' ') && (/[=\(\)#\[\]]/.test(cleanAnswer) || cleanAnswer.length < 80) && /^[A-Za-z0-9@+\-\[\]\(\)\\/#=.]+$/.test(cleanAnswer);
-
-      if (answerLooksSMILES) {
-        const answerMolecules = cleanAnswer.split('.').map(s => s.trim()).filter(s => s.length > 0);
-        renderMolecules(answerMolecules, moleculeDiv, "answer");
-      } else {
-        const answerDiv = document.createElement('div');
-        answerDiv.style.cssText = 'font-size: 1.1rem; font-weight: 600; color: #34c759; margin-top: 10px; padding: 8px 12px; background: #f0faf0; border-radius: 8px;';
-        renderRichText(data.answer, answerDiv, true);
-        moleculeDiv.appendChild(answerDiv);
+        if (answerLooksSMILES) {
+          const answerMolecules = cleanAnswer.split('.').map(s => s.trim()).filter(s => s.length > 0);
+          renderMolecules(answerMolecules, moleculeDiv, "answer");
+        } else {
+          const answerDiv = document.createElement('div');
+          answerDiv.style.cssText = 'font-size: 1.1rem; font-weight: 600; color: #34c759; margin-top: 10px; padding: 8px 12px; background: #f0faf0; border-radius: 8px;';
+          renderRichText(data.answer, answerDiv, true);
+          moleculeDiv.appendChild(answerDiv);
+        }
       }
     }
   }

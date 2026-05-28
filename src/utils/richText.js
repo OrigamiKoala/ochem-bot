@@ -63,11 +63,92 @@ export function parseSmilesSegments(text) {
   return segments;
 }
 
+export function wrapBracesInLatex(text) {
+  if (typeof text !== 'string') return text;
+  
+  let result = '';
+  let inMath = false;
+  let inParenMath = false;
+  let inBracketMath = false;
+  
+  let i = 0;
+  while (i < text.length) {
+    if (text.substring(i, i + 2) === '$$') {
+      inMath = !inMath;
+      result += '$$';
+      i += 2;
+      continue;
+    }
+    if (text[i] === '$') {
+      inMath = !inMath;
+      result += '$';
+      i++;
+      continue;
+    }
+    if (text.substring(i, i + 2) === '\\(') {
+      inParenMath = true;
+      result += '\\(';
+      i += 2;
+      continue;
+    }
+    if (text.substring(i, i + 2) === '\\)') {
+      inParenMath = false;
+      result += '\\)';
+      i += 2;
+      continue;
+    }
+    if (text.substring(i, i + 2) === '\\[') {
+      inBracketMath = true;
+      result += '\\[';
+      i += 2;
+      continue;
+    }
+    if (text.substring(i, i + 2) === '\\]') {
+      inBracketMath = false;
+      result += '\\]';
+      i += 2;
+      continue;
+    }
+    
+    if (text[i] === '{' && !inMath && !inParenMath && !inBracketMath) {
+      let depth = 1;
+      let j = i + 1;
+      while (j < text.length && depth > 0) {
+        if (text[j] === '{') depth++;
+        else if (text[j] === '}') depth--;
+        j++;
+      }
+      
+      if (depth === 0) {
+        const content = text.substring(i + 1, j - 1);
+        if (content.trim().length > 0) {
+          if (content.trim().startsWith('\\ce{') && content.trim().endsWith('}')) {
+            result += `$${content}$`;
+          } else {
+            result += `$\\ce{${content}}$`;
+          }
+        } else {
+          result += '{}';
+        }
+        i = j;
+        continue;
+      }
+    }
+    
+    result += text[i];
+    i++;
+  }
+  
+  return result;
+}
+
 // Render rich text with LaTeX + SMILES into a DOM container.
 // This is an imperative DOM function used via refs.
 export function renderRichText(text, container, isExplanation = false) {
   if (!container) return;
   container.innerHTML = '';
+
+  text = wrapBracesInLatex(text);
 
   const segments = parseSmilesSegments(text);
 
