@@ -66,6 +66,14 @@ export function smilesToFormula(smiles) {
   if (!smiles) return null;
   const s = smiles.trim();
 
+  if (s.includes('.')) {
+    const parts = s.split('.');
+    const formulas = parts.map(p => smilesToFormula(p));
+    if (formulas.every(f => f !== null)) {
+      return formulas.join(' \\cdot ');
+    }
+  }
+
   if (SMILES_TO_FORMULA[s]) return SMILES_TO_FORMULA[s];
 
   // Single bracketed ion: [OH-] -> OH^{-}, [Na+] -> Na^{+}
