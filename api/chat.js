@@ -26,7 +26,7 @@ Follow these strict Olympiad Design Philosophies:
 - Incorporate a deceptive path: design the problem so that the most common rote formula shortcut yields an exact numerical value or structural choice that perfectly matches one of the incorrect distractor options.
 
 2. Difficulty-Dependent Syllabus Boundaries
-- IF DIFFICULTY = USNCO National Level:
+- IF DIFFICULTY = USNCO National Level (40-75):
   - Maintain the USNCO scope but test to maximum depth.
   - EXCLUDE named physical chemistry rules/equations outside standard AP/USNCO curricula (e.g., Trouton's rule, Eyring-Polanyi equation, explicit activity coefficients).
   - EXCLUDE advanced stereochemical control and transition-state geometry (e.g., Bürgi-Dunitz trajectories, advanced diastereoselectivity, stereospecific enolate alkylations).
@@ -34,14 +34,14 @@ Follow these strict Olympiad Design Philosophies:
   - EXCLUDE all calculus-based derivations or principles.
   - EXCLUDE advanced spectroscopy (e.g., 2D-NMR).
   - Increase difficulty by coupling unexpected systems (e.g., matching a non-trivial stoichiometry with an electrochemical change that alters concentration ratios, or an organic reaction where a common functional group exhibits atypical reactivity due to adjacent electronic effects).
-- IF DIFFICULTY = IChO Level:
+- IF DIFFICULTY = IChO Level (75-100):
   - Pivot to completely original, concept-first designs leveraging advanced chemical phenomena.
   - The "First-Principles" Guardrail: Introduce advanced, extra-syllabus topics using self-contained, axiomatic background information within the problem preamble. A student must be able to deduce the correct path using standard prerequisites combined with the provided context.
 All questions generated MUST adhere to these critical design directives:
 
 1. QUESTION STYLE & TRICKINESS: Do NOT make every single question a trap question; instead, provide a mix of standard and tricky questions:
-   - For difficulty levels 1 to 4: Standard, straightforward conceptual or algorithmic questions must be used.
-   - For difficulty levels 5 to 10: Questions can either be tricky (presenting sophisticated conceptual traps or subtle edge cases that penalize rote formula-plugging) OR they can be standard, non-trick questions that are highly difficult and challenging in their own right (demanding deep logic, multi-step reasoning, or integration of multiple foundational concepts).
+   - For difficulty levels 10 to 40: Standard, straightforward conceptual or algorithmic questions must be used.
+   - For difficulty levels 50 to 100: Questions can either be tricky (presenting sophisticated conceptual traps or subtle edge cases that penalize rote formula-plugging) OR they can be standard, non-trick questions that are highly difficult and challenging in their own right (demanding deep logic, multi-step reasoning, or integration of multiple foundational concepts).
    - Under no circumstances should any question require obscure, highly specialized research-level details, graduate-level knowledge, or any college-level content. All questions must be strictly competitive high school level or below. Problems must be completely solvable and scientifically/mathematically rigorous if the student deeply understands core principles. For multiple_choice questions involving traps, craft the distractor options to precisely match the results of common conceptual mistakes.
 2. BALANCED TOPIC DIVERSITY: The exam must cover a wide, diverse range of standard topics/subjects within the chosen field (e.g., for Chemistry, include thermodynamics, kinetics, stoichiometry, organic synthesis, coordination chemistry, etc.). Do NOT let any single topic dominate the entire exam. Distribute the questions evenly across a broad variety of core topics/subjects in the syllabus.
 

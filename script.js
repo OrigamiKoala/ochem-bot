@@ -510,11 +510,26 @@ function initSettings() {
         const isChecked = selectedTopics.includes(topic);
         const isCustom = userCustomTopics.includes(topic);
 
-        item.innerHTML = `
-            <input type="checkbox" id="topic-${topic.replace(/\s+/g, '-')}" value="${topic}" ${isChecked ? 'checked' : ''}>
-            <label for="topic-${topic.replace(/\s+/g, '-')}">${topic.charAt(0).toUpperCase() + topic.slice(1)}</label>
-            ${isCustom ? `<button class="remove-topic-btn" data-topic="${topic}">×</button>` : ''}
-        `;
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.id = `topic-${topic.replace(/\s+/g, '-')}`;
+        checkbox.value = topic;
+        if (isChecked) checkbox.checked = true;
+
+        const label = document.createElement('label');
+        label.htmlFor = checkbox.id;
+        label.textContent = topic.charAt(0).toUpperCase() + topic.slice(1);
+
+        item.appendChild(checkbox);
+        item.appendChild(label);
+
+        if (isCustom) {
+            const btn = document.createElement('button');
+            btn.className = 'remove-topic-btn';
+            btn.setAttribute('data-topic', topic);
+            btn.textContent = '×';
+            item.appendChild(btn);
+        }
 
         // Interaction logic
         item.addEventListener('click', (e) => {
@@ -1172,7 +1187,7 @@ function parseSmilesSegments(text) {
         let found = false;
 
         while (i < text.length) {
-            const ch = text[i];
+            const ch = text.charAt(i);
             if (ch === '[') {
                 depth++;
                 i++;
@@ -1183,13 +1198,13 @@ function parseSmilesSegments(text) {
                     i++;
                 } else {
                     // depth == 0: this ] might be part of the closing ]]
-                    if (i + 1 < text.length && text[i + 1] === ']') {
+                    if (i + 1 < text.length && text.charAt(i + 1) === ']') {
                         // Found the closing ]] — extract SMILES content
                         const smilesContent = text.substring(smilesStart, i);
                         segments.push({ type: 'smiles', content: smilesContent });
                         i += 2; // Skip past ]]
                         // Also skip any extra trailing ] (AI sometimes outputs ]]])
-                        while (i < text.length && text[i] === ']') i++;
+                        while (i < text.length && text.charAt(i) === ']') i++;
                         found = true;
                         break;
                     } else {
@@ -1274,7 +1289,7 @@ function renderRichText(text, container, isExplanation = false) {
                     const fallbackFormula = smilesToFormula(smiles);
                     const fallbackEl = document.createElement('span');
                     if (fallbackFormula) {
-                        fallbackEl.innerHTML = `$ \\ce{${fallbackFormula}} $`;
+                        fallbackEl.textContent = `$ \\ce{${fallbackFormula}} $`;
                     } else {
                         fallbackEl.innerText = smiles;
                         fallbackEl.style.fontSize = '0.8rem';
@@ -1287,7 +1302,7 @@ function renderRichText(text, container, isExplanation = false) {
                 const fallbackFormula = smilesToFormula(smiles);
                 const fallbackEl = document.createElement('span');
                 if (fallbackFormula) {
-                    fallbackEl.innerHTML = `$ \\ce{${fallbackFormula}} $`;
+                    fallbackEl.textContent = `$ \\ce{${fallbackFormula}} $`;
                 } else {
                     fallbackEl.innerText = smiles;
                     fallbackEl.style.fontSize = '0.8rem';
@@ -1365,7 +1380,7 @@ async function getStarterQuestion(targetTopic, targetDifficulty) {
     });
 
     if (matches.length > 0) {
-        return matches[Math.floor(Math.random() * matches.length)];
+        return matches.at(Math.floor(Math.random() * matches.length));
     }
     return null;
 }
@@ -1387,10 +1402,9 @@ async function fetchBatchReactions(isExplicit = false) {
 
 
     try {
-        // Use user-selected topics
         const questiontypes = ["predict product", "draw arrow mechanism", "stereochemistry focus"]
-        const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
-        const questiontype = questiontypes[Math.floor(Math.random() * 3)];
+        const topic = selectedTopics.at(Math.floor(Math.random() * selectedTopics.length));
+        const questiontype = questiontypes.at(Math.floor(Math.random() * questiontypes.length));
 
         // Immediate gratification: If this is the VERY first ever question request, try starter.json first
         if (isInitialLoad && !currentReaction && reactionQueue.length === 0) {
@@ -1479,7 +1493,12 @@ async function fetchBatchReactions(isExplicit = false) {
                             if (Array.isArray(obj)) return obj.map(applyLatexTokens);
                             if (obj && typeof obj === 'object') {
                                 const out = {};
-                                for (const k in obj) out[k] = applyLatexTokens(obj[k]);
+                                for (const k in obj) {
+                                    if (Object.prototype.hasOwnProperty.call(obj, k)) {
+                                        if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+                                        Reflect.set(out, k, applyLatexTokens(Reflect.get(obj, k)));
+                                    }
+                                }
                                 return out;
                             }
                             return obj;
