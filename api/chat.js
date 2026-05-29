@@ -14,6 +14,19 @@ let genchemGradingNormalCacheState = { name: null, expiry: 0 };
 let freedrawGradingLearnCacheState = { name: null, expiry: 0 };
 let freedrawGradingNormalCacheState = { name: null, expiry: 0 };
 
+// --- Rate limit memory registry to remember 429 keys for the rest of the day ---
+let rateLimitRegistry = new Map();
+
+function isKeyRateLimitedForModel(modelId, apiKey) {
+    const today = new Date().toDateString();
+    return rateLimitRegistry.get(`${modelId}:${apiKey}`) === today;
+}
+
+function markKeyRateLimitedForModel(modelId, apiKey) {
+    const today = new Date().toDateString();
+    rateLimitRegistry.set(`${modelId}:${apiKey}`, today);
+}
+
 const CHALLENGE_PHILOSOPHY = `System Prompt: You are an expert examiner creating questions for high-stakes competitive olympiad exams.
 
 
@@ -258,79 +271,97 @@ export default async function handler(req, res) {
         }
 
         try {
-            console.log(`[${task || 'chat'}] Trying model ${attemptIndex}/${models.length}: ${modelId}${isFallback ? ' (fallback)' : ''} with primary key`);
-            
-            let result = await tryModelWithKey(primaryKey);
-            if (result.response.ok) {
-                console.log(`[${task}] Success with ${modelId} (primary key)`);
-                res.setHeader('X-Model-Used', modelId);
-                if (isFallback) res.setHeader('X-Model-Fallback', 'true');
-                if (stream) {
-                    res.setHeader('Content-Type', 'text/event-stream');
-                    res.setHeader('Cache-Control', 'no-cache');
-                    res.setHeader('Connection', 'keep-alive');
-                    return await pipeStreamToResponse(result.response.body, res);
+            const primaryRateLimited = isKeyRateLimitedForModel(modelId, primaryKey);
+            let result = null;
+
+            if (!primaryRateLimited) {
+                console.log(`[${task || 'chat'}] Trying model ${attemptIndex}/${models.length}: ${modelId}${isFallback ? ' (fallback)' : ''} with primary key`);
+                result = await tryModelWithKey(primaryKey);
+                
+                if (result.response.ok) {
+                    console.log(`[${task}] Success with ${modelId} (primary key)`);
+                    res.setHeader('X-Model-Used', modelId);
+                    if (isFallback) res.setHeader('X-Model-Fallback', 'true');
+                    if (stream) {
+                        res.setHeader('Content-Type', 'text/event-stream');
+                        res.setHeader('Cache-Control', 'no-cache');
+                        res.setHeader('Connection', 'keep-alive');
+                        return await pipeStreamToResponse(result.response.body, res);
+                    }
+                    return res.status(200).json(await result.response.json());
                 }
-                return res.status(200).json(await result.response.json());
-            }
 
-            const status = result.response.status;
-            const errBody = result.errBody;
-            const isBusy = status === 503 || (errBody?.error?.message && /busy|overloaded/i.test(errBody.error.message));
+                const status = result.response.status;
+                const errBody = result.errBody;
+                const isBusy = status === 503 || (errBody?.error?.message && /busy|overloaded/i.test(errBody.error.message));
 
-            if (isBusy) {
-                console.warn(`[${task}] ${modelId} busy on primary key. Moving to next model...`, errBody);
-                lastError = { status, data: errBody };
-                if (result.isCached && result.cacheState) {
-                    result.cacheState.name = null;
-                    result.cacheState.expiry = 0;
-                }
-                continue; // Move down a model on the first API key before trying the second one
-            }
-
-            if (status === 429) {
-                if (backupKey) {
-                    console.warn(`[429] Rate limit hit for ${modelId} on primary key. Retrying with backup key.`);
+                if (isBusy) {
+                    console.warn(`[${task}] ${modelId} busy on primary key. Moving to next model...`, errBody);
+                    lastError = { status, data: errBody };
                     if (result.isCached && result.cacheState) {
                         result.cacheState.name = null;
                         result.cacheState.expiry = 0;
                     }
+                    continue; // Move down a model on the first API key before trying the second one
+                }
 
-                    let backupResult = await tryModelWithKey(backupKey);
-                    if (backupResult.response.ok) {
-                        console.log(`[${task}] Success with ${modelId} (backup key)`);
-                        res.setHeader('X-Model-Used', modelId);
-                        if (isFallback) res.setHeader('X-Model-Fallback', 'true');
-                        if (stream) {
-                            res.setHeader('Content-Type', 'text/event-stream');
-                            res.setHeader('Cache-Control', 'no-cache');
-                            res.setHeader('Connection', 'keep-alive');
-                            return await pipeStreamToResponse(backupResult.response.body, res);
-                        }
-                        return res.status(200).json(await backupResult.response.json());
-                    }
-
-                    const backupStatus = backupResult.response.status;
-                    const backupErrBody = backupResult.errBody;
-                    console.warn(`[${task}] ${modelId} failed on backup key with status ${backupStatus}`, backupErrBody);
-                    lastError = { status: backupStatus, data: backupErrBody };
-                    if (backupResult.isCached && backupResult.cacheState) {
-                        backupResult.cacheState.name = null;
-                        backupResult.cacheState.expiry = 0;
+                if (status === 429) {
+                    console.warn(`[429] Rate limit hit for ${modelId} on primary key. Marking as rate limited for the rest of the day.`);
+                    markKeyRateLimitedForModel(modelId, primaryKey);
+                    if (result.isCached && result.cacheState) {
+                        result.cacheState.name = null;
+                        result.cacheState.expiry = 0;
                     }
                 } else {
-                    console.warn(`[429] Rate limit hit on primary key but no backup key configured.`);
+                    // Other non-busy, non-429 error (e.g. 4xx bad request)
+                    console.warn(`[${task}] ${modelId} failed on primary key with status ${status}`, errBody);
                     lastError = { status, data: errBody };
+                    if (result.isCached && result.cacheState) {
+                        result.cacheState.name = null;
+                        result.cacheState.expiry = 0;
+                    }
+                    continue;
                 }
-                continue;
+            } else {
+                console.warn(`[${task}] Primary key is already rate limited for ${modelId} today. Skipping primary key.`);
             }
 
-            // Other non-busy, non-429 error (e.g. 4xx bad request)
-            console.warn(`[${task}] ${modelId} failed on primary key with status ${status}`, errBody);
-            lastError = { status, data: errBody };
-            if (result.isCached && result.cacheState) {
-                result.cacheState.name = null;
-                result.cacheState.expiry = 0;
+            // Try backup key if primary key was rate limited or just returned 429
+            if (backupKey) {
+                if (isKeyRateLimitedForModel(modelId, backupKey)) {
+                    console.warn(`[${task}] Backup key is also rate limited for ${modelId} today. Skipping backup key.`);
+                    continue;
+                }
+
+                console.warn(`Trying ${modelId} with backup key.`);
+                let backupResult = await tryModelWithKey(backupKey);
+                if (backupResult.response.ok) {
+                    console.log(`[${task}] Success with ${modelId} (backup key)`);
+                    res.setHeader('X-Model-Used', modelId);
+                    if (isFallback) res.setHeader('X-Model-Fallback', 'true');
+                    if (stream) {
+                        res.setHeader('Content-Type', 'text/event-stream');
+                        res.setHeader('Cache-Control', 'no-cache');
+                        res.setHeader('Connection', 'keep-alive');
+                        return await pipeStreamToResponse(backupResult.response.body, res);
+                    }
+                    return res.status(200).json(await backupResult.response.json());
+                }
+
+                const backupStatus = backupResult.response.status;
+                const backupErrBody = backupResult.errBody;
+                console.warn(`[${task}] ${modelId} failed on backup key with status ${backupStatus}`, backupErrBody);
+                lastError = { status: backupStatus, data: backupErrBody };
+                
+                if (backupStatus === 429) {
+                    console.warn(`[429] Rate limit hit for ${modelId} on backup key. Marking as rate limited for the rest of the day.`);
+                    markKeyRateLimitedForModel(modelId, backupKey);
+                }
+
+                if (backupResult.isCached && backupResult.cacheState) {
+                    backupResult.cacheState.name = null;
+                    backupResult.cacheState.expiry = 0;
+                }
             }
             continue;
 
