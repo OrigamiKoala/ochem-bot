@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { renderRichText } from '../utils/richText';
-import { cleanSmiles, smilesOptions } from '../utils/smiles';
+import { cleanSmiles, smilesOptions, smilesToFormula } from '../utils/smiles';
 import { safeTypeset } from '../utils/mathJax';
 import { handleStream } from '../utils/stream';
 import { apiChat } from '../utils/api';
@@ -54,6 +54,31 @@ export default function ReactionPanel({
   function cleanTextForSvg(text) {
     if (!text) return "";
     let clean = text.trim();
+
+    // Replace [[SMILES: (smiles) ]] with formula or abbreviation
+    clean = clean.replace(/\[\[\s*SMILES:\s*(.*?)\s*\]\]/gi, (match, smiles) => {
+      const trimmed = smiles.trim();
+      const formula = smilesToFormula(trimmed);
+      if (formula) {
+        return formula;
+      }
+      
+      let sub = trimmed;
+      // replace aromatic ring c1ccccc1 or C1=CC=CC=C1 with Ph
+      sub = sub.replace(/C1=CC=CC=C1/gi, 'Ph');
+      sub = sub.replace(/c1ccccc1/gi, 'Ph');
+      
+      // Clean up standard group matches to read neatly
+      if (sub === 'ClPh') sub = 'PhCl';
+      if (sub === 'BrPh') sub = 'PhBr';
+      if (sub === 'IPh') sub = 'PhI';
+      if (sub === 'FPh') sub = 'PhF';
+      
+      // Strip any other SMILES chars to keep readable
+      sub = sub.replace(/[=\(\)#\[\]]/g, '');
+      return sub;
+    });
+
     clean = clean.replace(/\\ce\{([^\}]+)\}/g, '$1');
     clean = clean.replace(/\\cdot\b/g, '·')
                  .replace(/\\Delta\b/g, 'Δ')
@@ -158,7 +183,7 @@ export default function ReactionPanel({
       container.appendChild(newCanvas);
 
       const dpr = window.devicePixelRatio || 1;
-      const baseSize = 100;
+      const baseSize = 160; // Beautifully large molecules
       const size = baseSize * dpr;
 
       const options = { width: size, height: size, ...smilesOptions };
@@ -209,15 +234,8 @@ export default function ReactionPanel({
     const questionText = data.instructions || data.instruction || data.question || data.text;
     renderRichText(questionText || (isGenChemMode ? "" : "Predict the major product:"), instructionDiv, true);
 
-    // Try rendering as a single-step reaction!
+    // Reverted to earlier format (separate canvases with HTML arrow) as requested
     let renderedOneStep = false;
-    if (!isGenChemMode && hasContent(data.reactants)) {
-      let cleanReactants = extractPureSmiles(data.reactants);
-      const looksLikeSMILES = !cleanReactants.includes(' ') && (/[=\(\)#\[\]]/.test(cleanReactants) || cleanReactants.length < 80);
-      if (looksLikeSMILES) {
-        renderedOneStep = renderReactionOneStep(data, moleculeDiv, showAnswer);
-      }
-    }
 
     if (!renderedOneStep) {
       // Render Reactants
@@ -248,7 +266,8 @@ export default function ReactionPanel({
         topRow.className = 'reagents-top';
         const reagentsText = data.reagents || data.conditions || '';
         if (hasContent(reagentsText)) {
-          renderRichText(reagentsText.replace(/\\\\/g, '\\'), topRow);
+          const cleanedReagents = cleanTextForSvg(reagentsText.replace(/\\\\/g, '\\'));
+          renderRichText(cleanedReagents, topRow);
         }
 
         const arrowLine = document.createElement('div');
@@ -257,7 +276,8 @@ export default function ReactionPanel({
         const bottomRow = document.createElement('div');
         bottomRow.className = 'conditions-bottom';
         if (hasReagents && hasConditions) {
-          renderRichText(data.conditions, bottomRow);
+          const cleanedConditions = cleanTextForSvg(data.conditions);
+          renderRichText(cleanedConditions, bottomRow);
         }
 
         arrowContainer.appendChild(topRow);

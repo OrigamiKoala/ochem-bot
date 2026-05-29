@@ -247,20 +247,22 @@ export default function App() {
         const errMsg = errorData.error || "";
         console.error('Gemini API Error:', response.status, errorData);
 
-        if (response.status === 503 || response.status === 500 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity')) {
-          setMessageText("The bot is currently at capacity. Please try again in a moment.");
-        } else {
-          setMessageText("Oops. Looks like the bot messed up!");
+        if (isExplicit) {
+          if (response.status === 503 || response.status === 500 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity')) {
+            setMessageText("The bot is currently at capacity. Please try again in a moment.");
+          } else {
+            setMessageText("Oops. Looks like the bot messed up!");
+          }
+          setMessageVisible(true);
+          setIsMessageMinimized(false);
         }
-        setMessageVisible(true);
-        setIsMessageMinimized(false);
         return;
       }
 
       const modelUsed = response.headers.get('X-Model-Used') || '';
       const modelLabel = modelUsed ? ` [${modelUsed}]` : '';
 
-      if (response.headers.get('X-Model-Fallback')) {
+      if (isExplicit && response.headers.get('X-Model-Fallback')) {
         setMessageText(`Taking a bit longer — switched to a backup model...${modelLabel}`);
         setMessageVisible(true);
         setIsMessageMinimized(false);
@@ -269,7 +271,9 @@ export default function App() {
       await handleStream(
         response,
         (text) => {
-          setMessageText(`Generating questions... (${text.length} characters)${modelLabel}`);
+          if (isExplicit) {
+            setMessageText(`Generating questions... (${text.length} characters)${modelLabel}`);
+          }
         },
         (finalText) => {
           if (finalText) {
@@ -354,24 +358,28 @@ export default function App() {
                     setTimeout(() => fetchBatchReactions(false), 100);
                   }
                 }
-              } else {
+              } else if (isExplicit) {
                 setMessageText("No questions were generated. Please try again.");
                 setMessageVisible(true);
               }
             } catch (e) {
               console.error("JSON parse error", e, finalText);
-              setMessageText("Error parsing response.");
-              setMessageVisible(true);
-              setIsMessageMinimized(false);
+              if (isExplicit) {
+                setMessageText("Error parsing response.");
+                setMessageVisible(true);
+                setIsMessageMinimized(false);
+              }
             }
           }
         }
       );
     } catch (e) {
       console.error("Fetch error:", e);
-      setMessageText("Oops. Looks like the bot messed up!");
-      setMessageVisible(true);
-      setIsMessageMinimized(false);
+      if (isExplicit) {
+        setMessageText("Oops. Looks like the bot messed up!");
+        setMessageVisible(true);
+        setIsMessageMinimized(false);
+      }
     } finally {
       isFetchingRef.current = false;
       setIsFetching(false);
