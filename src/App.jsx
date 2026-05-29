@@ -140,6 +140,18 @@ export default function App() {
     const queue = reactionQueueRef.current;
     if (queue.length === 0) {
       setCurrentReaction(null);
+      setHasSubmitted(false);
+      setLastFeedback('');
+      setIsShowingAnswer(false);
+      setHasUsedHint(false);
+      setIsCanvasBlank(true);
+      setShowReportBtn(false);
+      setExplanationVisible(false);
+      setShowExplainBtn(false);
+      setHintOverride(null);
+      if (whiteboardRef.current) {
+        whiteboardRef.current.clearCanvas();
+      }
       fetchBatchReactions(true);
       return;
     }

@@ -1635,6 +1635,14 @@ function displayNextReaction() {
     if (reactionQueue.length === 0) {
         // Mark that the user is waiting — no active reaction
         currentReaction = null;
+        hasSubmitted = false;
+        lastFeedback = "";
+        isShowingAnswer = false;
+        hasUsedHint = false;
+        isCanvasBlank = true;
+        fabricCanvas.clear(); fabricCanvas.backgroundColor = 'transparent';
+        if (reportBtn) reportBtn.style.display = 'none';
+        if (explanationDisplay) explanationDisplay.style.display = 'none';
         fetchBatchReactions(true);
         return;
     }
