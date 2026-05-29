@@ -125,9 +125,16 @@ const monochromeTheme = {
     BACKGROUND: 'transparent'
 };
 const smilesOptions = {
-    padding: 10,
+    padding: 15,
+    bondThickness: 2.0,
+    bondLength: 30,
+    fontSizeLarge: 14,
+    fontSizeSmall: 10,
+    overlapSensitivity: 1.8,
+    compactDrawing: false,
     themes: { monochrome: monochromeTheme }
 };
+
 
 
 
@@ -1125,16 +1132,21 @@ function renderReaction(data, showAnswer = false) {
 // Helper to render a group of molecules with '+' signs
 function renderMolecules(molecules, container, suffix = "") {
     molecules.forEach((mol, index) => {
+        if (index > 0) {
+            const plusSpan = document.createElement('span');
+            plusSpan.className = 'reaction-plus';
+            plusSpan.innerHTML = ' + ';
+            container.appendChild(plusSpan);
+        }
+
         const newCanvas = document.createElement('canvas');
         newCanvas.id = `canvas-${suffix}-${index}-${Date.now()}`; // Unique ID
-
-
 
         container.appendChild(newCanvas);
 
         // iPad/Retina support: Scale resolution by device pixel ratio
         const dpr = window.devicePixelRatio || 1;
-        const baseSize = 100; // Increased base size
+        const baseSize = 220; // Beautifully large molecules
         const size = baseSize * dpr;
 
         const options = {
@@ -1158,12 +1170,14 @@ function renderMolecules(molecules, container, suffix = "") {
             // Fallback for user: replace canvas with text if rendering fails
             const fallback = document.createElement('span');
             fallback.innerText = mol;
-            fallback.style.fontSize = '0.8rem';
+            fallback.style.fontSize = '1.1rem';
+            fallback.style.fontWeight = '500';
             newCanvas.replaceWith(fallback);
         });
 
     });
 }
+
 
 // Parse text into segments of {type: 'text'|'smiles', content: string}.
 // Handles SMILES atom brackets (e.g. [O-], [NH2]) inside [[SMILES: ...]] tags

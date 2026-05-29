@@ -130,6 +130,7 @@ body {
     display: flex;
     flex-direction: row;
     align-items: center;
+    justify-content: center;
     gap: 10px;
     width: 100%;
     overflow-x: auto;
@@ -138,6 +139,18 @@ body {
     padding-bottom: 5px;
     flex-wrap: wrap;
 }
+
+.reaction-plus {
+    font-size: 1.8rem;
+    font-weight: 500;
+    color: #8e8e93;
+    margin: 0 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+}
+
 
 /* ===== MESSAGE CONTAINER (bottom-right) ===== */
 #message-container {

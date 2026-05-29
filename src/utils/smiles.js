@@ -35,9 +35,16 @@ export const monochromeTheme = {
 };
 
 export const smilesOptions = {
-  padding: 10,
+  padding: 15,
+  bondThickness: 2.0,
+  bondLength: 30,
+  fontSizeLarge: 14,
+  fontSizeSmall: 10,
+  overlapSensitivity: 1.8,
+  compactDrawing: false,
   themes: { monochrome: monochromeTheme }
 };
+
 
 // Heuristic: is this SMILES "simple enough" to render as a formula?
 export function isSimpleSmiles(smiles) {

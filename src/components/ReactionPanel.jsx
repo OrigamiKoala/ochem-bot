@@ -202,12 +202,19 @@ export default function ReactionPanel({
 
   function renderMolecules(molecules, container, suffix = "") {
     molecules.forEach((mol, index) => {
+      if (index > 0) {
+        const plusSpan = document.createElement('span');
+        plusSpan.className = 'reaction-plus';
+        plusSpan.innerHTML = ' + ';
+        container.appendChild(plusSpan);
+      }
+
       const newCanvas = document.createElement('canvas');
       newCanvas.id = `canvas-${suffix}-${index}-${Date.now()}`;
       container.appendChild(newCanvas);
 
       const dpr = window.devicePixelRatio || 1;
-      const baseSize = 160; // Beautifully large molecules
+      const baseSize = 220; // Beautifully large molecules
       const size = baseSize * dpr;
 
       const options = { width: size, height: size, ...smilesOptions };
@@ -225,7 +232,8 @@ export default function ReactionPanel({
         console.error("Smiles parsing error: ", cleanedMol, err);
         const fallback = document.createElement('span');
         fallback.innerText = mol;
-        fallback.style.fontSize = '0.8rem';
+        fallback.style.fontSize = '1.1rem';
+        fallback.style.fontWeight = '500';
         newCanvas.replaceWith(fallback);
       });
     });
@@ -258,15 +266,9 @@ export default function ReactionPanel({
     const questionText = data.instructions || data.instruction || data.question || data.text;
     renderRichText(questionText || (isGenChemMode ? "" : "Predict the major product:"), instructionDiv, true);
 
-    // Try rendering as a single-step reaction!
+    // Try rendering as a single-step reaction! Bypassed to use robust HTML/CSS layout with large canvas sizes
     let renderedOneStep = false;
-    if (!isGenChemMode && hasContent(data.reactants)) {
-      let cleanReactants = extractPureSmiles(data.reactants);
-      const looksLikeSMILES = !cleanReactants.includes(' ') && (/[=\(\)#\[\]]/.test(cleanReactants) || cleanReactants.length < 80);
-      if (looksLikeSMILES) {
-        renderedOneStep = renderReactionOneStep(data, moleculeDiv, showAnswer);
-      }
-    }
+
 
     if (!renderedOneStep) {
       // Render Reactants
