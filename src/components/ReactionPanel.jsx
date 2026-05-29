@@ -68,6 +68,7 @@ export default function ReactionPanel({
                  .replace(/\\beta\b/g, 'β')
                  .replace(/\\alpha\b/g, 'α');
     clean = clean.replace(/\\\\/g, '').replace(/\\/g, '').replace(/[\{\}]/g, '');
+    clean = clean.replace(/\$/g, '').replace(/_/g, '');
     return clean;
   }
 
