@@ -119,6 +119,23 @@ export default function ReactionPanel({
       let success = false;
       window.SmilesDrawer.parseReaction(reactionSmiles, function (reaction) {
         reactionDrawer.draw(reaction, svgElement, 'monochrome', textAbove, textBelow, false);
+
+        // Adjust viewBox to add padding and prevent text clipping
+        const viewBoxStr = svgElement.getAttribute('viewBox');
+        if (viewBoxStr) {
+          const parts = viewBoxStr.split(' ').map(Number);
+          if (parts.length === 4 && !parts.some(isNaN)) {
+            let [x, y, w, h] = parts;
+            const vPadding = 25; // Vertical padding for top/bottom text
+            const hPadding = 35; // Horizontal padding for long names
+            x -= hPadding;
+            y -= vPadding;
+            w += hPadding * 2;
+            h += vPadding * 2;
+            svgElement.setAttribute('viewBox', `${x} ${y} ${w} ${h}`);
+          }
+        }
+
         svgElement.style.maxWidth = '100%';
         svgElement.style.height = 'auto';
         svgElement.style.display = 'block';

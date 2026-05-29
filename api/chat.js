@@ -137,7 +137,7 @@ export default async function handler(req, res) {
     const temperature = (task === 'generate') ? 1.5 : 0.2;
     const topP = (task === 'generate') ? 0.95 : 0.8;
     const maxOutputTokens = (task === 'generate') ? 8192 : 1024;
-    const serviceTier = "priority";
+    const serviceTier = undefined; // Avoid priority queueing overhead on standard keys
 
     // Build URL correctly — streaming endpoint already has ?, non-streaming needs ?
     function buildUrl(modelId) {
@@ -204,16 +204,7 @@ export default async function handler(req, res) {
                 response_mime_type: responseMimeType || "text/plain"
             };
 
-            // Set thinking config based on model generation to prioritize gemini-3.5-flash with low thinking budget
-            if (modelId.startsWith("gemini-3")) {
-                genConfig.thinkingConfig = {
-                    thinkingLevel: "LOW"
-                };
-            } else if (modelId.startsWith("gemini-2.5")) {
-                genConfig.thinkingConfig = {
-                    thinkingBudget: 1024
-                };
-            }
+            // Omit experimental thinking configurations to prioritize ultra-fast standard Flash default execution speed
 
             // --- Try cached path first ---
             if (cacheState) {
