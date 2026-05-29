@@ -2,6 +2,16 @@ import { useEffect, useRef, useCallback, useImperativeHandle, forwardRef } from 
 
 const WORKSPACE_HEIGHT_MULTIPLIER = 3;
 
+const TRANSLATIONS = {
+  about: 'About',
+  submit: 'Submit',
+  clear: 'Clear',
+  iWasRight: 'I was right',
+  settings: 'Settings',
+  pen: 'Pen',
+  eraser: 'Eraser'
+};
+
 const WhiteboardPanel = forwardRef(function WhiteboardPanel({
   isFreeDraw,
   isEraser,
@@ -203,7 +213,7 @@ const WhiteboardPanel = forwardRef(function WhiteboardPanel({
   return (
     <div id="whiteboard-container" ref={containerRef}>
       <div id="toolbar">
-        <button type="button" id="about-btn" onClick={onAbout}>About</button>
+        <button type="button" id="about-btn" onClick={onAbout}>{TRANSLATIONS.about}</button>
         <button type="button" id="generate-btn" onClick={onGenerate}>{generateBtnText}</button>
         <button
           type="button"
@@ -216,7 +226,7 @@ const WhiteboardPanel = forwardRef(function WhiteboardPanel({
           disabled={submitDisabled}
           onClick={onSubmit}
         >
-          Submit
+          {TRANSLATIONS.submit}
         </button>
         <button
           type="button"
@@ -225,10 +235,10 @@ const WhiteboardPanel = forwardRef(function WhiteboardPanel({
           className={isEraser ? 'active-tool' : ''}
           onClick={onEraserToggle}
         >
-          {isEraser ? 'Pen' : 'Eraser'}
+          {isEraser ? TRANSLATIONS.pen : TRANSLATIONS.eraser}
         </button>
         {!isFreeDraw && (
-          <button type="button" id="clear-btn" onClick={onClear}>Clear</button>
+          <button type="button" id="clear-btn" onClick={onClear}>{TRANSLATIONS.clear}</button>
         )}
         {showReportBtn && !isFreeDraw && (
           <button
@@ -237,7 +247,7 @@ const WhiteboardPanel = forwardRef(function WhiteboardPanel({
             style={{ backgroundColor: '#8e8e93' }}
             onClick={onReport}
           >
-            I was right
+            {TRANSLATIONS.iWasRight}
           </button>
         )}
         <button
@@ -246,7 +256,7 @@ const WhiteboardPanel = forwardRef(function WhiteboardPanel({
           style={{ backgroundColor: '#5856d6' }}
           onClick={onSettings}
         >
-          Settings
+          {TRANSLATIONS.settings}
         </button>
       </div>
       <canvas id="whiteboard"></canvas>

@@ -3,7 +3,12 @@ import { jsonrepair } from 'https://cdn.jsdelivr.net/npm/jsonrepair@3/lib/esm/in
 // script.js
 console.log("hi!");
 let lastModelUsed = null;
+const sessionKeySeed = Math.floor(Math.random() * 1000000);
 async function fetchWithModelLogging(url, options) {
+    options.headers = {
+        ...options.headers,
+        'X-Session-Key-Seed': String(sessionKeySeed)
+    };
     const response = await fetch(url, options);
     const modelUsed = response.headers.get('X-Model-Used');
     if (modelUsed && modelUsed !== lastModelUsed) {
@@ -934,7 +939,14 @@ async function loadIntro() {
         const response = await fetch('./intro.txt');
         if (response.ok) {
             const html = await response.text();
-            if (aboutContent) aboutContent.innerHTML = html;
+            if (aboutContent) {
+                aboutContent.innerHTML = '';
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                while (doc.body.firstChild) {
+                    aboutContent.appendChild(doc.body.firstChild);
+                }
+            }
         }
     } catch (e) {
         console.error("Failed to load intro.txt", e);
@@ -1420,7 +1432,8 @@ function renderRichText(text, container, isExplanation = false) {
             }
 
             // The AI often passes literal \n sequences inside the JSON string instead of true newlines.
-            span.innerHTML = content.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+            span.style.whiteSpace = 'pre-wrap';
+            span.textContent = content.replace(/\\n/g, '\n');
             container.appendChild(span);
         }
     });

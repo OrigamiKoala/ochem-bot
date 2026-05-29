@@ -1,5 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 
+const TRANSLATIONS = {
+  gotIt: 'Got it!'
+};
+
 export default function AboutModal({ visible, onClose }) {
   const [content, setContent] = useState('');
   const contentRef = useRef(null);
@@ -14,10 +18,16 @@ export default function AboutModal({ visible, onClose }) {
       .catch(e => console.error("Failed to load intro.txt", e));
   }, []);
 
-  // Check first visit
   useEffect(() => {
-    // This is handled by parent — no auto-open here
-  }, []);
+    if (contentRef.current && content) {
+      contentRef.current.innerHTML = '';
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(content, 'text/html');
+      while (doc.body.firstChild) {
+        contentRef.current.appendChild(doc.body.firstChild);
+      }
+    }
+  }, [content, visible]);
 
   if (!visible) return null;
 
@@ -32,7 +42,6 @@ export default function AboutModal({ visible, onClose }) {
         <div
           id="about-content"
           ref={contentRef}
-          dangerouslySetInnerHTML={{ __html: content }}
         />
         <div className="modal-actions">
           <button
@@ -50,7 +59,7 @@ export default function AboutModal({ visible, onClose }) {
             }}
             onClick={onClose}
           >
-            Got it!
+            {TRANSLATIONS.gotIt}
           </button>
         </div>
       </div>

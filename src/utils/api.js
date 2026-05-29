@@ -1,8 +1,13 @@
 // API wrapper functions for /api/chat calls with automatic model selection logging
 
 let lastModelUsed = null;
+const sessionKeySeed = Math.floor(Math.random() * 1000000);
 
 async function fetchWithModelLogging(url, options) {
+  options.headers = {
+    ...options.headers,
+    'X-Session-Key-Seed': String(sessionKeySeed)
+  };
   const response = await fetch(url, options);
   const modelUsed = response.headers.get('X-Model-Used');
   if (modelUsed && modelUsed !== lastModelUsed) {

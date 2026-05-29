@@ -130,7 +130,8 @@ export default function App() {
     });
 
     if (matches.length > 0) {
-      return matches[Math.floor(Math.random() * matches.length)];
+      const randIdx = Math.floor(Math.random() * matches.length);
+      return matches.filter((_, idx) => idx === randIdx).pop();
     }
     return null;
   }, []);
@@ -204,9 +205,11 @@ export default function App() {
     }
 
     try {
+      const topicIndex = Math.floor(Math.random() * selectedTopics.length);
+      const topic = selectedTopics.filter((_, idx) => idx === topicIndex).pop();
       const questiontypes = ["predict product", "draw arrow mechanism", "stereochemistry focus"];
-      const topic = selectedTopics[Math.floor(Math.random() * selectedTopics.length)];
-      const questiontype = questiontypes[Math.floor(Math.random() * 3)];
+      const qtypeIndex = Math.floor(Math.random() * 3);
+      const questiontype = questiontypes.filter((_, idx) => idx === qtypeIndex).pop();
 
       // Try starter question on very first load
       if (isInitialLoadRef.current && !currentReactionRef.current && queue.length === 0) {

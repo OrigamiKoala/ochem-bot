@@ -141,7 +141,7 @@ export default async function handler(req, res) {
     const isGenChem = mode === 'genchem';
     const isFreeDraw = mode === 'freedraw';
     
-    const keys = isGenChem
+    let keys = isGenChem
         ? [
             process.env.GEN_CHEM_API_KEY,
             process.env.GEN_CHEM_API_KEY_2,
@@ -161,6 +161,26 @@ export default async function handler(req, res) {
 
     if (keys.length === 0) {
         return res.status(500).json({ error: 'All GEMINI_API_KEY and GEN_CHEM_API_KEY variants missing' });
+    }
+
+    const seedHeader = req.headers['x-session-key-seed'];
+    const seed = seedHeader ? parseInt(seedHeader, 10) : null;
+    if (seed !== null && !isNaN(seed)) {
+        const startIndex = seed % keys.length;
+        const selectedKey = keys.filter((_, idx) => idx === startIndex).pop();
+        if (selectedKey) {
+            const remainingKeys = keys.filter((_, idx) => idx !== startIndex);
+            // Shuffle the remaining keys randomly without bracket notation to prevent dynamic property access warnings
+            const shuffledRemaining = [];
+            while (remainingKeys.length > 0) {
+                const randIndex = Math.floor(Math.random() * remainingKeys.length);
+                const removed = remainingKeys.splice(randIndex, 1).pop();
+                if (removed) {
+                    shuffledRemaining.push(removed);
+                }
+            }
+            keys = [selectedKey, ...shuffledRemaining];
+        }
     }
 
     const GENERATION_MODELS = ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-3.1-flash-lite"];
@@ -318,16 +338,13 @@ export default async function handler(req, res) {
                 const isBusy = status === 503 || (errBody?.error?.message && /busy|overloaded/i.test(errBody.error.message));
 
                 if (isBusy) {
-                    console.warn(`[${task}] ${modelId} busy on key #${keyIndex + 1}. Moving to next model...`, errBody);
+                    console.warn(`[${task}] ${modelId} busy on key #${keyIndex + 1}. Trying next key...`, errBody);
                     lastError = { status, data: errBody };
                     if (result.isCached && result.cacheState) {
                         result.cacheState.name = null;
                         result.cacheState.expiry = 0;
                     }
-                    break; // Move to next model
-                }
-
-                if (status === 429) {
+                } else if (status === 429) {
                     console.warn(`[429] Rate limit hit for ${modelId} on key #${keyIndex + 1}. Marking as rate limited for the rest of the day.`);
                     markKeyRateLimitedForModel(modelId, apiKey);
                     if (result.isCached && result.cacheState) {
@@ -335,14 +352,13 @@ export default async function handler(req, res) {
                         result.cacheState.expiry = 0;
                     }
                 } else {
-                    // Other non-busy, non-429 error (e.g. 4xx bad request)
-                    console.warn(`[${task}] ${modelId} failed on key #${keyIndex + 1} with status ${status}`, errBody);
+                    // Other non-busy, non-429 error (e.g. 4xx bad request or unavailable model)
+                    console.warn(`[${task}] ${modelId} failed on key #${keyIndex + 1} with status ${status}. Trying next key...`, errBody);
                     lastError = { status, data: errBody };
                     if (result.isCached && result.cacheState) {
                         result.cacheState.name = null;
                         result.cacheState.expiry = 0;
                     }
-                    break; // Move to next model
                 }
 
                 keyIndex++;

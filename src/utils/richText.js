@@ -21,7 +21,7 @@ export function parseSmilesSegments(text) {
     let found = false;
 
     while (i < text.length) {
-      const ch = text[i];
+      const ch = text.charAt(i);
       if (ch === '[') {
         depth++;
         i++;
@@ -30,11 +30,11 @@ export function parseSmilesSegments(text) {
           depth--;
           i++;
         } else {
-          if (i + 1 < text.length && text[i + 1] === ']') {
+          if (i + 1 < text.length && text.charAt(i + 1) === ']') {
             const smilesContent = text.substring(smilesStart, i);
             segments.push({ type: 'smiles', content: smilesContent });
             i += 2;
-            while (i < text.length && text[i] === ']') i++;
+            while (i < text.length && text.charAt(i) === ']') i++;
             found = true;
             break;
           } else {
@@ -79,7 +79,7 @@ export function wrapBracesInLatex(text) {
       i += 2;
       continue;
     }
-    if (text[i] === '$') {
+    if (text.charAt(i) === '$') {
       inMath = !inMath;
       result += '$';
       i++;
@@ -110,12 +110,12 @@ export function wrapBracesInLatex(text) {
       continue;
     }
     
-    if (text[i] === '{' && !inMath && !inParenMath && !inBracketMath) {
+    if (text.charAt(i) === '{' && !inMath && !inParenMath && !inBracketMath) {
       let depth = 1;
       let j = i + 1;
       while (j < text.length && depth > 0) {
-        if (text[j] === '{') depth++;
-        else if (text[j] === '}') depth--;
+        if (text.charAt(j) === '{') depth++;
+        else if (text.charAt(j) === '}') depth--;
         j++;
       }
       
@@ -135,7 +135,7 @@ export function wrapBracesInLatex(text) {
       }
     }
     
-    result += text[i];
+    result += text.charAt(i);
     i++;
   }
   
@@ -146,7 +146,7 @@ export function wrapBracesInLatex(text) {
 // This is an imperative DOM function used via refs.
 export function renderRichText(text, container, isExplanation = false) {
   if (!container) return;
-  container.innerHTML = '';
+  container.textContent = '';
 
   text = wrapBracesInLatex(text);
 
@@ -189,7 +189,7 @@ export function renderRichText(text, container, isExplanation = false) {
           const fallbackFormula = smilesToFormula(smiles);
           const fallbackEl = document.createElement('span');
           if (fallbackFormula) {
-            fallbackEl.innerHTML = `$ \\ce{${fallbackFormula}} $`;
+            fallbackEl.textContent = `$ \\ce{${fallbackFormula}} $`;
           } else {
             fallbackEl.innerText = smiles;
             fallbackEl.style.fontSize = '0.8rem';
@@ -201,7 +201,7 @@ export function renderRichText(text, container, isExplanation = false) {
         const fallbackFormula = smilesToFormula(smiles);
         const fallbackEl = document.createElement('span');
         if (fallbackFormula) {
-          fallbackEl.innerHTML = `$ \\ce{${fallbackFormula}} $`;
+          fallbackEl.textContent = `$ \\ce{${fallbackFormula}} $`;
         } else {
           fallbackEl.innerText = smiles;
           fallbackEl.style.fontSize = '0.8rem';
@@ -229,7 +229,8 @@ export function renderRichText(text, container, isExplanation = false) {
         }
       }
 
-      span.innerHTML = content.replace(/\\n/g, '<br>').replace(/\n/g, '<br>');
+      span.style.whiteSpace = 'pre-wrap';
+      span.textContent = content.replace(/\\n/g, '\n');
       container.appendChild(span);
     }
   });

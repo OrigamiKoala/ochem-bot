@@ -5,6 +5,10 @@ import { safeTypeset } from '../utils/mathJax';
 import { handleStream } from '../utils/stream';
 import { apiChat } from '../utils/api';
 
+const TRANSLATIONS = {
+  send: 'Send'
+};
+
 export default function ReactionPanel({
   currentReaction,
   isShowingAnswer,
@@ -479,7 +483,7 @@ Answer concisely as ${isGenChemMode ? 'chemistry' : 'organic chemistry'} tutor. 
               placeholder="Still confused? Ask Gemini..."
               onKeyPress={(e) => { if (e.key === 'Enter') sendFollowupQuestion(); }}
             />
-            <button id="send-followup-btn" onClick={sendFollowupQuestion}>Send</button>
+            <button id="send-followup-btn" onClick={sendFollowupQuestion}>{TRANSLATIONS.send}</button>
           </div>
         </div>
       </div>
