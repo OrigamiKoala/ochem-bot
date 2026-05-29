@@ -1452,16 +1452,19 @@ async function fetchBatchReactions(isExplicit = false) {
             return;
         }
 
+        const modelUsed = response.headers.get('X-Model-Used') || '';
+        const modelLabel = modelUsed ? ` [${modelUsed}]` : '';
+
         // Notify user if the server had to switch models
         if (response.headers.get('X-Model-Fallback')) {
-            loadingText.innerText = "Taking a bit longer — switched to a backup model...";
+            loadingText.innerText = `Taking a bit longer — switched to a backup model...${modelLabel}`;
             document.getElementById('message-container').style.display = 'block';
         }
 
         await handleStream(
             response,
             (text) => {
-                loadingText.innerText = `Generating questions... (${text.length} characters)`;
+                loadingText.innerText = `Generating questions... (${text.length} characters)${modelLabel}`;
             },
             (finalText) => {
                 if (finalText) {

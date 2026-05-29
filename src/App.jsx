@@ -245,8 +245,11 @@ export default function App() {
         return;
       }
 
+      const modelUsed = response.headers.get('X-Model-Used') || '';
+      const modelLabel = modelUsed ? ` [${modelUsed}]` : '';
+
       if (response.headers.get('X-Model-Fallback')) {
-        setMessageText("Taking a bit longer — switched to a backup model...");
+        setMessageText(`Taking a bit longer — switched to a backup model...${modelLabel}`);
         setMessageVisible(true);
         setIsMessageMinimized(false);
       }
@@ -254,7 +257,7 @@ export default function App() {
       await handleStream(
         response,
         (text) => {
-          setMessageText(`Generating questions... (${text.length} characters)`);
+          setMessageText(`Generating questions... (${text.length} characters)${modelLabel}`);
         },
         (finalText) => {
           if (finalText) {
@@ -282,7 +285,12 @@ export default function App() {
                 if (Array.isArray(obj)) return obj.map(applyLatexTokens);
                 if (obj && typeof obj === 'object') {
                   const out = {};
-                  for (const k in obj) out[k] = applyLatexTokens(obj[k]);
+                  for (const k in obj) {
+                    if (Object.prototype.hasOwnProperty.call(obj, k)) {
+                      if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+                      Reflect.set(out, k, applyLatexTokens(Reflect.get(obj, k)));
+                    }
+                  }
                   return out;
                 }
                 return obj;
@@ -309,6 +317,34 @@ export default function App() {
                   saveQueueToCacheUtil(currentReactionRef.current, updated, isFreeDraw, isGenChemMode);
                   return updated;
                 });
+
+                // Immediate transition if user is waiting
+                if (!currentReactionRef.current) {
+                  const next = reactions[0];
+                  const rest = reactions.slice(1);
+                  setCurrentReaction(next);
+                  setReactionQueue(rest);
+                  reactionQueueRef.current = rest;
+                  saveQueueToCacheUtil(null, rest, isFreeDraw, isGenChemMode);
+                  setHasSubmitted(false);
+                  setLastFeedback('');
+                  setIsShowingAnswer(false);
+                  setHasUsedHint(false);
+                  setIsCanvasBlank(true);
+                  setShowReportBtn(false);
+                  setExplanationVisible(false);
+                  setShowExplainBtn(false);
+                  if (whiteboardRef.current) whiteboardRef.current.clearCanvas();
+                  setMessageVisible(false);
+
+                  // Pre-fetch next batch if queue is running low
+                  if (rest.length <= 2) {
+                    setTimeout(() => fetchBatchReactions(false), 100);
+                  }
+                }
+              } else {
+                setMessageText("No questions were generated. Please try again.");
+                setMessageVisible(true);
               }
             } catch (e) {
               console.error("JSON parse error", e, finalText);

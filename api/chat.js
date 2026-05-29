@@ -240,6 +240,7 @@ export default async function handler(req, res) {
 
                     if (response.ok) {
                         console.log(`[${task}] Success with ${modelId} (cached path)`);
+                        res.setHeader('X-Model-Used', modelId);
                         if (isFallback) res.setHeader('X-Model-Fallback', 'true');
                         if (stream) {
                             res.setHeader('Content-Type', 'text/event-stream');
@@ -282,6 +283,7 @@ export default async function handler(req, res) {
 
             if (response.ok) {
                 console.log(`[${task}] Success with ${modelId} (non-cached path)`);
+                res.setHeader('X-Model-Used', modelId);
                 if (isFallback) res.setHeader('X-Model-Fallback', 'true');
                 if (stream) {
                     res.setHeader('Content-Type', 'text/event-stream');
