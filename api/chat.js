@@ -127,8 +127,13 @@ export default async function handler(req, res) {
     const { prompt, image, responseMimeType, task, gradeMode, stream, mode } = req.body;
     const isGenChem = mode === 'genchem';
     const isFreeDraw = mode === 'freedraw';
-    const API_KEY = isGenChem ? process.env.GEN_CHEM_API_KEY : process.env.GEMINI_API_KEY;
-    if (!API_KEY) return res.status(500).json({ error: isGenChem ? 'GEN_CHEM_API_KEY missing' : 'GEMINI_API_KEY missing' });
+    
+    const primaryKey = isGenChem ? process.env.GEN_CHEM_API_KEY : process.env.GEMINI_API_KEY;
+    const backupKey = isGenChem ? process.env.GEN_CHEM_API_KEY_2 : process.env.GEMINI_API_KEY_2;
+    const hasKey = primaryKey || backupKey;
+    if (!hasKey) {
+        return res.status(500).json({ error: isGenChem ? 'GEN_CHEM_API_KEY / GEN_CHEM_API_KEY_2 missing' : 'GEMINI_API_KEY / GEMINI_API_KEY_2 missing' });
+    }
 
     const GENERATION_MODELS = ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-3.1-flash-lite"];
     const GRADING_MODELS = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-2.5-flash"];
@@ -139,12 +144,12 @@ export default async function handler(req, res) {
     const maxOutputTokens = (task === 'generate') ? 8192 : 1024;
     const serviceTier = undefined; // Avoid priority queueing overhead on standard keys
 
-    // Build URL correctly — streaming endpoint already has ?, non-streaming needs ?
-    function buildUrl(modelId) {
+    // Build URL correctly
+    function buildUrl(modelId, apiKey) {
         if (stream) {
-            return `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse&key=${API_KEY}`;
+            return `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:streamGenerateContent?alt=sse&key=${apiKey}`;
         }
-        return `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${API_KEY}`;
+        return `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
     }
 
     // Pipe a Web ReadableStream to a Node.js ServerResponse (Vercel compatible)
@@ -166,14 +171,13 @@ export default async function handler(req, res) {
     let attemptIndex = 0;
 
     for (const modelId of models) {
-        try {
-            const isFallback = attemptIndex > 0;
-            attemptIndex++;
-            console.log(`[${task || 'chat'}] Trying model ${attemptIndex}/${models.length}: ${modelId}${isFallback ? ' (fallback)' : ''}`);
+        const isFallback = attemptIndex > 0;
+        attemptIndex++;
 
-            const parts = [{ text: prompt }];
-            if (image) parts.push({ inline_data: { mime_type: 'image/jpeg', data: image } });
+        const parts = [{ text: prompt }];
+        if (image) parts.push({ inline_data: { mime_type: 'image/jpeg', data: image } });
 
+        async function tryModelWithKey(apiKey) {
             // Determine cache config (use separate caches for genchem mode)
             let cacheLabel = null, cacheSystemText = null, cacheState = null;
             if (task === 'generate') {
@@ -210,7 +214,7 @@ export default async function handler(req, res) {
             if (cacheState) {
                 let cacheName = null;
                 try {
-                    cacheName = await ensureCache(cacheLabel, modelId, API_KEY, cacheSystemText, cacheState);
+                    cacheName = await ensureCache(cacheLabel, modelId, apiKey, cacheSystemText, cacheState);
                 } catch (cacheErr) {
                     console.warn(`[cache:${cacheLabel}] ensureCache threw for ${modelId}:`, cacheErr.message);
                 }
@@ -223,37 +227,14 @@ export default async function handler(req, res) {
                         service_tier: serviceTier
                     };
 
-                    const response = await fetch(buildUrl(modelId), {
+                    const response = await fetch(buildUrl(modelId, apiKey), {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(payload)
                     });
 
-                    if (response.ok) {
-                        console.log(`[${task}] Success with ${modelId} (cached path)`);
-                        res.setHeader('X-Model-Used', modelId);
-                        if (isFallback) res.setHeader('X-Model-Fallback', 'true');
-                        if (stream) {
-                            res.setHeader('Content-Type', 'text/event-stream');
-                            res.setHeader('Cache-Control', 'no-cache');
-                            res.setHeader('Connection', 'keep-alive');
-                            return await pipeStreamToResponse(response.body, res);
-                        }
-                        return res.status(200).json(await response.json());
-                    }
-
-                    // Cached request failed — invalidate and try next approach
-                    const errBody = await response.json().catch(() => ({}));
-                    console.warn(`[cache:${cacheLabel}] ${modelId} returned ${response.status}, invalidating cache`, errBody);
-                    cacheState.name = null;
-                    cacheState.expiry = 0;
-                    lastError = { status: response.status, data: errBody };
-
-                    // Server errors → skip to next model entirely
-                    if (response.status >= 500 || response.status === 429) {
-                        continue;
-                    }
-                    // 4xx → fall through to non-cached path for same model
+                    const errBody = !response.ok ? await response.json().catch(() => ({})) : null;
+                    return { response, errBody, isCached: true, cacheState };
                 }
             }
 
@@ -262,7 +243,7 @@ export default async function handler(req, res) {
                 ? [{ text: cacheSystemText + "\n\n" + prompt }, ...parts.slice(1)]
                 : parts;
 
-            const response = await fetch(buildUrl(modelId), {
+            const response = await fetch(buildUrl(modelId, apiKey), {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -272,23 +253,85 @@ export default async function handler(req, res) {
                 })
             });
 
-            if (response.ok) {
-                console.log(`[${task}] Success with ${modelId} (non-cached path)`);
+            const errBody = !response.ok ? await response.json().catch(() => ({})) : null;
+            return { response, errBody, isCached: false };
+        }
+
+        try {
+            console.log(`[${task || 'chat'}] Trying model ${attemptIndex}/${models.length}: ${modelId}${isFallback ? ' (fallback)' : ''} with primary key`);
+            
+            let result = await tryModelWithKey(primaryKey);
+            if (result.response.ok) {
+                console.log(`[${task}] Success with ${modelId} (primary key)`);
                 res.setHeader('X-Model-Used', modelId);
                 if (isFallback) res.setHeader('X-Model-Fallback', 'true');
                 if (stream) {
                     res.setHeader('Content-Type', 'text/event-stream');
                     res.setHeader('Cache-Control', 'no-cache');
                     res.setHeader('Connection', 'keep-alive');
-                    return await pipeStreamToResponse(response.body, res);
+                    return await pipeStreamToResponse(result.response.body, res);
                 }
-                return res.status(200).json(await response.json());
+                return res.status(200).json(await result.response.json());
             }
 
-            // Failed — log and try next model
-            const errBody = await response.json().catch(() => ({}));
-            console.warn(`[${task}] ${modelId} returned ${response.status}, trying next model...`, errBody);
-            lastError = { status: response.status, data: errBody };
+            const status = result.response.status;
+            const errBody = result.errBody;
+            const isBusy = status === 503 || (errBody?.error?.message && /busy|overloaded/i.test(errBody.error.message));
+
+            if (isBusy) {
+                console.warn(`[${task}] ${modelId} busy on primary key. Moving to next model...`, errBody);
+                lastError = { status, data: errBody };
+                if (result.isCached && result.cacheState) {
+                    result.cacheState.name = null;
+                    result.cacheState.expiry = 0;
+                }
+                continue; // Move down a model on the first API key before trying the second one
+            }
+
+            if (status === 429) {
+                if (backupKey) {
+                    console.warn(`[429] Rate limit hit for ${modelId} on primary key. Retrying with backup key.`);
+                    if (result.isCached && result.cacheState) {
+                        result.cacheState.name = null;
+                        result.cacheState.expiry = 0;
+                    }
+
+                    let backupResult = await tryModelWithKey(backupKey);
+                    if (backupResult.response.ok) {
+                        console.log(`[${task}] Success with ${modelId} (backup key)`);
+                        res.setHeader('X-Model-Used', modelId);
+                        if (isFallback) res.setHeader('X-Model-Fallback', 'true');
+                        if (stream) {
+                            res.setHeader('Content-Type', 'text/event-stream');
+                            res.setHeader('Cache-Control', 'no-cache');
+                            res.setHeader('Connection', 'keep-alive');
+                            return await pipeStreamToResponse(backupResult.response.body, res);
+                        }
+                        return res.status(200).json(await backupResult.response.json());
+                    }
+
+                    const backupStatus = backupResult.response.status;
+                    const backupErrBody = backupResult.errBody;
+                    console.warn(`[${task}] ${modelId} failed on backup key with status ${backupStatus}`, backupErrBody);
+                    lastError = { status: backupStatus, data: backupErrBody };
+                    if (backupResult.isCached && backupResult.cacheState) {
+                        backupResult.cacheState.name = null;
+                        backupResult.cacheState.expiry = 0;
+                    }
+                } else {
+                    console.warn(`[429] Rate limit hit on primary key but no backup key configured.`);
+                    lastError = { status, data: errBody };
+                }
+                continue;
+            }
+
+            // Other non-busy, non-429 error (e.g. 4xx bad request)
+            console.warn(`[${task}] ${modelId} failed on primary key with status ${status}`, errBody);
+            lastError = { status, data: errBody };
+            if (result.isCached && result.cacheState) {
+                result.cacheState.name = null;
+                result.cacheState.expiry = 0;
+            }
             continue;
 
         } catch (error) {
