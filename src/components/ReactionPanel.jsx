@@ -51,11 +51,65 @@ export default function ReactionPanel({
     return s.replace(/\[\[\s*SMILES:\s*/gi, '').replace(/\]\]/g, '').trim();
   }
 
+  function isLikelySmiles(token) {
+    const s = token.trim();
+    if (s.length < 3) return false;
+
+    // Must only contain valid SMILES characters
+    if (!/^[A-Za-z0-9@+\-\[\]\(\)\\/#=.]+$/.test(s)) return false;
+
+    const excludeList = new Set([
+      'THF', 'DMF', 'DMSO', 'DME', 'DCM', 'TFA', 'TEA', 'LDA', 'DCC', 'NBS', 'PCC', 'PDC',
+      'MCPBA', 'AIBN', 'DIAD', 'DEAD', 'DIBAL', 'DIBAL-H', 'BINAP', 'HMPA', 'TMEDA',
+      'AcOH', 'Ac2O', 'Et3N', 'MeCN', 'EtOH', 'MeOH', 'tBuOH', 'iPrOH', 'EtOAc', 'PhNH2',
+      'PhCl', 'PhBr', 'PhI', 'PhF', 'PhNO2', 'PhMe', 'TsCl', 'MsCl', 'Tf2O', 'TMSCl', 'TBDMSCl',
+      'pyridine', 'pyr', 'benzene', 'hv', 'heat', 'light', 'water', 'ether', 'aq', 'cat', 'conc',
+      'dil', 'reflux', 'rt', 'min', 'hr', 'hours', 'deg', 'degC', 'atm', 'bar', 'psi',
+      'H2O', 'CO2', 'HCl', 'HBr', 'HI', 'HF', 'H2SO4', 'HNO3', 'H3PO4', 'NaOH', 'KOH', 'LiOH',
+      'NaHCO3', 'Na2CO3', 'K2CO3', 'Cs2CO3', 'NaCl', 'NaBr', 'NaI', 'KCl', 'KBr', 'KI',
+      'NH3', 'NH4Cl', 'NH4OH', 'MgSO4', 'Na2SO4', 'CaCl2', 'CuSO4', 'FeSO4', 'ZnCl2', 'AlCl3',
+      'BF3', 'BCl3', 'TiCl4', 'SnCl4', 'FeCl3', 'FeBr3', 'Pd/C', 'PtO2', 'Raney', 'LiAlH4',
+      'NaBH4', 'NaCNBH3', 'LiBH4', 'BH3', 'B2H6', 'N2', 'O2', 'H2', 'Cl2', 'Br2', 'I2', 'F2',
+      'O3', 'D2O', 'NaH', 'KH', 'LiH', 'CaH2', 'NaNH2', 'KNH2', 'tBuOK', 'tBuONa', 'NaOEt',
+      'NaOMe', 'KOEt', 'KOMe', 'LDA', 'LiHMDS', 'NaHMDS', 'KHMDS', 'nBuLi', 'sBuLi', 'tBuLi',
+      'MeLi', 'PhLi', 'MeMgBr', 'MeMgCl', 'EtMgBr', 'PhMgBr', 'PhMgCl', 'Zn', 'Mg', 'Fe', 'Cu',
+    ]);
+
+    if (excludeList.has(s) || excludeList.has(s.toUpperCase())) return false;
+
+    const atoms = s.match(/[COHNSPFIBcns]|\b(Cl|Br)\b/g);
+    if (!atoms) return false;
+
+    const hasSmilesSyntax = /[=\(\)#\[\]\\\/]/.test(s);
+    if (hasSmilesSyntax) return true;
+
+    const cleanToken = s.replace(/Cl/g, 'C').replace(/Br/g, 'C');
+    if (/^[CcOoNnSsPpHhFfIiBb0-9]+$/.test(cleanToken)) {
+      const nonSmilesLetters = cleanToken.replace(/[CcOoNnSsPpHhFfIiBb0-9]/g, '');
+      if (nonSmilesLetters.length === 0) {
+        return /[CcOoNnSsPpFfIiBb]/.test(cleanToken);
+      }
+    }
+
+    return false;
+  }
+
+  function autoTagSmiles(text) {
+    if (!text) return "";
+    return text.replace(/\b[A-Za-z0-9@+\-\[\]\(\)\\/#=.]+\b/g, (token) => {
+      if (isLikelySmiles(token)) {
+        return `[[SMILES: ${token}]]`;
+      }
+      return token;
+    });
+  }
+
   function cleanTextForSvg(text) {
     if (!text) return "";
 
     // Parse using the robust bracket-tracking parser to completely eliminate the extra bracket issue
     const segments = parseSmilesSegments(text);
+
     let clean = segments.map(seg => {
       if (seg.type === 'smiles') {
         const trimmed = seg.content.trim();
@@ -299,8 +353,8 @@ export default function ReactionPanel({
         topRow.className = 'reagents-top';
         const reagentsText = data.reagents || data.conditions || '';
         if (hasContent(reagentsText)) {
-          const cleanedReagents = cleanTextForSvg(reagentsText.replace(/\\\\/g, '\\'));
-          renderRichText(cleanedReagents, topRow);
+          const taggedReagents = autoTagSmiles(reagentsText.replace(/\\\\/g, '\\'));
+          renderRichText(taggedReagents, topRow);
         }
 
         const arrowLine = document.createElement('div');
@@ -309,8 +363,8 @@ export default function ReactionPanel({
         const bottomRow = document.createElement('div');
         bottomRow.className = 'conditions-bottom';
         if (hasReagents && hasConditions) {
-          const cleanedConditions = cleanTextForSvg(data.conditions);
-          renderRichText(cleanedConditions, bottomRow);
+          const taggedConditions = autoTagSmiles(data.conditions);
+          renderRichText(taggedConditions, bottomRow);
         }
 
         arrowContainer.appendChild(topRow);
