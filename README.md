@@ -7,6 +7,6 @@ This is my repository. Check out the latest build at https://ochem-bot.vercel.ap
 
 Vibe-coded by Carl Liu, built with Github and deployed with Vercel.
 
-Copyright 2026. All rights reserved. This code is under the MIT open source license.
+Copyright 2026. All rights reserved. This code is under the GNU GPL v3.0 license.
 
 Got questions or feedback? DM my creator on Discord at @origamikoala. 
