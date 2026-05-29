@@ -1,7 +1,19 @@
-// API wrapper functions for /api/chat calls
+// API wrapper functions for /api/chat calls with automatic model selection logging
+
+let lastModelUsed = null;
+
+async function fetchWithModelLogging(url, options) {
+  const response = await fetch(url, options);
+  const modelUsed = response.headers.get('X-Model-Used');
+  if (modelUsed && modelUsed !== lastModelUsed) {
+    console.log(`[Model Selection] Generation model switched to: ${modelUsed}`);
+    lastModelUsed = modelUsed;
+  }
+  return response;
+}
 
 export async function apiGenerate({ prompt, isGenChemMode, stream = true, responseMimeType = 'application/json' }) {
-  return fetch('/api/chat', {
+  return fetchWithModelLogging('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -15,7 +27,7 @@ export async function apiGenerate({ prompt, isGenChemMode, stream = true, respon
 }
 
 export async function apiGrade({ prompt, image, isLearnMode, isFreeDraw, isGenChemMode, stream = true }) {
-  return fetch('/api/chat', {
+  return fetchWithModelLogging('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -30,7 +42,7 @@ export async function apiGrade({ prompt, image, isLearnMode, isFreeDraw, isGenCh
 }
 
 export async function apiChat({ prompt, image, isGenChemMode, isFreeDraw, stream = true }) {
-  return fetch('/api/chat', {
+  return fetchWithModelLogging('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -44,7 +56,7 @@ export async function apiChat({ prompt, image, isGenChemMode, isFreeDraw, stream
 }
 
 export async function apiReevaluate({ prompt, image, isGenChemMode, isLearnMode, stream = true }) {
-  return fetch('/api/chat', {
+  return fetchWithModelLogging('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

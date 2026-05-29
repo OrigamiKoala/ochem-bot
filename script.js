@@ -2,6 +2,16 @@ import { jsonrepair } from 'https://cdn.jsdelivr.net/npm/jsonrepair@3/lib/esm/in
 
 // script.js
 console.log("hi!");
+let lastModelUsed = null;
+async function fetchWithModelLogging(url, options) {
+    const response = await fetch(url, options);
+    const modelUsed = response.headers.get('X-Model-Used');
+    if (modelUsed && modelUsed !== lastModelUsed) {
+        console.log(`[Model Selection] Generation model switched to: ${modelUsed}`);
+        lastModelUsed = modelUsed;
+    }
+    return response;
+}
 const canvasEl = document.getElementById('whiteboard');
 
 const clearBtn = document.getElementById('clear-btn');
@@ -860,7 +870,7 @@ Student asks: ${question}
 
 Answer concisely as ${isGenChemMode ? 'chemistry' : 'organic chemistry'} tutor. Use [[SMILES: ...]] for structures. ALWAYS wrap ALL LaTeX formulas, chemical formulas (like $\ce{H2O}$), equations, and expressions in inline math delimiters ($...$) or block math delimiters ($$...$$).`;
 
-        const response = await fetch('/api/chat', {
+        const response = await fetchWithModelLogging('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt, task: 'chat', stream: true, mode: isGenChemMode ? 'genchem' : 'ochem' })
@@ -1493,7 +1503,7 @@ async function fetchBatchReactions(isExplicit = false) {
             : `5 organic chemistry questions. Topic: ${topic}. Difficulty: ${currentDifficulty}/100 ${diffExplanation}. Type: ${questiontype}. JSON only. ${currentDifficulty > 33 ? 'Allow multistep reagents.' : ''}`;
 
 
-        const response = await fetch('/api/chat', {
+        const response = await fetchWithModelLogging('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1867,7 +1877,7 @@ async function submitDrawing() {
 Reaction: ${currentReaction.reactants} + [${currentReaction.reagents || ''}] / [${currentReaction.conditions || ''}]
 Answer: ${currentReaction.answer}`;
 
-        const response = await fetch('/api/chat', {
+        const response = await fetchWithModelLogging('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -1979,7 +1989,7 @@ async function explainFreeDrawFeedback() {
     try {
         const prompt = `The student drew a chemistry mechanism on a whiteboard (image attached). Your previous evaluation was:\n\n"${lastFeedback}"\n\nNow provide a detailed explanation of WHY this mechanism is chemically implausible or incorrect. Specifically:\n1. Identify what reaction the student appears to be attempting\n2. Point out each specific error in the arrow-pushing, electron flow, or products\n3. Explain the correct mechanism or approach\n4. Use [[SMILES: ...]] for any molecular structures you reference\n\nBe thorough, educational, and encouraging.`;
 
-        const response = await fetch('/api/chat', {
+        const response = await fetchWithModelLogging('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -2056,7 +2066,7 @@ Re-evaluate VERY carefully. Is the user's drawing actually a plausible represent
 Consider different orientations, implicit hydrogens, or valid alternative mechanisms if applicable.
 Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
 
-        const response = await fetch('/api/chat', {
+        const response = await fetchWithModelLogging('/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ prompt, image: base64Image, task: 'grade', mode: isGenChemMode ? 'genchem' : 'ochem' })
