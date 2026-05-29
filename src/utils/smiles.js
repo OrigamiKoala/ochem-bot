@@ -51,7 +51,7 @@ export function isSimpleSmiles(smiles) {
   if (!smiles) return false;
   const s = smiles.trim();
 
-  if (SMILES_TO_FORMULA[s]) return true;
+  if (Object.prototype.hasOwnProperty.call(SMILES_TO_FORMULA, s)) return true;
 
   // Single atom in brackets (ions): [O-], [Na+], [NH2+], etc.
   if (/^\[[A-Za-z][a-z]?[HhDd]?\d*[+\-]\d*\]$/.test(s)) return true;
@@ -81,7 +81,7 @@ export function smilesToFormula(smiles) {
     }
   }
 
-  if (SMILES_TO_FORMULA[s]) return SMILES_TO_FORMULA[s];
+  if (Object.prototype.hasOwnProperty.call(SMILES_TO_FORMULA, s)) return SMILES_TO_FORMULA[s];
 
   // Single bracketed ion: [OH-] -> OH^{-}, [Na+] -> Na^{+}
   const ionMatch = s.match(/^\[([A-Za-z][a-z]?[HhDd]?\d*)([+\-]\d*)\]$/);

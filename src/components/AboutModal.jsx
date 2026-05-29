@@ -20,7 +20,7 @@ export default function AboutModal({ visible, onClose }) {
 
   useEffect(() => {
     if (contentRef.current && content) {
-      contentRef.current.innerHTML = '';
+      contentRef.current.textContent = '';
       const parser = new DOMParser();
       const doc = parser.parseFromString(content, 'text/html');
       while (doc.body.firstChild) {

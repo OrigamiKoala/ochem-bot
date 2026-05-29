@@ -406,7 +406,7 @@ function isSimpleSmiles(smiles) {
     const s = smiles.trim();
 
     // Direct lookup match
-    if (SMILES_TO_FORMULA[s]) return true;
+    if (Object.prototype.hasOwnProperty.call(SMILES_TO_FORMULA, s)) return true;
 
     // Single atom in brackets (ions): [O-], [Na+], [NH2+], etc.
     if (/^\[[A-Za-z][a-z]?[HhDd]?\d*[+\-]\d*\]$/.test(s)) return true;
@@ -430,7 +430,7 @@ function smilesToFormula(smiles) {
     const s = smiles.trim();
 
     // Direct lookup
-    if (SMILES_TO_FORMULA[s]) return SMILES_TO_FORMULA[s];
+    if (Object.prototype.hasOwnProperty.call(SMILES_TO_FORMULA, s)) return SMILES_TO_FORMULA[s];
 
     // Single bracketed ion: [OH-] -> OH^{-}, [Na+] -> Na^{+}
     const ionMatch = s.match(/^\[([A-Za-z][a-z]?[HhDd]?\d*)([+\-]\d*)\]$/);
@@ -522,7 +522,7 @@ function initSettings() {
     // Set slider value
     difficultySlider.value = currentDifficulty;
 
-    topicsListDiv.innerHTML = '';
+    topicsListDiv.textContent = '';
 
     const allAvailableTopics = [...getActiveBaseTopics(), ...userCustomTopics];
 
@@ -1080,12 +1080,12 @@ function renderReaction(data, showAnswer = false) {
     if (!instructionDiv || !moleculeDiv || !explanationDisplay || !explanationContent) return;
 
     // Immediate clear
-    moleculeDiv.innerHTML = '';
+    moleculeDiv.textContent = '';
 
     // Only hide explanation if we aren't explicitly showing the answer
     if (!showAnswer) {
         explanationDisplay.style.display = 'none';
-        chatMessages.innerHTML = ''; // Reset chat history
+        chatMessages.textContent = ''; // Reset chat history
     }
 
     // Reset/Parse explanation
@@ -1212,7 +1212,7 @@ function renderMolecules(molecules, container, suffix = "") {
         if (index > 0) {
             const plusSpan = document.createElement('span');
             plusSpan.className = 'reaction-plus';
-            plusSpan.innerHTML = ' + ';
+            plusSpan.textContent = ' + ';
             container.appendChild(plusSpan);
         }
 
@@ -1331,7 +1331,7 @@ function parseSmilesSegments(text) {
 //// ------ Rendering Mechanistic Explanations & Rich Text ------
 function renderRichText(text, container, isExplanation = false) {
     if (!container) return;
-    container.innerHTML = '';
+    container.textContent = '';
 
     // Parse SMILES tags from the text. SMILES can contain ] chars (atom brackets
     // like [O-], [NH2]), so simple regex splitting breaks. Instead, we use a custom
@@ -1664,9 +1664,9 @@ function enterFreeDrawMode() {
     if (freedrawExplainBtn) freedrawExplainBtn.style.display = 'none';
 
     if (instructionDiv) instructionDiv.innerText = 'Free Draw Mode — draw any mechanism and submit for grading.';
-    if (moleculeDiv) moleculeDiv.innerHTML = '';
+    if (moleculeDiv) moleculeDiv.textContent = '';
     if (explanationDisplay) explanationDisplay.style.display = 'none';
-    if (chatMessages) chatMessages.innerHTML = '';
+    if (chatMessages) chatMessages.textContent = '';
 
     // Clear whiteboard
     fabricCanvas.clear(); fabricCanvas.backgroundColor = 'transparent';
@@ -1704,9 +1704,9 @@ function resetQuestionUI() {
     const loadingText = document.getElementById('loading-text');
 
     if (instructionDiv) instructionDiv.innerText = '';
-    if (moleculeDiv) moleculeDiv.innerHTML = '';
+    if (moleculeDiv) moleculeDiv.textContent = '';
     if (explanationDisplay) explanationDisplay.style.display = 'none';
-    if (chatMessages) chatMessages.innerHTML = '';
+    if (chatMessages) chatMessages.textContent = '';
 
     // Clear whiteboard
     fabricCanvas.clear(); fabricCanvas.backgroundColor = 'transparent';
@@ -1806,7 +1806,7 @@ function handleHint() {
         explanationDiv.style.display = 'block';
     }
     if (explanationContent) {
-        explanationContent.innerHTML = '';
+        explanationContent.textContent = '';
         const hintLabel = document.createElement('strong');
         hintLabel.textContent = '💡 Hint: ';
         const hintSpan = document.createElement('span');
@@ -1997,7 +1997,7 @@ async function explainFreeDrawFeedback() {
     // Show the explanation panel below the question area (same as other modes)
     if (explanationDisplay) explanationDisplay.style.display = 'block';
     if (explanationContent) explanationContent.innerText = 'Generating explanation...';
-    if (chatMessages) chatMessages.innerHTML = '';
+    if (chatMessages) chatMessages.textContent = '';
 
     try {
         const prompt = `The student drew a chemistry mechanism on a whiteboard (image attached). Your previous evaluation was:\n\n"${lastFeedback}"\n\nNow provide a detailed explanation of WHY this mechanism is chemically implausible or incorrect. Specifically:\n1. Identify what reaction the student appears to be attempting\n2. Point out each specific error in the arrow-pushing, electron flow, or products\n3. Explain the correct mechanism or approach\n4. Use [[SMILES: ...]] for any molecular structures you reference\n\nBe thorough, educational, and encouraging.`;

@@ -33,7 +33,7 @@ export default function ReactionPanel({
   useEffect(() => {
     if (hintOverride && explanationContentRef.current) {
       const container = explanationContentRef.current;
-      container.innerHTML = '';
+      container.textContent = '';
       const hintLabel = document.createElement('strong');
       hintLabel.textContent = '💡 Hint: ';
       container.appendChild(hintLabel);
@@ -161,7 +161,7 @@ export default function ReactionPanel({
   }
 
   function renderReactionOneStep(data, container, showAnswer = false) {
-    container.innerHTML = '';
+    container.textContent = '';
 
     let cleanReactants = extractPureSmiles(data.reactants);
     let cleanAnswer = showAnswer && data.answer ? extractPureSmiles(data.answer) : "";
@@ -263,7 +263,7 @@ export default function ReactionPanel({
       if (index > 0) {
         const plusSpan = document.createElement('span');
         plusSpan.className = 'reaction-plus';
-        plusSpan.innerHTML = ' + ';
+        plusSpan.textContent = ' + ';
         container.appendChild(plusSpan);
       }
 
@@ -304,10 +304,10 @@ export default function ReactionPanel({
 
     if (!instructionDiv || !moleculeDiv || !explanationContentDiv) return;
 
-    moleculeDiv.innerHTML = '';
+    moleculeDiv.textContent = '';
 
     if (!showAnswer && chatMessagesRef.current) {
-      chatMessagesRef.current.innerHTML = '';
+      chatMessagesRef.current.textContent = '';
     }
 
     renderRichText(data?.explanation || "No explanation preloaded.", explanationContentDiv, true);
