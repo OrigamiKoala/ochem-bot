@@ -50,6 +50,15 @@ Follow these strict Olympiad Design Philosophies:
 - IF DIFFICULTY = IChO Level (75-100):
   - Pivot to completely original, concept-first designs leveraging advanced chemical phenomena.
   - The "First-Principles" Guardrail: Introduce advanced, extra-syllabus topics using self-contained, axiomatic background information within the problem preamble. A student must be able to deduce the correct path using standard prerequisites combined with the provided context.
+
+3. Question Generation Criteria (For High-Difficulty Questions)
+- Conceptual Integration (Multi-Topic Coupling): Standard questions isolate a single topic (e.g., a simple acid-base titration). High-quality difficult questions require the simultaneous application of disparate chemical principles. Example: Coupling a coordination chemistry equilibrium ($K_f$) with a solubility product ($K_{sp}$) and an electrochemical cell ($E^{\\circ}$), requiring the user to determine free ligand concentration via Nernst equation manipulation.
+- Multi-Step Logical Cascades: The problem cannot be solved in a single algebraic or conceptual step. It requires a clear execution pathway where the output of one step forms the input of the next, often without explicit prompting on the intermediate variables. Example: Advanced organic synthesis/structure elucidation. Deducing a molecular structure from elemental analysis (empirical formula) $\\rightarrow$ mass spectrometry fragments $\\rightarrow$ IR functional groups $\\rightarrow$ regioselective multi-step mechanistic outcomes (e.g., ozonolysis followed by an intramolecular aldol condensation).
+- Discrimination of Subtle Chemical Nuances: Distinguishes top-tier students by testing exceptions grounded in fundamental principles rather than rote memorization. Focuses on electronic structures, periodic trends, and thermodynamic vs. kinetic control. Example: Predicting the major product of an electrophilic aromatic substitution where steric hindrance and electronic activation conflict, or identifying anomalies in molecular orbital configurations (e.g., $B_2$ vs $O_2$ paramagnetism and bond orders).
+- Mathematical and Algorithmic Rigor: Eliminates standard simplifying assumptions (e.g., the $x$-is-small approximation in weak acid ionization). Requires setting up and solving higher-order algebraic equations or systems of simultaneous equations derived from mass and charge balances. Example: Calculating the exact pH of a polyprotic acid solution where $K_{a2}$ is non-negligible or the solution is sufficiently dilute that water autoionization ($K_w$) must be factored into the charge balance equation:
+$$\\text{[H}^+\\text{]} = \\text{[OH}^-\\text{]} + \\text{[A}^-\\text{]} + 2\\text{[A}^{2-}\\text{]}$$
+- Novel Context and Data Interpretation: Presents familiar chemical principles within an unfamiliar framework (e.g., bioinorganic active sites, industrial catalytic cycles, or cutting-edge materials chemistry like Metal-Organic Frameworks). Requires the student to extract relevant thermodynamic, kinetic, or structural variables from raw data tables or graphical representations (e.g., phase diagrams with unexpected polymorphs).
+
 All questions generated MUST adhere to these critical design directives:
 
 1. QUESTION STYLE & TRICKINESS: Do NOT make every single question a trap question; instead, provide a mix of standard and tricky questions:
@@ -79,6 +88,40 @@ Output JSON only:
 {"reactions":[{"qtype":"predict|calculate|conceptual|mechanism","reactants":"","reagents":"","conditions":"","answer":"LaTeX formula/numeric with units","instructions":"FULL COMPLETE QUESTION TEXT here. Include all data, context, and task. Use LaTeX for math. This is the ONLY field the student sees.","hint":"a brief helpful hint that nudges the student toward the right approach WITHOUT revealing the answer — e.g. name a relevant law, suggest a starting equation, or highlight a key concept","explanation":"detailed solution with LaTeX math and [[SMILES: ...]]"}]}
 
 IMPORTANT: Put the ENTIRE question in 'instructions'. Leave reactants/reagents/conditions EMPTY — they are for organic reaction diagrams only.
+
+FEW-SHOT EXAMPLES:
+[
+  {
+    "qtype": "conceptual",
+    "reactants": "",
+    "reagents": "",
+    "conditions": "",
+    "answer": "(A)",
+    "instructions": "A weighed sample of a copper-nickel alloy is dissolved in a known volume of nitric acid. Which method is most suitable for determining the mass percent of copper in the alloy?\n\n(A) Treatment of an aliquot of the solution with excess iodide, followed by titration of the iodine produced with sodium thiosulfate.\n(B) Measurement of the absorbance of the solution at a wavelength of light at which both $\\ce{Cu^{2+}}$ and $\\ce{Ni^{2+}}$ absorb, and comparison with the absorbances of known standards of the two ions.\n(C) Addition of excess sodium hydroxide to the solution, isolation of the metal hydroxides by filtration, and measurement of the mass of the precipitate.\n(D) Bubbling hydrogen gas through the solution and measuring the mass of the metal that precipitates from the solution.",
+    "hint": "Recall the reactions of copper(II) and nickel(II) ions with iodide, and think about which method is highly selective for copper.",
+    "explanation": "Dissolving a copper-nickel alloy in nitric acid produces $\\ce{Cu^{2+}}$ and $\\ce{Ni^{2+}}$ ions.\n\n1. In method (A), adding excess iodide ($\\ce{I^-}$) selectively reduces $\\ce{Cu^{2+}}$ to insoluble copper(I) iodide ($\\ce{CuI}$), producing triiodide/iodine ($\\ce{I_3^-}$ / $\\ce{I_2}$):\n$$2\\ce{Cu^{2+}} + 4\\ce{I^-} \\rightarrow 2\\ce{CuI(s)} + \\ce{I_2}$$\n$\\ce{Ni^{2+}}$ does not oxidize iodide. Titrating the liberated iodine with sodium thiosulfate ($\\ce{S_2O_3^{2-}}$) allows for highly selective and accurate quantification of copper:\n$$\\ce{I_2} + 2\\ce{S_2O_3^{2-}} \\rightarrow 2\\ce{I^-} + \\ce{S_4O_6^{2-}}$$\nThis iodometric titration is extremely selective for copper over nickel, making (A) the correct and most suitable method.\n\n2. Method (B) is unsuitable because both ions absorb light at the chosen wavelength, making direct comparison difficult without a multi-wavelength deconvolution method.\n3. Method (C) precipitates both metal hydroxides ($\\ce{Cu(OH)_2}$ and $\\ce{Ni(OH)_2}$), so their masses cannot be separated simply by weighing the precipitate.\n4. Method (D) cannot selectively precipitate copper in a strongly oxidizing nitric acid environment, nor is it a standard analytical procedure."
+  },
+  {
+    "qtype": "conceptual",
+    "reactants": "",
+    "reagents": "",
+    "conditions": "",
+    "answer": "(B)",
+    "instructions": "Which species has the longest carbon-oxygen bond?\n\n(A) $\\ce{HCO2^-}$\n(B) $\\ce{CO3^{2-}}$\n(C) $\\ce{CO2}$\n(D) $\\ce{COS}$",
+    "hint": "Determine the Lewis structure and calculate the average carbon-oxygen bond order for each species. A lower bond order corresponds to a longer bond.",
+    "explanation": "The length of a carbon-oxygen bond is inversely proportional to its bond order. Let's determine the carbon-oxygen bond orders in each species:\n\n1. For $\\ce{HCO2^-}$ (formate ion), the carbon has one double bond and one single bond to oxygen, which are delocalized by resonance. The average $\\ce{C-O}$ bond order is:\n$$\\text{Bond Order} = \\frac{1 + 2}{2} = 1.5$$\n\n2. For $\\ce{CO3^{2-}}$ (carbonate ion), the carbon is bonded to three oxygen atoms with one double bond and two single bonds in resonance. The average $\\ce{C-O}$ bond order is:\n$$\\text{Bond Order} = \\frac{1 + 1 + 2}{3} = 1.33$$\n\n3. For $\\ce{CO2}$ (carbon dioxide), the Lewis structure is $\\ce{O=C=O}$, which has two discrete $\\ce{C-O}$ double bonds. The bond order is $2.0$.\n\n4. For $\\ce{COS}$ (carbonyl sulfide), the Lewis structure is $\\ce{O=C=S}$, containing a $\\ce{C-O}$ double bond. The bond order is $2.0$.\n\nComparing the average bond orders, the carbonate ion ($\\ce{CO3^{2-}}$) has the lowest average bond order ($1.33$) and therefore the longest carbon-oxygen bond, making (B) the correct choice."
+  },
+  {
+    "qtype": "conceptual",
+    "reactants": "",
+    "reagents": "",
+    "conditions": "",
+    "answer": "(D)",
+    "instructions": "Which is the best description of the arrangement of the atoms in space in the protonated urea ion, $\\ce{H5CN2O^+}$?\n\n(A) SMILES: [[SMILES: NC(=O)[NH3+]]]\n(B) SMILES: [[SMILES: NC(=O)[NH3+]]]\n(C) SMILES: [[SMILES: N=C(O)N]]\n(D) SMILES: [[SMILES: NC(O)=[NH2+]]]",
+    "hint": "Consider which atom in urea is the most nucleophilic due to resonance stabilization of the protonated cation.",
+    "explanation": "Protonation of urea, $\\ce{(NH2)2C=O}$, occurs preferentially on the oxygen atom rather than the nitrogen atom.\n\n1. Protonation on the oxygen atom gives the cation $\\ce{[(NH2)2C=OH]^+}$. The positive charge in this cation is highly stabilized via resonance delocalization over both electronegative nitrogen atoms:\n$$\\ce{H2N-C(OH)=NH2^+} \\leftrightarrow \\ce{H2N^+=C(OH)-NH2} \\leftrightarrow \\ce{H2N-C(O^+H)-NH2}$$\nThis delocalization gives both $\\ce{C-N}$ bonds substantial double-bond character and makes the three heavy atoms (N, C, N) and O lie in the same plane.\n\n2. Protonation on nitrogen, yielding $\\ce{H2N-C(=O)-NH3^+}$, lacks this resonance stabilization because the positive charge on nitrogen cannot be delocalized since nitrogen has no lone pairs to participate in conjugation.\n\n3. The SMILES string representing oxygen protonation (specifically showing one resonance contributor with a $\\ce{C=N}$ double bond) is [[SMILES: NC(O)=[NH2+]]], which is option (D)."
+  }
+]
 
 RULES:
 - Chemistry MUST be correct. Double-check calculations and products.
