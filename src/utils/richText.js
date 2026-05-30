@@ -1,12 +1,13 @@
 import { cleanSmiles, smilesToFormula, smilesOptions } from './smiles';
 import { safeTypeset } from './mathJax';
+import { renderSVG } from './svglib';
 
-// Parse text into segments of {type: 'text'|'smiles', content: string}.
-// Handles SMILES atom brackets (e.g. [O-], [NH2]) inside [[SMILES: ...]] tags
+// Parse text into segments of {type: 'text'|'smiles'|'svg', content: string}.
+// Handles SMILES atom brackets (e.g. [O-], [NH2]) inside [[SMILES: ...]] and [[SVG: ...]] tags
 // by tracking bracket depth.
 export function parseSmilesSegments(text) {
   const segments = [];
-  const tagPattern = /\[\[\s*SMILES:\s*/gi;
+  const tagPattern = /\[\[\s*(SMILES|SVG):\s*/gi;
   let lastIndex = 0;
   let match;
 
@@ -15,6 +16,7 @@ export function parseSmilesSegments(text) {
       segments.push({ type: 'text', content: text.substring(lastIndex, match.index) });
     }
 
+    const type = match[1].toLowerCase();
     let i = match.index + match[0].length;
     let depth = 0;
     let smilesStart = i;
@@ -32,7 +34,7 @@ export function parseSmilesSegments(text) {
         } else {
           if (i + 1 < text.length && text.charAt(i + 1) === ']') {
             const smilesContent = text.substring(smilesStart, i);
-            segments.push({ type: 'smiles', content: smilesContent });
+            segments.push({ type, content: smilesContent });
             i += 2;
             while (i < text.length && text.charAt(i) === ']') i++;
             found = true;
@@ -48,7 +50,7 @@ export function parseSmilesSegments(text) {
 
     if (!found) {
       const smilesContent = text.substring(smilesStart);
-      segments.push({ type: 'smiles', content: smilesContent });
+      segments.push({ type, content: smilesContent });
       i = text.length;
     }
 
@@ -142,7 +144,7 @@ export function wrapBracesInLatex(text) {
   return result;
 }
 
-// Render rich text with LaTeX + SMILES into a DOM container.
+// Render rich text with LaTeX + SMILES + SVG into a DOM container.
 // This is an imperative DOM function used via refs.
 export function renderRichText(text, container, isExplanation = false) {
   if (!container) return;
@@ -208,6 +210,13 @@ export function renderRichText(text, container, isExplanation = false) {
         }
         wrapper.replaceWith(fallbackEl);
       }
+
+    } else if (seg.type === 'svg') {
+      const svgString = seg.content.trim();
+      const wrapper = document.createElement('div');
+      wrapper.className = 'inline-svg-diagram-wrapper';
+      container.appendChild(wrapper);
+      renderSVG(svgString, wrapper);
 
     } else if (seg.content.trim().length > 0) {
       const span = document.createElement('span');
