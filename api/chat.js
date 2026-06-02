@@ -1,18 +1,13 @@
 // api/chat.js
 
-// --- Explicit Context Caching for Generation ---
+// --- Explicit Context Caching for Generation (prompts large enough to cache) ---
 let generationCacheState = { name: null, expiry: 0 };
-let gradingLearnCacheState = { name: null, expiry: 0 };
-let gradingNormalCacheState = { name: null, expiry: 0 };
 
-// --- Gen-Chem mode caches (separate from ochem) ---
+// --- Gen-Chem mode cache (separate from ochem) ---
 let genchemGenerationCacheState = { name: null, expiry: 0 };
-let genchemGradingLearnCacheState = { name: null, expiry: 0 };
-let genchemGradingNormalCacheState = { name: null, expiry: 0 };
 
-// --- Free Draw mode caches ---
-let freedrawGradingLearnCacheState = { name: null, expiry: 0 };
-let freedrawGradingNormalCacheState = { name: null, expiry: 0 };
+// Grading prompts are too short for Gemini's context cache minimum token count,
+// so grading always uses the non-cached path with the system instruction inlined.
 
 // --- Rate limit memory registry to remember 429 keys for the rest of the day ---
 let rateLimitRegistry = new Map();
@@ -418,9 +413,14 @@ const GRADING_NORMAL_SYSTEM_INSTRUCTION = `Grade organic chemistry drawing. Outp
 
 const CACHE_TTL_SECONDS = 3600; // 1 hour
 
+const CACHE_FAIL_COOLDOWN_MS = 300000; // 5 min cooldown after cache creation failure
+
 async function ensureCache(label, modelId, apiKey, systemText, state) {
     const now = Date.now();
     if (state.name && now < state.expiry - 60000) return state.name;
+
+    // Skip if cache creation recently failed (avoids wasted API call)
+    if (state.failedUntil && now < state.failedUntil) return null;
 
     const cacheResponse = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/cachedContents?key=${apiKey}`,
@@ -435,11 +435,15 @@ async function ensureCache(label, modelId, apiKey, systemText, state) {
         }
     );
 
-    if (!cacheResponse.ok) return null;
+    if (!cacheResponse.ok) {
+        state.failedUntil = now + CACHE_FAIL_COOLDOWN_MS;
+        return null;
+    }
 
     const cacheData = await cacheResponse.json();
     state.name = cacheData.name;
     state.expiry = now + CACHE_TTL_SECONDS * 1000;
+    state.failedUntil = 0;
     return state.name;
 }
 
@@ -493,7 +497,7 @@ export default async function handler(req, res) {
     }
 
     const GENERATION_MODELS = ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-3.1-flash-lite"];
-    const GRADING_MODELS = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-2.5-flash"];
+    const GRADING_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3-flash-preview", "gemini-2.5-flash"];
     const models = (task === 'generate') ? GENERATION_MODELS : GRADING_MODELS;
 
     const temperature = (task === 'generate') ? 1.5 : 0.2;
@@ -542,18 +546,14 @@ export default async function handler(req, res) {
                 cacheSystemText = isGenChem ? GENCHEM_GENERATION_SYSTEM_INSTRUCTION : GENERATION_SYSTEM_INSTRUCTION;
                 cacheState = isGenChem ? genchemGenerationCacheState : generationCacheState;
             } else if (task === 'grade' && gradeMode) {
+                // No caching for grading — prompts too short for Gemini's cache minimum.
+                // System instruction is inlined in the non-cached path via cacheSystemText.
                 if (isFreeDraw) {
-                    cacheLabel = `freedraw-grading-${gradeMode}`;
                     cacheSystemText = (gradeMode === 'learn') ? FREEDRAW_GRADING_LEARN_SYSTEM_INSTRUCTION : FREEDRAW_GRADING_NORMAL_SYSTEM_INSTRUCTION;
-                    cacheState = (gradeMode === 'learn') ? freedrawGradingLearnCacheState : freedrawGradingNormalCacheState;
                 } else if (isGenChem) {
-                    cacheLabel = `genchem-grading-${gradeMode}`;
                     cacheSystemText = (gradeMode === 'learn') ? GENCHEM_GRADING_LEARN_SYSTEM_INSTRUCTION : GENCHEM_GRADING_NORMAL_SYSTEM_INSTRUCTION;
-                    cacheState = (gradeMode === 'learn') ? genchemGradingLearnCacheState : genchemGradingNormalCacheState;
                 } else {
-                    cacheLabel = `grading-${gradeMode}`;
                     cacheSystemText = (gradeMode === 'learn') ? GRADING_LEARN_SYSTEM_INSTRUCTION : GRADING_NORMAL_SYSTEM_INSTRUCTION;
-                    cacheState = (gradeMode === 'learn') ? gradingLearnCacheState : gradingNormalCacheState;
                 }
             }
 
@@ -652,6 +652,7 @@ export default async function handler(req, res) {
                     if (result.isCached && result.cacheState) {
                         result.cacheState.name = null;
                         result.cacheState.expiry = 0;
+                        result.cacheState.failedUntil = Date.now() + CACHE_FAIL_COOLDOWN_MS;
                     }
                 } else if (status === 429) {
                     console.warn(`[429] Rate limit hit for ${modelId} on key #${keyIndex + 1}. Marking as rate limited for the rest of the day.`);
@@ -659,6 +660,7 @@ export default async function handler(req, res) {
                     if (result.isCached && result.cacheState) {
                         result.cacheState.name = null;
                         result.cacheState.expiry = 0;
+                        result.cacheState.failedUntil = Date.now() + CACHE_FAIL_COOLDOWN_MS;
                     }
                 } else {
                     // Other non-busy, non-429 error (e.g. 4xx bad request or unavailable model)
@@ -667,6 +669,7 @@ export default async function handler(req, res) {
                     if (result.isCached && result.cacheState) {
                         result.cacheState.name = null;
                         result.cacheState.expiry = 0;
+                        result.cacheState.failedUntil = Date.now() + CACHE_FAIL_COOLDOWN_MS;
                     }
                 }
 
