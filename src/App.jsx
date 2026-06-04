@@ -891,47 +891,6 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
         visible={aboutVisible}
         onClose={() => setAboutVisible(false)}
       />
-      <style>{`
-        @keyframes toastPulse {
-          0% { opacity: 0.5; }
-          50% { opacity: 1; }
-          100% { opacity: 0.5; }
-        }
-      `}</style>
-      {isFetching && (
-        <div
-          id="generating-toast"
-          style={{
-            position: 'fixed',
-            bottom: '16px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            backgroundColor: 'rgba(30, 30, 30, 0.9)',
-            color: 'white',
-            padding: '8px 16px',
-            borderRadius: '20px',
-            fontSize: '0.85rem',
-            fontWeight: '500',
-            zIndex: 9999,
-            pointerEvents: 'none',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            fontFamily: 'system-ui, -apple-system, sans-serif',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-          }}
-        >
-          <span style={{
-            width: '8px',
-            height: '8px',
-            backgroundColor: '#34c759',
-            borderRadius: '50%',
-            display: 'inline-block',
-            animation: 'toastPulse 1.5s infinite'
-          }}></span>
-          Generating... (fetching {fetchingModel})
-        </div>
-      )}
     </>
   );
 }
