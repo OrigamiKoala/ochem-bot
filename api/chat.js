@@ -106,11 +106,95 @@ Follow these strict Olympiad Design Philosophies:
 (No examples provided for organic chemistry generation. Focus strictly on correct JSON structure.)
 
 ###Steps:###
-1. Brainstorm an organic reaction or mechanism concept.
-2. Formulate the starting materials, reagents, and conditions.
-3. Identify the major organic product and its correct SMILES.
-4. Draft a neutral instruction, hint, and detailed explanation of the mechanism.
-5. Format the output strictly matching the required JSON schema.
+1. Brainstorm potential concepts for each question.
+2. Narrow down each concept into a particular topic for each question, as well as the subtle conceptual trap the user might fall into.
+3. Decide on a difficulty level for each question.
+4. For each question, generate the question text, taking into account the topic, trap, and difficulty level.
+5. Test-solve each of the questions to ensure they satisfy each of the constraints. Write feedback for each of the problems for how to improve them.
+6. Improve the questions based on the feedback. Fix all questions that do not adhere to the constraints, and ones you can easily solve.
+7. Solve each question. Double check that the answers generated are the only valid solutions. If the answer is not the only valid solution, change the problem, repeating steps 4 and 5.
+8. Double check that all constraints and output requirements have been met. If they have not, change the format and/or problem so that all constraints and output requirements are met.
+
+For example, your thought process might look like:
+
+Step 1: The user wants me to generate 2 chemistry olympiad questions with starting difficulty 5. The user struggles with remembering to balance equations in stoichiometry and electrochemistry.
+
+Step 2, 3: For the first question, I will test stoichiometry (identifying an unknown compound based on resulting gases), with difficulty level 5. For the second question, I will test electrochemistry (overpotential), with difficulty level 6. I will tailor these questions to target the user's weaknesses.
+
+Step 4: Now I will generate the problem texts.
+
+1. A compound M reacts in the following reaction. $\ce{M + 5 O_2 -> 3 C O_2 + 4 H_2 O}. How many grams of $\ce{M}$ are required to form $14.4$ liters of $\ce{C O_2}$ at STP? The trap is to forget to balance out the chemical equation.
+
+2. A reaction has a standard exchange current density ($j_0$) of $1.0$ A/cm$^2$ at $25$ °C. What is the current density ($j$) when the overpotential ($\eta$) is $0.1$ V? The trap is to forget to multiply the exchange current density by 2 when taking the absolute value.
+
+Step 5: Test-solve and feedback
+
+Question 1 Test-Solve:
+Equation given: M + 5 O2 -> 3 CO2 + 4 H2O.
+Equation is balanced; M = C3H8 (molar mass = 44.1 g/mol).
+Moles of CO2 = 14.4 L / 22.4 L/mol = 0.643 mol.
+Moles of M = 0.643 / 3 = 0.214 mol.
+Mass of M = 0.214 mol * 44.1 g/mol = 9.44 g.
+Question 1 Feedback: Problem is too easy and too standard for difficulty level 5. Make it more challenging by removing the equation and giving how much of each gas is produced when a given amount of M is burned.
+
+Question 2 Test-Solve:
+Using Butler-Volmer equation: j = j0 * (exp(alpha_a * n * F * eta / RT) - exp(-alpha_c * n * F * eta / RT)).
+Parameters n and alpha are missing.
+Question 2 Feedback: Butler-Volmer equation is beyond the scope of the USNCO, and beyond difficulty level 6. Replace the entire question.
+
+Step 6: Improve the questions
+
+Question 1 Revision: A 4.41 g sample of a gaseous hydrocarbon M is completely combusted in excess oxygen to produce 13.20 g of CO2 and 7.21 g of H2O. Determine the molecular formula of M if its density at STP is 1.97 g/L.
+Question 2 Revision: A galvanic cell consists of a silver electrode in 1.0 M AgNO3 and a copper electrode in 1.0 M Cu(NO3)2. If the cell operates at 25 degrees C under a constant current of 2.0 A for 45 minutes, calculate the change in mass of the copper electrode. (E0 Ag+/Ag = +0.80 V, E0 Cu2+/Cu = +0.34 V, F = 96485 C/mol).
+
+Step 7: Solve and verify uniqueness
+
+Question 1 Solution:
+Moles C = 13.20 g / 44.01 g/mol = 0.300 mol.
+Moles H = 2 * (7.21 g / 18.02 g/mol) = 0.800 mol.
+Empirical formula = C3H8.
+Molar mass = 1.97 g/L * 22.4 L/mol = 44.1 g/mol.
+Molecular formula = C3H8.
+Uniqueness: Single hydrocarbon identity fits elemental mass ratios and molar mass.
+
+Question 2 Solution:
+Anode reaction: Cu -> Cu2+ + 2e-.
+Charge Q = 2.0 A * 45 min * 60 s/min = 5400 C.
+Moles e- = 5400 C / 96485 C/mol = 0.0560 mol.
+Moles Cu = 0.0560 mol / 2 = 0.0280 mol.
+Mass decrease = 0.0280 mol * 63.55 g/mol = 1.78 g.
+Uniqueness: Standard reduction potentials confirm copper is the anode. Faraday's law yields one precise value.
+
+Step 8: Double check constraints
+
+Target difficulties (5 and 6) met. Traps appropriate for USNCO. Formatting constraints followed. No bold text used.
+
+Final Output JSON:
+{
+  "reactions": [
+    {
+      "qtype": "calculate",
+      "reactants": "",
+      "reagents": "",
+      "conditions": "",
+      "answer": "C3H8",
+      "instructions": "A $4.41\\\\text{ g}$ sample of a gaseous hydrocarbon M is completely combusted in excess oxygen to produce $13.20\\\\text{ g}$ of $\\\\ce{CO2}$ and $7.21\\\\text{ g}$ of $\\\\ce{H2O}$. Determine the molecular formula of M if its density at STP is $1.97\\\\text{ g L}^{-1}$.",
+      "hint": "Determine the empirical formula from the masses of carbon dioxide and water, then use the density at STP to find the molar mass.",
+      "explanation": "Calculate the moles of carbon and hydrogen atoms from the combustion products:\\\\n- Moles of $\\\\text{C} = 13.20\\\\text{ g} / 44.01\\\\text{ g mol}^{-1} = 0.300\\\\text{ mol}$\\\\n- Moles of $\\\\text{H} = 2 \\\\times (7.21\\\\text{ g} / 18.02\\\\text{ g mol}^{-1}) = 0.800\\\\text{ mol}$\\\\n\\\\nThe empirical formula is $\\\\ce{C3H8}$ (empirical formula mass $= 44.1\\\\text{ g mol}^{-1}$).\\\\n\\\\nNext, use the density at STP to calculate the molar mass of M:\\\\n- $\\\\text{Molar Mass} = 1.97\\\\text{ g L}^{-1} \\\\times 22.4\\\\text{ L mol}^{-1} = 44.1\\\\text{ g mol}^{-1}$\\\\n\\\\nSince the molar mass matches the empirical formula mass, the molecular formula of M is $\\\\ce{C3H8}$."
+    },
+    {
+      "qtype": "calculate",
+      "reactants": "",
+      "reagents": "",
+      "conditions": "",
+      "answer": "1.78 g decrease",
+      "instructions": "A galvanic cell consists of a silver electrode in $1.0\\\\text{ M } \\\\ce{AgNO3}$ and a copper electrode in $1.0\\\\text{ M } \\\\ce{Cu(NO3)2}$. If the cell operates at $25\\\\ ^{\\\\circ}\\\\text{C}$ under a constant current of $2.0\\\\text{ A}$ for $45$ minutes, calculate the change in mass of the copper electrode. ($E^{\\\\circ}(\\\\ce{Ag^+/Ag}) = +0.80\\\\text{ V}$, $E^{\\\\circ}(\\\\ce{Cu^{2+}/Cu}) = +0.34\\\\text{ V}$, $F = 96485\\\\text{ C mol}^{-1}$)",
+      "hint": "Compare the standard reduction potentials to determine which electrode acts as the anode, then apply Faraday's law of electrolysis.",
+      "explanation": "Since $E^{\\\\circ}(\\\\ce{Ag^+/Ag}) = +0.80\\\\text{ V}$ is greater than $E^{\\\\circ}(\\\\ce{Cu^{2+}/Cu}) = +0.34\\\\text{ V}$, silver ions are reduced at the cathode, and the copper electrode undergoes oxidation at the anode:\\\\n$$\\\\ce{Cu(s) -> Cu^{2+}(aq) + 2e^-}$$\\\\n\\\\nThis oxidation causes a decrease in the mass of the copper electrode. First, calculate the total charge $Q$ passed through the cell:\\\\n- $Q = I \\\\times t = 2.0\\\\text{ A} \\\\times (45\\\\text{ min} \\\\times 60\\\\text{ s min}^{-1}) = 5400\\\\text{ C}$\\\\n\\\\nConvert charge to moles of electrons:\\\\n- $n(\\\\text{e}^-) = 5400\\\\text{ C} / 96485\\\\text{ C mol}^{-1} = 0.0560\\\\text{ mol}$\\\\n\\\\nFrom the stoichiometry of the anode reaction, 1 mole of copper is oxidized for every 2 moles of electrons:\\\\n- $n(\\\\ce{Cu}) = 0.0560\\\\text{ mol} / 2 = 0.0280\\\\text{ mol}$\\\\n\\\\nCalculate the mass loss of the copper electrode:\\\\n- $\\\\Delta m = 0.0280\\\\text{ mol} \\\\times 63.55\\\\text{ g mol}^{-1} = 1.78\\\\text{ g}$ decrease."
+    }
+  ]
+}
+
 
 ###Output Requirements:###
 Output JSON only with the following schema:
