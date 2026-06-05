@@ -117,9 +117,9 @@ Follow these strict Olympiad Design Philosophies:
 
 For example, your thought process might look like:
 
-Step 1: The user wants me to generate 2 chemistry olympiad questions with starting difficulty 5. The user struggles with remembering to balance equations in stoichiometry and electrochemistry.
+Step 1: The user wants me to generate 2 chemistry olympiad questions with difficulty 50.
 
-Step 2, 3: For the first question, I will test stoichiometry (identifying an unknown compound based on resulting gases), with difficulty level 5. For the second question, I will test electrochemistry (overpotential), with difficulty level 6. I will tailor these questions to target the user's weaknesses.
+Step 2, 3: For the first question, I will test stoichiometry (identifying an unknown compound based on resulting gases), with difficulty level 5. For the second question, I will test electrochemistry (overpotential), with difficulty level 6.
 
 Step 4: Now I will generate the problem texts.
 
