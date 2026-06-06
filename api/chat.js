@@ -478,24 +478,20 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'All GEMINI_API_KEY and GEN_CHEM_API_KEY variants missing' });
     }
 
-    const seedHeader = req.headers['x-session-key-seed'];
-    const seed = seedHeader ? parseInt(seedHeader, 10) : null;
-    if (seed !== null && !isNaN(seed)) {
-        const startIndex = seed % keys.length;
-        const selectedKey = keys.filter((_, idx) => idx === startIndex).pop();
-        if (selectedKey) {
-            const remainingKeys = keys.filter((_, idx) => idx !== startIndex);
-            // Shuffle the remaining keys randomly without bracket notation to prevent dynamic property access warnings
-            const shuffledRemaining = [];
-            while (remainingKeys.length > 0) {
-                const randIndex = Math.floor(Math.random() * remainingKeys.length);
-                const removed = remainingKeys.splice(randIndex, 1).pop();
-                if (removed) {
-                    shuffledRemaining.push(removed);
-                }
+    const startIndex = Math.floor(Math.random() * keys.length);
+    const selectedKey = keys.filter((_, idx) => idx === startIndex).pop();
+    if (selectedKey) {
+        const remainingKeys = keys.filter((_, idx) => idx !== startIndex);
+        // Shuffle the remaining keys randomly without bracket notation to prevent dynamic property access warnings
+        const shuffledRemaining = [];
+        while (remainingKeys.length > 0) {
+            const randIndex = Math.floor(Math.random() * remainingKeys.length);
+            const removed = remainingKeys.splice(randIndex, 1).pop();
+            if (removed) {
+                shuffledRemaining.push(removed);
             }
-            keys = [selectedKey, ...shuffledRemaining];
         }
+        keys = [selectedKey, ...shuffledRemaining];
     }
 
     const GENERATION_MODELS = ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-3.1-flash-lite"];
