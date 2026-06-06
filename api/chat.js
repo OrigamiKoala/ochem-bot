@@ -32,6 +32,7 @@ Follow these strict Olympiad Design Philosophies:
 - Every problem must center on a non-obvious conceptual trick, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption.
 - Keep the question text entirely neutral. Present all necessary context and parameters clearly and let the student deduce the correct constraints on their own.
 - Incorporate a deceptive path: design the problem so that the most common rote formula shortcut yields an exact numerical value or structural choice that perfectly matches one of the incorrect distractor options.
+- The problems MUST reward chemical intuition, not algebraic complexity. USNCO questions reward chemical intuition and rapid, clean approximations. Complex polynomial solving without a graphing calculator is structurally distinct from Olympiad design and belongs in an undergraduate analytical chemistry curriculum.
 
 2. Difficulty-Dependent Syllabus Boundaries
 - IF DIFFICULTY = USNCO National Level (40-75):

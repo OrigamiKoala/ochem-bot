@@ -137,59 +137,6 @@ export default function App() {
     return null;
   }, []);
 
-  // ---- Display Next Reaction ----
-  const displayNextReaction = useCallback(() => {
-    const queue = reactionQueueRef.current;
-    if (queue.length === 0) {
-      setCurrentReaction(null);
-      setHasSubmitted(false);
-      setLastFeedback('');
-      setIsShowingAnswer(false);
-      setHasUsedHint(false);
-      setIsCanvasBlank(true);
-      setShowReportBtn(false);
-      setExplanationVisible(false);
-      setShowExplainBtn(false);
-      setHintOverride(null);
-      if (whiteboardRef.current) {
-        whiteboardRef.current.clearCanvas();
-      }
-      fetchBatchReactions(true);
-      return;
-    }
-
-    const nextReaction = queue[0];
-    const newQueue = queue.slice(1);
-
-    setCurrentReaction(nextReaction);
-    setReactionQueue(newQueue);
-    saveQueueToCacheUtil(null, newQueue, isFreeDraw, isGenChemMode);
-
-    // Reset state for new reaction
-    setHasSubmitted(false);
-    setLastFeedback('');
-    setIsShowingAnswer(false);
-    setHasUsedHint(false);
-    setIsCanvasBlank(true);
-    setShowReportBtn(false);
-    setExplanationVisible(false);
-    setShowExplainBtn(false);
-    setHintOverride(null);
-
-    // Clear whiteboard
-    if (whiteboardRef.current) {
-      whiteboardRef.current.clearCanvas();
-    }
-
-    // Hide message if it was showing success/error
-    setMessageVisible(false);
-
-    // If running low, fetch more
-    if (newQueue.length === 0) {
-      fetchBatchReactions(false);
-    }
-  }, [isFreeDraw, isGenChemMode]);
-
   // ---- Fetch Batch Reactions ----
   const fetchBatchReactions = useCallback(async (isExplicit = false) => {
     if (isFetchingRef.current) return;
@@ -360,7 +307,7 @@ export default function App() {
                   setMessageVisible(false);
 
                   // Pre-fetch next batch if queue is running low
-                  if (rest.length === 0) {
+                  if (rest.length <= 2) {
                     setTimeout(() => fetchBatchReactions(false), 100);
                   }
                 }
@@ -413,7 +360,7 @@ export default function App() {
             if (whiteboardRef.current) whiteboardRef.current.clearCanvas();
             setMessageVisible(false);
 
-            if (rest.length === 0) {
+            if (rest.length <= 2) {
               fetchBatchReactions(false);
             }
           }
@@ -421,6 +368,59 @@ export default function App() {
       }
     }
   }, [selectedTopics, currentDifficulty, isGenChemMode, isFreeDraw, getStarterQuestion]);
+
+  // ---- Display Next Reaction ----
+  const displayNextReaction = useCallback(() => {
+    const queue = reactionQueueRef.current;
+    if (queue.length === 0) {
+      setCurrentReaction(null);
+      setHasSubmitted(false);
+      setLastFeedback('');
+      setIsShowingAnswer(false);
+      setHasUsedHint(false);
+      setIsCanvasBlank(true);
+      setShowReportBtn(false);
+      setExplanationVisible(false);
+      setShowExplainBtn(false);
+      setHintOverride(null);
+      if (whiteboardRef.current) {
+        whiteboardRef.current.clearCanvas();
+      }
+      fetchBatchReactions(true);
+      return;
+    }
+
+    const nextReaction = queue[0];
+    const newQueue = queue.slice(1);
+
+    setCurrentReaction(nextReaction);
+    setReactionQueue(newQueue);
+    saveQueueToCacheUtil(null, newQueue, isFreeDraw, isGenChemMode);
+
+    // Reset state for new reaction
+    setHasSubmitted(false);
+    setLastFeedback('');
+    setIsShowingAnswer(false);
+    setHasUsedHint(false);
+    setIsCanvasBlank(true);
+    setShowReportBtn(false);
+    setExplanationVisible(false);
+    setShowExplainBtn(false);
+    setHintOverride(null);
+
+    // Clear whiteboard
+    if (whiteboardRef.current) {
+      whiteboardRef.current.clearCanvas();
+    }
+
+    // Hide message if it was showing success/error
+    setMessageVisible(false);
+
+    // If running low, fetch more
+    if (newQueue.length <= 2) {
+      fetchBatchReactions(false);
+    }
+  }, [isFreeDraw, isGenChemMode, fetchBatchReactions]);
 
   // ---- Button State ----
   const getGenerateBtnText = useCallback(() => {
