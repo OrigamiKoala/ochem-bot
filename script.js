@@ -822,7 +822,7 @@ if (saveSettingsBtn) {
                     enterFreeDrawMode();
                 } else if (reactionQueue.length > 0) {
                     displayNextReaction();
-                    if (reactionQueue.length <= 2) fetchBatchReactions(false);
+                    if (reactionQueue.length === 0) fetchBatchReactions(false);
                 } else {
                     resetQuestionUI();
                     fetchBatchReactions(true);
@@ -1771,7 +1771,7 @@ function displayNextReaction() {
 
 
     // If we're running low, fetch more in the background
-    if (reactionQueue.length <= 2) {
+    if (reactionQueue.length === 0) {
         fetchBatchReactions(false);
     }
 }
@@ -2130,7 +2130,7 @@ if (isFreeDraw) {
         reactionQueue = cachedQueue;
         displayNextReaction();
         // Still fetch more in the background if running low
-        if (reactionQueue.length <= 2) {
+        if (reactionQueue.length === 0) {
             fetchBatchReactions(false);
         }
     } else {
