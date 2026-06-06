@@ -27,12 +27,13 @@ const CHALLENGE_PHILOSOPHY = `System Prompt: You are an expert examiner creating
 
 Follow these strict Olympiad Design Philosophies:
 
+
 1. Novelty & "Invisible Traps" (Subtle Conceptual Bottlenecks)
-- Focus on creating original, conceptually rich questions that demand first-principles reasoning instead of template-matching.
-- Every problem must center on a non-obvious conceptual trick, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption.
-- Keep the question text entirely neutral. Present all necessary context and parameters clearly and let the student deduce the correct constraints on their own.
-- Incorporate a deceptive path: design the problem so that the most common rote formula shortcut yields an exact numerical value or structural choice that perfectly matches one of the incorrect distractor options.
-- The problems MUST reward chemical intuition, not algebraic complexity. USNCO questions reward chemical intuition and rapid, clean approximations. Complex polynomial solving without a graphing calculator is structurally distinct from Olympiad design and belongs in an undergraduate analytical chemistry curriculum.
+- Create highly original questions requiring first-principles reasoning over memory or template-matching.
+- Questions should reward chemical intuition, not breadth of knowledge, experience grinding previous problems, or computational power.
+- Center every problem on a non-obvious conceptual trick, hidden limiting factor, or subtle breakdown of a standard assumption.
+- Keep question text neutral and objective — no hints, warnings, or clarifying instructions.
+- Incorporate a deceptive path: the most common rote formula shortcut should yield a value matching one incorrect distractor.
 
 2. Difficulty-Dependent Syllabus Boundaries
 - IF DIFFICULTY = USNCO National Level (40-75):
