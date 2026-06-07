@@ -94,14 +94,18 @@ export default function App() {
   const reactionQueueRef = useRef(reactionQueue);
   const currentReactionRef = useRef(currentReaction);
   const isFetchingRef = useRef(false);
+  const isFreeDrawRef = useRef(isFreeDraw);
+  const isGenChemModeRef = useRef(isGenChemMode);
 
   useEffect(() => { reactionQueueRef.current = reactionQueue; }, [reactionQueue]);
   useEffect(() => { currentReactionRef.current = currentReaction; }, [currentReaction]);
+  useEffect(() => { isFreeDrawRef.current = isFreeDraw; }, [isFreeDraw]);
+  useEffect(() => { isGenChemModeRef.current = isGenChemMode; }, [isGenChemMode]);
 
   // ---- Save helpers ----
   const saveQueue = useCallback((reaction, queue) => {
-    saveQueueToCacheUtil(reaction, queue, isFreeDraw, isGenChemMode);
-  }, [isFreeDraw, isGenChemMode]);
+    saveQueueToCacheUtil(reaction, queue, isFreeDrawRef.current, isGenChemModeRef.current);
+  }, []);
 
   // ---- Starter Questions ----
   const getStarterQuestion = useCallback(async (targetTopic, targetDifficulty) => {
@@ -170,7 +174,7 @@ export default function App() {
           setCurrentReaction(starter);
           setReactionQueue([]);
           reactionQueueRef.current = [];
-          saveQueueToCacheUtil(starter, [], isFreeDraw, isGenChemMode);
+          saveQueueToCacheUtil(starter, [], isFreeDrawRef.current, isGenChemModeRef.current);
           setHasSubmitted(false);
           setLastFeedback('');
           setIsShowingAnswer(false);
