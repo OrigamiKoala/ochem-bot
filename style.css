@@ -720,8 +720,8 @@ body {
 
 .inline-molecule canvas,
 .inline-molecule-explanation canvas {
-    max-height: 2.2em;
-    width: auto;
+    height: 2.2em !important;
+    width: auto !important;
     display: inline-block;
     vertical-align: middle;
 }
