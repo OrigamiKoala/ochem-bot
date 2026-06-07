@@ -301,10 +301,7 @@ export default function App() {
                     setMessageVisible(false);
 
                     if (rest.length <= 2) {
-                      const cachedQueue = loadQueueFromCacheUtil(isFreeDrawRef.current, isGenChemModeRef.current);
-                      if (!(cachedQueue && cachedQueue.length > 1)) {
-                        setTimeout(() => fetchBatchReactions(false), 100);
-                      }
+                      setTimeout(() => fetchBatchReactions(false), 100);
                     }
                     return next;
                   } else {
@@ -383,10 +380,7 @@ export default function App() {
       if (whiteboardRef.current) {
         whiteboardRef.current.clearCanvas();
       }
-      const cachedBeforeFetch = loadQueueFromCacheUtil(isFreeDraw, isGenChemMode);
-      if (!(cachedBeforeFetch && cachedBeforeFetch.length > 1)) {
-        fetchBatchReactions(true);
-      }
+      fetchBatchReactions(true);
       return;
     }
 
@@ -418,10 +412,7 @@ export default function App() {
 
     // If running low, fetch more
     if (newQueue.length <= 2) {
-      const cachedBeforeFetch = loadQueueFromCacheUtil(isFreeDraw, isGenChemMode);
-      if (!(cachedBeforeFetch && cachedBeforeFetch.length > 1)) {
-        fetchBatchReactions(false);
-      }
+      fetchBatchReactions(false);
     }
   }, [isFreeDraw, isGenChemMode, fetchBatchReactions]);
 
@@ -759,10 +750,7 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
           if (whiteboardRef.current) whiteboardRef.current.clearCanvas();
           setMessageVisible(false);
           if (rest.length <= 2) {
-            const cachedQueue = loadQueueFromCacheUtil(newIsFreeDraw, newIsGenChem);
-            if (!(cachedQueue && cachedQueue.length > 1)) {
-              setTimeout(() => fetchBatchReactions(false), 0);
-            }
+            setTimeout(() => fetchBatchReactions(false), 0);
           }
         } else {
           setCurrentReaction(null);
@@ -774,10 +762,7 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
           setIsCanvasBlank(true);
           setExplanationVisible(false);
           if (whiteboardRef.current) whiteboardRef.current.clearCanvas();
-          const cachedQueue = loadQueueFromCacheUtil(newIsFreeDraw, newIsGenChem);
-          if (!(cachedQueue && cachedQueue.length > 1)) {
-            setTimeout(() => fetchBatchReactions(true), 0);
-          }
+          setTimeout(() => fetchBatchReactions(true), 0);
         }
       } else {
         // Same mode, settings changed — reset and refetch
@@ -793,10 +778,7 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
         setExplanationVisible(false);
         if (whiteboardRef.current) whiteboardRef.current.clearCanvas();
         if (!newIsFreeDraw) {
-          const cachedQueue = loadQueueFromCacheUtil(newIsFreeDraw, newIsGenChem);
-          if (!(cachedQueue && cachedQueue.length > 1)) {
-            setTimeout(() => fetchBatchReactions(true), 0);
-          }
+          setTimeout(() => fetchBatchReactions(true), 0);
         }
       }
     }
@@ -834,17 +816,11 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
         setReactionQueue(rest);
         reactionQueueRef.current = rest;
         isInitialLoadRef.current = false;
-                    if (rest.length <= 2) {
-            const cachedQueue = loadQueueFromCacheUtil(isFreeDraw, isGenChemMode);
-            if (!(cachedQueue && cachedQueue.length > 1)) {
-              setTimeout(() => fetchBatchReactions(false), 100);
-            }
-          }
-      } else {
-        const cachedQueue = loadQueueFromCacheUtil(isFreeDraw, isGenChemMode);
-        if (!(cachedQueue && cachedQueue.length > 1)) {
-          setTimeout(() => fetchBatchReactions(true), 100);
+        if (rest.length <= 2) {
+          setTimeout(() => fetchBatchReactions(false), 100);
         }
+      } else {
+        setTimeout(() => fetchBatchReactions(true), 100);
       }
     }
   }, []); // Run once on mount
