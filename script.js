@@ -1188,8 +1188,9 @@ function renderReaction(data, showAnswer = false) {
     // Helper: check if a field has meaningful content (not empty, not "None", etc.)
     function hasContent(field) {
         if (!field) return false;
-        const trimmed = field.trim().toLowerCase();
-        return trimmed.length > 0 && trimmed !== 'none' && trimmed !== 'n/a' && trimmed !== '-';
+        const trimmed = field.trim().toLowerCase().replace(/[\.\s_-]/g, '');
+        const ignored = new Set(['', 'none', 'na', 'notapplicable', 'nonespecified', 'noreactant', 'noreactants', 'nil', 'null', 'empty']);
+        return trimmed.length > 0 && !ignored.has(trimmed);
     }
 
     // Helper: clean AI hallucinations of [[SMILES: ... ]] tags from fields that should be pure SMILES
