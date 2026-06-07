@@ -287,7 +287,7 @@ export default function App() {
                     const rest = reactions.slice(1);
                     setReactionQueue(rest);
                     reactionQueueRef.current = rest;
-                    saveQueueToCacheUtil(next, rest, isFreeDrawRef.current, isGenChemModeRef.current);
+                    saveQueueToCacheUtil(next, rest, isFreeDraw, isGenChemMode);
                     
                     setHasSubmitted(false);
                     setLastFeedback('');
@@ -308,7 +308,7 @@ export default function App() {
                     setReactionQueue(prev => {
                       const updated = [...prev, ...reactions];
                       reactionQueueRef.current = updated;
-                      saveQueueToCacheUtil(current, updated, isFreeDrawRef.current, isGenChemModeRef.current);
+                      saveQueueToCacheUtil(current, updated, isFreeDraw, isGenChemMode);
                       return updated;
                     });
                     return current;
