@@ -280,39 +280,37 @@ export default function App() {
               }
 
               if (reactions.length > 0) {
-                setCurrentReaction(current => {
-                  if (!current) {
-                    const next = reactions[0];
-                    const rest = reactions.slice(1);
-                    setReactionQueue(rest);
-                    reactionQueueRef.current = rest;
-                    saveQueueToCacheUtil(next, rest, isFreeDraw, isGenChemMode);
-                    
-                    setHasSubmitted(false);
-                    setLastFeedback('');
-                    setIsShowingAnswer(false);
-                    setHasUsedHint(false);
-                    setIsCanvasBlank(true);
-                    setShowReportBtn(false);
-                    setExplanationVisible(false);
-                    setShowExplainBtn(false);
-                    if (whiteboardRef.current) whiteboardRef.current.clearCanvas();
-                    setMessageVisible(false);
-
-                    if (rest.length <= 2) {
-                      setTimeout(() => fetchBatchReactions(false), 100);
-                    }
-                    return next;
-                  } else {
-                    setReactionQueue(prev => {
-                      const updated = [...prev, ...reactions];
-                      reactionQueueRef.current = updated;
-                      saveQueueToCacheUtil(current, updated, isFreeDraw, isGenChemMode);
-                      return updated;
-                    });
-                    return current;
-                  }
+                setReactionQueue(prev => {
+                  const updated = [...prev, ...reactions];
+                  reactionQueueRef.current = updated;
+                  saveQueueToCacheUtil(currentReactionRef.current, updated, isFreeDraw, isGenChemMode);
+                  return updated;
                 });
+
+                // Immediate transition if user is waiting
+                if (!currentReactionRef.current) {
+                  const next = reactions[0];
+                  const rest = reactions.slice(1);
+                  setCurrentReaction(next);
+                  setReactionQueue(rest);
+                  reactionQueueRef.current = rest;
+                  saveQueueToCacheUtil(null, rest, isFreeDraw, isGenChemMode);
+                  setHasSubmitted(false);
+                  setLastFeedback('');
+                  setIsShowingAnswer(false);
+                  setHasUsedHint(false);
+                  setIsCanvasBlank(true);
+                  setShowReportBtn(false);
+                  setExplanationVisible(false);
+                  setShowExplainBtn(false);
+                  if (whiteboardRef.current) whiteboardRef.current.clearCanvas();
+                  setMessageVisible(false);
+
+                  // Pre-fetch next batch if queue is running low
+                  if (rest.length <= 2) {
+                    setTimeout(() => fetchBatchReactions(false), 100);
+                  }
+                }
               } else if (isExplicit) {
                 setMessageText("No questions were generated. Please try again.");
                 setMessageVisible(true);
@@ -339,7 +337,35 @@ export default function App() {
       isFetchingRef.current = false;
       setIsFetching(false);
 
+      // If user was waiting, display next
+      if (reactionQueueRef.current.length > 0 && !currentReactionRef.current) {
+        // Schedule displayNextReaction
+        setTimeout(() => {
+          const q = reactionQueueRef.current;
+          if (q.length > 0 && !currentReactionRef.current) {
+            const next = q[0];
+            const rest = q.slice(1);
+            setCurrentReaction(next);
+            setReactionQueue(rest);
+            reactionQueueRef.current = rest;
+            saveQueueToCacheUtil(null, rest, isFreeDraw, isGenChemMode);
+            setHasSubmitted(false);
+            setLastFeedback('');
+            setIsShowingAnswer(false);
+            setHasUsedHint(false);
+            setIsCanvasBlank(true);
+            setShowReportBtn(false);
+            setExplanationVisible(false);
+            setShowExplainBtn(false);
+            if (whiteboardRef.current) whiteboardRef.current.clearCanvas();
+            setMessageVisible(false);
 
+            if (rest.length <= 2) {
+              fetchBatchReactions(false);
+            }
+          }
+        }, 0);
+      }
     }
   }, [selectedTopics, currentDifficulty, isGenChemMode, isFreeDraw, getStarterQuestion]);
 
@@ -369,7 +395,7 @@ export default function App() {
 
     setCurrentReaction(nextReaction);
     setReactionQueue(newQueue);
-    saveQueueToCacheUtil(nextReaction, newQueue, isFreeDraw, isGenChemMode);
+    saveQueueToCacheUtil(null, newQueue, isFreeDraw, isGenChemMode);
 
     // Reset state for new reaction
     setHasSubmitted(false);
