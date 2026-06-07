@@ -166,11 +166,14 @@ export default function App() {
         isInitialLoadRef.current = false;
         if (starter) {
           console.log("Loading starter question:", starter.id);
+          const newQueue = [starter];
+          setReactionQueue(newQueue);
+          reactionQueueRef.current = newQueue;
           // Display it
           setCurrentReaction(starter);
           setReactionQueue([]);
           reactionQueueRef.current = [];
-          saveQueueToCacheUtil(starter, [], isFreeDraw, isGenChemMode);
+          saveQueueToCacheUtil(null, [], isFreeDraw, isGenChemMode);
           setHasSubmitted(false);
           setLastFeedback('');
           setIsShowingAnswer(false);
@@ -268,7 +271,7 @@ export default function App() {
                 processedData.forEach(item => {
                   if (item && Array.isArray(item.reactions)) {
                     reactions = reactions.concat(item.reactions);
-                  } else if (item && (item.qtype || item.reactants || item.answer || item.instructions)) {
+                  } else if (item && item.qtype) {
                     reactions.push(item);
                   }
                 });
@@ -792,7 +795,6 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
         currentReactionRef.current = next;
         setReactionQueue(rest);
         reactionQueueRef.current = rest;
-        isInitialLoadRef.current = false;
         if (rest.length <= 2) {
           setTimeout(() => fetchBatchReactions(false), 100);
         }

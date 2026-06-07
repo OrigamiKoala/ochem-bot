@@ -27,7 +27,7 @@ export function loadQueueFromCache(isFreeDraw, isGenChemMode) {
         parsed.forEach(item => {
           if (item && Array.isArray(item.reactions)) {
             flattenedQueue = flattenedQueue.concat(item.reactions);
-          } else if (item && (item.qtype || item.reactants || item.answer || item.instructions)) {
+          } else if (item && item.qtype) {
             flattenedQueue.push(item);
           }
         });
