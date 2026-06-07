@@ -718,6 +718,14 @@ body {
     overflow: hidden;
 }
 
+.inline-molecule canvas,
+.inline-molecule-explanation canvas {
+    max-height: 2.2em;
+    width: auto;
+    display: inline-block;
+    vertical-align: middle;
+}
+
 /* Inline formula (simple SMILES rendered as mhchem text) */
 .inline-formula {
     display: inline;

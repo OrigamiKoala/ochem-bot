@@ -173,8 +173,14 @@ export function trimCanvas(canvas, basePadding = 10) {
   
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const alpha = data[(y * width + x) * 4 + 3];
-      if (alpha > 0) {
+      const idx = (y * width + x) * 4;
+      const r = data[idx];
+      const g = data[idx + 1];
+      const b = data[idx + 2];
+      const alpha = data[idx + 3];
+      
+      const isBg = alpha === 0 || (r > 245 && g > 245 && b > 245);
+      if (!isBg) {
         if (x < minX) minX = x;
         if (x > maxX) maxX = x;
         if (y < minY) minY = y;
