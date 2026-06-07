@@ -307,7 +307,7 @@ export default function App() {
                   setMessageVisible(false);
 
                   // Pre-fetch next batch if queue is running low
-                  if (rest.length <= 2) {
+                  if (rest.length <= 1) {
                     setTimeout(() => fetchBatchReactions(false), 100);
                   }
                 }
@@ -360,7 +360,7 @@ export default function App() {
             if (whiteboardRef.current) whiteboardRef.current.clearCanvas();
             setMessageVisible(false);
 
-            if (rest.length <= 2) {
+            if (rest.length <= 1) {
               fetchBatchReactions(false);
             }
           }
@@ -417,7 +417,7 @@ export default function App() {
     setMessageVisible(false);
 
     // If running low, fetch more
-    if (newQueue.length <= 2) {
+    if (newQueue.length <= 1) {
       fetchBatchReactions(false);
     }
   }, [isFreeDraw, isGenChemMode, fetchBatchReactions]);
@@ -755,7 +755,7 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
           setExplanationVisible(false);
           if (whiteboardRef.current) whiteboardRef.current.clearCanvas();
           setMessageVisible(false);
-          if (rest.length <= 2) {
+          if (rest.length <= 1) {
             setTimeout(() => fetchBatchReactions(false), 0);
           }
         } else {
@@ -821,7 +821,7 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
         currentReactionRef.current = next;
         setReactionQueue(rest);
         reactionQueueRef.current = rest;
-        if (rest.length <= 2) {
+        if (rest.length <= 1) {
           setTimeout(() => fetchBatchReactions(false), 100);
         }
       } else {
