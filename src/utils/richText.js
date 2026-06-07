@@ -1,4 +1,4 @@
-import { cleanSmiles, smilesToFormula, smilesOptions } from './smiles';
+import { cleanSmiles, smilesToFormula, smilesOptions, trimCanvas } from './smiles';
 import { safeTypeset } from './mathJax';
 import { renderSVG } from './svglib';
 
@@ -186,6 +186,11 @@ export function renderRichText(text, container, isExplanation = false) {
       if (cleanedMol) {
         window.SmilesDrawer.parse(cleanedMol, (tree) => {
           sd.draw(tree, canvas, 'monochrome', false);
+          const trimmed = trimCanvas(canvas, 8);
+          if (trimmed) {
+            canvas.style.width = trimmed.width + "px";
+            canvas.style.height = trimmed.height + "px";
+          }
         }, (err) => {
           console.error("Rich SMILES err:", cleanedMol, err);
           const fallbackFormula = smilesToFormula(smiles);

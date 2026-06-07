@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { cleanSmiles, smilesOptions } from '../utils/smiles';
+import { cleanSmiles, smilesOptions, trimCanvas } from '../utils/smiles';
 
 // Renders a single SMILES molecule onto a canvas element
 export default function MoleculeCanvas({ smiles, baseSize = 100, suffix = '', index = 0 }) {
@@ -27,6 +27,11 @@ export default function MoleculeCanvas({ smiles, baseSize = 100, suffix = '', in
 
     window.SmilesDrawer.parse(cleanedMol, function (tree) {
       smilesDrawer.draw(tree, canvas, 'monochrome', false);
+      const trimmed = trimCanvas(canvas, 10);
+      if (trimmed) {
+        canvas.style.width = trimmed.width + "px";
+        canvas.style.height = trimmed.height + "px";
+      }
     }, function (err) {
       console.error("Smiles parsing error: ", cleanedMol, err);
       // Replace canvas with text fallback

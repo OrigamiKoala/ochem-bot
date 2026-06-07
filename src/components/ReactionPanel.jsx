@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { renderRichText, parseSmilesSegments } from '../utils/richText';
-import { cleanSmiles, smilesOptions, smilesToFormula } from '../utils/smiles';
+import { cleanSmiles, smilesOptions, smilesToFormula, trimCanvas } from '../utils/smiles';
 import { safeTypeset } from '../utils/mathJax';
 import { handleStream } from '../utils/stream';
 import { apiChat } from '../utils/api';
@@ -286,6 +286,11 @@ export default function ReactionPanel({
 
       window.SmilesDrawer.parse(cleanedMol, function (tree) {
         smilesDrawer.draw(tree, newCanvas, 'monochrome', false);
+        const trimmed = trimCanvas(newCanvas, 10);
+        if (trimmed) {
+          newCanvas.style.width = trimmed.width + "px";
+          newCanvas.style.height = trimmed.height + "px";
+        }
       }, function (err) {
         console.error("Smiles parsing error: ", cleanedMol, err);
         const fallback = document.createElement('span');
@@ -349,7 +354,7 @@ export default function ReactionPanel({
       const hasReagents = hasContent(data.reagents);
       const hasConditions = hasContent(data.conditions);
 
-      if (hasReagents || hasConditions || hasContent(data.reactants)) {
+      if (hasContent(data.reactants)) {
         const arrowContainer = document.createElement('div');
         arrowContainer.className = 'reaction-arrow-container';
 

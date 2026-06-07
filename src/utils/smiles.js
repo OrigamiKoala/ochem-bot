@@ -149,3 +149,68 @@ export function cleanSmiles(smiles) {
 
   return s;
 }
+
+export function trimCanvas(canvas, basePadding = 10) {
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const width = canvas.width;
+  const height = canvas.height;
+  
+  let imageData;
+  try {
+    imageData = ctx.getImageData(0, 0, width, height);
+  } catch (e) {
+    console.error("getImageData failed:", e);
+    return;
+  }
+  const data = imageData.data;
+  
+  let minX = width;
+  let minY = height;
+  let maxX = 0;
+  let maxY = 0;
+  let found = false;
+  
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const alpha = data[(y * width + x) * 4 + 3];
+      if (alpha > 0) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+        found = true;
+      }
+    }
+  }
+  
+  if (!found) return;
+  
+  const dpr = window.devicePixelRatio || 1;
+  const padding = Math.round(basePadding * dpr);
+  
+  minX = Math.max(0, minX - padding);
+  minY = Math.max(0, minY - padding);
+  maxX = Math.min(width - 1, maxX + padding);
+  maxY = Math.min(height - 1, maxY + padding);
+  
+  const croppedWidth = maxX - minX + 1;
+  const croppedHeight = maxY - minY + 1;
+  
+  if (croppedWidth <= 0 || croppedHeight <= 0) return;
+  
+  const tempCanvas = document.createElement('canvas');
+  tempCanvas.width = croppedWidth;
+  tempCanvas.height = croppedHeight;
+  const tempCtx = tempCanvas.getContext('2d');
+  tempCtx.drawImage(canvas, minX, minY, croppedWidth, croppedHeight, 0, 0, croppedWidth, croppedHeight);
+  
+  canvas.width = croppedWidth;
+  canvas.height = croppedHeight;
+  ctx.drawImage(tempCanvas, 0, 0);
+  
+  return {
+    width: croppedWidth / dpr,
+    height: croppedHeight / dpr
+  };
+}
