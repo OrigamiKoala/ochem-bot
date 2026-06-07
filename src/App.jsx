@@ -342,7 +342,26 @@ export default function App() {
 
   // ---- Display Next Reaction ----
   const displayNextReaction = useCallback(() => {
-    const queue = reactionQueueRef.current;
+    let queue = reactionQueueRef.current;
+    if (queue.length === 0) {
+      const cached = loadQueueFromCacheUtil(isFreeDraw, isGenChemMode);
+      let remaining = cached;
+      if (currentReactionRef.current && cached.length > 0) {
+        const first = cached[0];
+        const current = currentReactionRef.current;
+        const isSame = (first.id && first.id === current.id) ||
+                       (first.instructions === current.instructions &&
+                        first.reactants === current.reactants &&
+                        first.answer === current.answer);
+        if (isSame) {
+          remaining = cached.slice(1);
+        }
+      }
+      if (remaining.length > 0) {
+        queue = remaining;
+      }
+    }
+
     if (queue.length === 0) {
       setCurrentReaction(null);
       setHasSubmitted(false);
