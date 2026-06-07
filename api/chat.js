@@ -105,11 +105,17 @@ Follow these strict Olympiad Design Philosophies:
 - Product must be MAJOR product. SMILES must be valid and balanced.
 
 ###Examples:###
-(No examples provided for organic chemistry generation. Focus strictly on correct JSON struc###Steps:###
-To ensure high question quality while streaming incrementally:
-- Place your thought process for each question inside the "thoughtProcess" JSON field of that question object.
-- **For the first question object in the array**: Start the "thoughtProcess" value with your "Overall Plan" (deciding the topics, difficulties, and traps for all questions to get an overall sense for the test), followed by the sequential steps for the first question.
-- **For each question object sequentially**: Inside its "thoughtProcess" field, perform the draft, test-solving, feedback, and revision steps. Keep these explanations extremely concise (e.g. 1 short sentence per step) to minimize generation latency.
+(No examples provided for organic chemistry generation. Focus strictly on correct JSON structure.)
+
+###Steps:###
+1. Brainstorm potential concepts for each question.
+2. Narrow down each concept into a particular topic for each question, as well as the subtle conceptual trap the user might fall into.
+3. Decide on a difficulty level for each question.
+4. For each question, generate the question text, taking into account the topic, trap, and difficulty level.
+5. Test-solve each of the questions to ensure they satisfy each of the constraints. Write feedback for each of the problems for how to improve them.
+6. Improve the questions based on the feedback. Fix all questions that do not adhere to the constraints, and ones you can easily solve.
+7. Solve each question. Double check that the answers generated are the only valid solutions. If the answer is not the only valid solution, change the problem, repeating steps 4 and 5. Explain the trick in the problem. If the trick is not a trap students are likely to fall into, or there is no trick, redo the question (add a trick).
+8. Double check that all constraints and output requirements have been met. If they have not, change the format and/or problem so that all constraints and output requirements are met.
 
 For example, your thought process might look like:
 
@@ -169,7 +175,6 @@ Final Output JSON:
 {
   "reactions": [
     {
-      "thoughtProcess": "Overall Plan: Q1 stoichiometry (difficulty 5, balance trap), Q2 electrochemistry cell change (difficulty 6). Q1 Draft: M + 5 O2 -> 3 CO2... Q1 Test-solve: Moles CO2 = 14.4 / 22.4 = 0.643 mol... Q1 Feedback: Too easy. Q1 Revise: hydrocarbon combustion masses. Q1 Solve: Empirical = C3H8, Molar mass = 44.1. Formula C3H8.",
       "qtype": "calculate",
       "reactants": "",
       "reagents": "",
@@ -180,7 +185,6 @@ Final Output JSON:
       "explanation": "Calculate the moles of carbon and hydrogen atoms from the combustion products:\\\\n- Moles of $\\\\text{C} = 13.20\\\\text{ g} / 44.01\\\\text{ g mol}^{-1} = 0.300\\\\text{ mol}$\\\\n- Moles of $\\\\text{H} = 2 \\\\times (7.21\\\\text{ g} / 18.02\\\\text{ g mol}^{-1}) = 0.800\\\\text{ mol}$\\\\n\\\\nThe empirical formula is $\\\\ce{C3H8}$ (empirical formula mass $= 44.1\\\\text{ g mol}^{-1}$).\\\\n\\\\nNext, use the density at STP to calculate the molar mass of M:\\\\n- $\\\\text{Molar Mass} = 1.97\\\\text{ g L}^{-1} \\\\times 22.4\\\\text{ L mol}^{-1} = 44.1\\\\text{ g mol}^{-1}$\\\\n\\\\nSince the molar mass matches the empirical formula mass, the molecular formula of M is $\\\\ce{C3H8}$."
     },
     {
-      "thoughtProcess": "Q2 Draft: Butler-Volmer overpotential. Q2 Test-solve: Butler-Volmer is too advanced for USNCO. Q2 Feedback: Replace with standard galvanic cell. Q2 Revise: Silver/copper cell mass change. Q2 Solve: Cu -> Cu2+ + 2e-. Q = 5400 C. Moles e- = 0.0560. Moles Cu = 0.0280. Mass change = 1.78 g decrease.",
       "qtype": "calculate",
       "reactants": "",
       "reagents": "",
@@ -196,7 +200,7 @@ Final Output JSON:
 
 ###Output Requirements:###
 Output JSON only with the following schema:
-{"reactions":[{"thoughtProcess":"Thought process string detailing the plan/verifications (extremely concise)","qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], inorganic as LaTeX (wrapped in inline math delimiters $...$)","conditions":"plain text","answer":"SMILES","instructions":"task","hint":"a brief helpful hint that nudges the student toward the right approach while helping them discover the solution on their own — e.g. mention a key reagent role, or highlight a functional group to focus on","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
+{"reactions":[{"qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], inorganic as LaTeX (wrapped in inline math delimiters $...$)","conditions":"plain text","answer":"SMILES","instructions":"task","hint":"a brief helpful hint that nudges the student toward the right approach while helping them discover the solution on their own — e.g. mention a key reagent role, or highlight a functional group to focus on","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
 ` + CHALLENGE_PHILOSOPHY;
 
 const GENCHEM_GENERATION_SYSTEM_INSTRUCTION = `###Role:### You are an expert chemistry professor generating olympiad problems (USNCO/IChO) for high-stakes exams.
@@ -285,11 +289,17 @@ Bad example (DO NOT generate questions like this):
   "answer": "A",
   "difficulty": 1
 }
-Problem: Too simple — single formula plug-in. Questions must require multi-###Steps:###
-To ensure high question quality while streaming incrementally:
-- Place your thought process for each question inside the "thoughtProcess" JSON field of that question object.
-- **For the first question object in the array**: Start the "thoughtProcess" value with your "Overall Plan" (deciding the topics, difficulties, and traps for all questions to get an overall sense for the test), followed by the sequential steps for the first question.
-- **For each question object sequentially**: Inside its "thoughtProcess" field, perform the draft, test-solving, feedback, and revision steps. Keep these explanations extremely concise (e.g. 1 short sentence per step) to minimize generation latency.
+Problem: Too simple — single formula plug-in. Questions must require multi-step reasoning.
+
+###Steps:###
+1. Brainstorm potential concepts for each question.
+2. Narrow down each concept into a particular topic for each question, as well as the subtle conceptual trap the user might fall into.
+3. Decide on a difficulty level for each question.
+4. For each question, generate the question text, taking into account the topic, trap, and difficulty level.
+5. Test-solve each of the questions to ensure they satisfy each of the constraints. Write feedback for each of the problems for how to improve them.
+6. Improve the questions based on the feedback. Fix all questions that do not adhere to the constraints, and ones you can easily solve.
+7. Solve each question. Double check that the answers generated are the only valid solutions. If the answer is not the only valid solution, change the problem, repeating steps 4 and 5.
+8. Double check that all constraints and output requirements have been met. If they have not, change the format and/or problem so that all constraints and output requirements are met.
 
 For example, your thought process might look like:
 
@@ -349,7 +359,6 @@ Final Output JSON:
 {
   "reactions": [
     {
-      "thoughtProcess": "Overall Plan: Q1 stoichiometry (difficulty 5, balance trap), Q2 electrochemistry cell change (difficulty 6). Q1 Draft: M + 5 O2 -> 3 CO2... Q1 Test-solve: Moles CO2 = 14.4 / 22.4 = 0.643 mol... Q1 Feedback: Too easy. Q1 Revise: hydrocarbon combustion masses. Q1 Solve: Empirical = C3H8, Molar mass = 44.1. Formula C3H8.",
       "qtype": "calculate",
       "reactants": "",
       "reagents": "",
@@ -360,7 +369,6 @@ Final Output JSON:
       "explanation": "Calculate the moles of carbon and hydrogen atoms from the combustion products:\\\\n- Moles of $\\\\text{C} = 13.20\\\\text{ g} / 44.01\\\\text{ g mol}^{-1} = 0.300\\\\text{ mol}$\\\\n- Moles of $\\\\text{H} = 2 \\\\times (7.21\\\\text{ g} / 18.02\\\\text{ g mol}^{-1}) = 0.800\\\\text{ mol}$\\\\n\\\\nThe empirical formula is $\\\\ce{C3H8}$ (empirical formula mass $= 44.1\\\\text{ g mol}^{-1}$).\\\\n\\\\nNext, use the density at STP to calculate the molar mass of M:\\\\n- $\\\\text{Molar Mass} = 1.97\\\\text{ g L}^{-1} \\\\times 22.4\\\\text{ L mol}^{-1} = 44.1\\\\text{ g mol}^{-1}$\\\\n\\\\nSince the molar mass matches the empirical formula mass, the molecular formula of M is $\\\\ce{C3H8}$."
     },
     {
-      "thoughtProcess": "Q2 Draft: Butler-Volmer overpotential. Q2 Test-solve: Butler-Volmer is too advanced for USNCO. Q2 Feedback: Replace with standard galvanic cell. Q2 Revise: Silver/copper cell mass change. Q2 Solve: Cu -> Cu2+ + 2e-. Q = 5400 C. Moles e- = 0.0560. Moles Cu = 0.0280. Mass change = 1.78 g decrease.",
       "qtype": "calculate",
       "reactants": "",
       "reagents": "",
