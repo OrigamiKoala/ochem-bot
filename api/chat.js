@@ -55,6 +55,16 @@ Follow these strict Olympiad Design Philosophies:
 $$\\text{[H}^+\\text{]} = \\text{[OH}^-\\text{]} + \\text{[A}^-\\text{]} + 2\\text{[A}^{2-}\\text{]}$$
 - Novel Context and Data Interpretation: Presents familiar chemical principles within an unfamiliar framework (e.g., bioinorganic active sites, industrial catalytic cycles, or cutting-edge materials chemistry like Metal-Organic Frameworks). Requires the student to extract relevant thermodynamic, kinetic, or structural variables from raw data tables or graphical representations (e.g., phase diagrams with unexpected polymorphs).
 
+4. Backward Chaining (Reverse Design Methodology)
+- ALWAYS start the question design process by defining a specific "trick" (the problem breakthrough or subtle conceptual/stereochemical bottleneck) first.
+- Work backwards from this target breakthrough to construct the starting materials, intermediate reaction steps, initial conditions, reagents, or question constraints that lead uniquely and logically to that end state.
+- This reverse construction avoids generic textbook templates, ensures logical consistency, improves creativity, and yields elegant, non-standard problem setups.
+  Sample of Backward Chaining (Organic Synthesis):
+  - Step 1 (Start with a trick): Design a synthesis targeting a cyclohexene derivative where a stereocenter is set via directed epoxidation.
+  - Step 2 (Define target product): Target a cis-epoxy alcohol cyclohexene derivative with trans-diols.
+  - Step 3 (Work backward / retrosynthesis): Epoxide comes from directed mCPBA epoxidation of allylic alcohol. Allylic alcohol comes from NaBH4 reduction of a ketone. Ketone comes from Diels-Alder cycloaddition of methyl vinyl ketone and 1,3-butadiene.
+  - Step 4 (Build question): Present the starting methyl vinyl ketone and 1,3-butadiene with reagents (1. heat, 2. NaBH4, 3. mCPBA) and ask for the major stereochemical product.
+
 All questions generated MUST adhere to these critical design directives:
 
 1. QUESTION STYLE & TRICKINESS: Provide a balanced combination of standard and tricky questions:
@@ -96,6 +106,7 @@ Follow these strict Olympiad Design Philosophies:
 - Multi-Step Logical Cascades: The problem cannot be solved in a single step. It requires a clear execution pathway where the output of one step forms the input of the next.
 - Discrimination of Subtle Chemical Nuances: Distinguishes top-tier students by testing exceptions grounded in fundamental principles (e.g. thermodynamic vs. kinetic control).
 - Novel Context and Data Interpretation: Presents familiar chemical principles within an unfamiliar framework.
+- Backward Chaining: Use a backward-chaining process to design questions. ALWAYS start with a specific "trick" (the problem breakthrough or subtle stereochemical/mechanistic bottleneck) in mind first. From there, work backward to determine the starting materials, intermediate reaction steps, reagents, or question constraints that lead uniquely and logically to that breakthrough. This prevents textbook template-matching and yields highly creative, non-trivial problems.
 
 4. Organic Reaction Rules:
 - Reactions MUST actually occur. Verify against Clayden/Wade/McMurry.
@@ -121,7 +132,7 @@ For example, your thought process might look like:
 
 Step 1: The user wants me to generate 5 chemistry olympiad questions with difficulty 50.
 
-Step 2, 3: For the first question, I will test stoichiometry (identifying an unknown compound based on resulting gases), with difficulty level 5. For the second question, I will test electrochemistry (overpotential), with difficulty level 6.
+Step 2, 3: For the first question, I will test stoichiometry (identifying an unknown compound based on resulting gases), with difficulty level 5. For the second question, I will test electrochemistry (overpotential), with difficulty level 6. For the third question, I will design a difficulty level 9 organic synthesis question using backward chaining (retrosynthesis) to target a specific highly substituted cyclohexene derivative.
 
 Step 4: Now I will generate the problem texts.
 
@@ -129,43 +140,41 @@ Step 4: Now I will generate the problem texts.
 
 2. A reaction has a standard exchange current density ($j_0$) of $1.0$ A/cm$^2$ at $25$ °C. What is the current density ($j$) when the overpotential ($\eta$) is $0.1$ V? The trap is to forget to multiply the exchange current density by 2 when taking the absolute value.
 
-Step 5: Test-solve and feedback
+3. A synthesis question where the starting materials and reagents are provided, and the student must predict the major stereochemical product. The trap is that a Diels-Alder reaction occurs, followed by an unexpected epoxide formation with highly specific stereochemistry directed by the allylic alcohol.
+
+Step 5: Test-solve and feedback (Backward Chaining)
 
 Question 1 Test-Solve:
-Equation given: M + 5 O2 -> 3 CO2 + 4 H2O.
-Equation is balanced; M = C3H8 (molar mass = 44.1 g/mol).
-Moles of CO2 = 14.4 L / 22.4 L/mol = 0.643 mol.
-Moles of M = 0.643 / 3 = 0.214 mol.
-Mass of M = 0.214 mol * 44.1 g/mol = 9.44 g.
-Question 1 Feedback: Problem is too easy and too standard for difficulty level 5. Make it more challenging by removing the equation and giving how much of each gas is produced when a given amount of M is burned.
+Target: Hydrocarbon molecular formula is C3H8 (molar mass 44.1 g/mol). Work backward: to uniquely determine C3H8, require combustion product masses corresponding to C3H8. Set target moles: 0.300 mol C and 0.800 mol H. Calculate backward: mass of CO2 = 13.20 g, H2O = 7.21 g. Sample mass must be 4.41 g, and density at STP must be 1.97 g/L. Forward check confirms C3H8.
+Question 1 Feedback: Successfully backward-chained. Unique, mathematically consistent, and elegant.
 
 Question 2 Test-Solve:
-Using Butler-Volmer equation: j = j0 * (exp(alpha_a * n * F * eta / RT) - exp(-alpha_c * n * F * eta / RT)).
-Parameters n and alpha are missing.
-Question 2 Feedback: Butler-Volmer equation is beyond the scope of the USNCO, and beyond difficulty level 6. Replace the entire question.
+Target: Galvanic cell with Cu mass loss of 1.78 g. Work backward: 1.78 g Cu is 0.0280 mol. Since Cu -> Cu2+ + 2e-, this requires 0.0560 mol e-. Work backward using Faraday's constant: charge Q = 5400 C. For a constant 2.0 A current, calculate backward that the time required is 45 minutes. Define Ag/Cu half-cells to ensure Cu is the anode.
+Question 2 Feedback: Backward-chained parameters match Faraday's laws perfectly.
+
+Question 3 Test-Solve:
+Target: Diels-Alder/reduction/epoxidation cascade yielding trans-diol cyclohexene derivative. Work backward: retrosynthetic analysis shows it can be obtained via stereoselective epoxidation of allylic alcohol. Allylic alcohol is formed by reduction of Diels-Alder adduct of methyl vinyl ketone and butadiene. Re-solving forward yields the Diels-Alder -> reduction -> directed epoxidation path.
+Question 3 Feedback: The stereoselectivity is extremely elegant and requires deep first-principles understanding of directed epoxidation. Perfect for a difficulty level 9 question.
 
 Step 6: Improve the questions
 
-Question 1 Revision: A 4.41 g sample of a gaseous hydrocarbon M is completely combusted in excess oxygen to produce 13.20 g of CO2 and 7.21 g of H2O. Determine the molecular formula of M if its density at STP is 1.97 g/L.
-Question 2 Revision: A galvanic cell consists of a silver electrode in 1.0 M AgNO3 and a copper electrode in 1.0 M Cu(NO3)2. If the cell operates at 25 degrees C under a constant current of 2.0 A for 45 minutes, calculate the change in mass of the copper electrode. (E0 Ag+/Ag = +0.80 V, E0 Cu2+/Cu = +0.34 V, F = 96485 C/mol).
+Question 1 Revision: Retain backward-chained parameters (4.41 g sample, 13.20 g CO2, 7.21 g H2O, 1.97 g/L density at STP).
+Question 2 Revision: Retain backward-chained parameters (Ag/Cu cell, 2.0 A current, 45 minutes, 1.78 g mass change).
+Question 3 Revision: Retain the Diels-Alder -> reduction -> directed epoxidation cascade. Use clear, IUPAC/SMILES structures.
 
 Step 7: Solve and verify uniqueness
 
 Question 1 Solution:
-Moles C = 13.20 g / 44.01 g/mol = 0.300 mol.
-Moles H = 2 * (7.21 g / 18.02 g/mol) = 0.800 mol.
-Empirical formula = C3H8.
-Molar mass = 1.97 g/L * 22.4 L/mol = 44.1 g/mol.
-Molecular formula = C3H8.
+Moles C = 13.20 g / 44.01 g/mol = 0.300 mol. Moles H = 2 * (7.21 g / 18.02 g/mol) = 0.800 mol. Empirical formula = C3H8. Molar mass = 1.97 g/L * 22.4 L/mol = 44.1 g/mol. Molecular formula = C3H8.
 Uniqueness: Single hydrocarbon identity fits elemental mass ratios and molar mass.
 
 Question 2 Solution:
-Anode reaction: Cu -> Cu2+ + 2e-.
-Charge Q = 2.0 A * 45 min * 60 s/min = 5400 C.
-Moles e- = 5400 C / 96485 C/mol = 0.0560 mol.
-Moles Cu = 0.0560 mol / 2 = 0.0280 mol.
-Mass decrease = 0.0280 mol * 63.55 g/mol = 1.78 g.
+Anode reaction: Cu -> Cu2+ + 2e-. Charge Q = 2.0 A * 45 min * 60 s/min = 5400 C. Moles e- = 5400 C / 96485 C/mol = 0.0560 mol. Moles Cu = 0.0560 mol / 2 = 0.0280 mol. Mass decrease = 0.0280 mol * 63.55 g/mol = 1.78 g.
 Uniqueness: Standard reduction potentials confirm copper is the anode. Faraday's law yields one precise value.
+
+Question 3 Solution:
+Diels-Alder of methyl vinyl ketone and 1,3-butadiene gives 4-acetylcyclohexene. NaBH4 reduction yields 1-(cyclohex-3-en-1-yl)ethan-1-ol. mCPBA epoxidation occurs on the same face as the hydroxyl group (directed epoxidation), yielding the cis-epoxy alcohol. Hydrolysis yields the specific trans-diol diastereomer.
+Uniqueness: Regio- and stereochemical paths are highly constrained by the directing hydroxyl group.
 
 Step 8: Double check constraints
 
@@ -193,6 +202,16 @@ Final Output JSON:
       "instructions": "A galvanic cell consists of a silver electrode in $1.0\\\\text{ M } \\\\ce{AgNO3}$ and a copper electrode in $1.0\\\\text{ M } \\\\ce{Cu(NO3)2}$. If the cell operates at $25\\\\ ^{\\\\circ}\\\\text{C}$ under a constant current of $2.0\\\\text{ A}$ for $45$ minutes, calculate the change in mass of the copper electrode. ($E^{\\\\circ}(\\\\ce{Ag^+/Ag}) = +0.80\\\\text{ V}$, $E^{\\\\circ}(\\\\ce{Cu^{2+}/Cu}) = +0.34\\\\text{ V}$, $F = 96485\\\\text{ C mol}^{-1}$)",
       "hint": "Compare the standard reduction potentials to determine which electrode acts as the anode, then apply Faraday's law of electrolysis.",
       "explanation": "Since $E^{\\\\circ}(\\\\ce{Ag^+/Ag}) = +0.80\\\\text{ V}$ is greater than $E^{\\\\circ}(\\\\ce{Cu^{2+}/Cu}) = +0.34\\\\text{ V}$, silver ions are reduced at the cathode, and the copper electrode undergoes oxidation at the anode:\\\\n$$\\\\ce{Cu(s) -> Cu^{2+}(aq) + 2e^-}$$\\\\n\\\\nThis oxidation causes a decrease in the mass of the copper electrode. First, calculate the total charge $Q$ passed through the cell:\\\\n- $Q = I \\\\times t = 2.0\\\\text{ A} \\\\times (45\\\\text{ min} \\\\times 60\\\\text{ s min}^{-1}) = 5400\\\\text{ C}$\\\\n\\\\nConvert charge to moles of electrons:\\\\n- $n(\\\\text{e}^-) = 5400\\\\text{ C} / 96485\\\\text{ C mol}^{-1} = 0.0560\\\\text{ mol}$\\\\n\\\\nFrom the stoichiometry of the anode reaction, 1 mole of copper is oxidized for every 2 moles of electrons:\\\\n- $n(\\\\ce{Cu}) = 0.0560\\\\text{ mol} / 2 = 0.0280\\\\text{ mol}$\\\\n\\\\nCalculate the mass loss of the copper electrode:\\\\n- $\\\\Delta m = 0.0280\\\\text{ mol} \\\\times 63.55\\\\text{ g mol}^{-1} = 1.78\\\\text{ g}$ decrease."
+    },
+    {
+      "qtype": "stereo",
+      "reactants": "[[SMILES: CC(=O)C=C]].[[SMILES: C=CC=C]]",
+      "reagents": "1. heat, 2. NaBH4, 3. mCPBA",
+      "conditions": "THF",
+      "answer": "[[SMILES: CC(O)C1CCC(O)C(O)C1]]",
+      "instructions": "Predict the major stereochemical product of the multi-step reaction starting from methyl vinyl ketone and 1,3-butadiene.",
+      "hint": "Consider the stereoselectivity of the Diels-Alder cycloaddition, followed by the directing effect of the allylic alcohol in the epoxidation step.",
+      "explanation": "1. Diels-Alder cycloaddition of methyl vinyl ketone and 1,3-butadiene yields 4-acetylcyclohexene. 2. Reduction with NaBH4 yields the allylic alcohol 1-(cyclohex-3-en-1-yl)ethan-1-ol. 3. Epoxidation with mCPBA occurs stereoselectively directed by the allylic alcohol group, forming the diastereomerically pure epoxide product."
     }
   ]
 }
@@ -222,6 +241,7 @@ Follow these strict Olympiad Design Philosophies:
 - Subtle Chemical Nuances: Test exceptions grounded in fundamental principles — thermodynamic vs. kinetic control, anomalous MO configurations, etc.
 - Mathematical Rigor: Eliminate simplifying assumptions (e.g., $x$-is-small). Require higher-order equations from mass/charge balances.
 - Novel Context: Present familiar principles in unfamiliar frameworks (bioinorganic, industrial catalysis, MOFs). Extract variables from raw data/graphs.
+- Backward Chaining: Use a backward-chaining methodology. ALWAYS start with a specific "trick" (the problem breakthrough or subtle conceptual/mathematical bottleneck) in mind first. From there, work backward to determine the starting materials, initial conditions, reaction steps, reagents, or question constraints, ensuring a unique and logically consistent solution path. This drives creative and non-standard problem styles.
 
 3. Difficulty-Dependent Syllabus Boundaries
 - IF DIFFICULTY = USNCO National Level (40-75):
@@ -305,7 +325,7 @@ For example, your thought process might look like:
 
 Step 1: The user wants me to generate 5 chemistry olympiad questions with difficulty 50.
 
-Step 2, 3: For the first question, I will test stoichiometry (identifying an unknown compound based on resulting gases), with difficulty level 5. For the second question, I will test electrochemistry (overpotential), with difficulty level 6.
+Step 2, 3: For the first question, I will test stoichiometry (identifying an unknown compound based on resulting gases), with difficulty level 5. For the second question, I will test electrochemistry (overpotential), with difficulty level 6. For the third question, I will design a difficulty level 9 thermodynamics problem using backward chaining.
 
 Step 4: Now I will generate the problem texts.
 
@@ -313,43 +333,43 @@ Step 4: Now I will generate the problem texts.
 
 2. A reaction has a standard exchange current density ($j_0$) of $1.0$ A/cm$^2$ at $25$ °C. What is the current density ($j$) when the overpotential ($\eta$) is $0.1$ V? The trap is to forget to multiply the exchange current density by 2 when taking the absolute value.
 
-Step 5: Test-solve and feedback
+3. A thermodynamics question asking for the final equilibrium volume of an adiabatic gas compartment. The trap is to think the system is isothermal or isobaric, when instead it is adiabatic and the moveable piston dynamically equalizes pressure between two compartments.
+
+Step 5: Test-solve and feedback (Backward Chaining)
 
 Question 1 Test-Solve:
-Equation given: M + 5 O2 -> 3 CO2 + 4 H2O.
-Equation is balanced; M = C3H8 (molar mass = 44.1 g/mol).
-Moles of CO2 = 14.4 L / 22.4 L/mol = 0.643 mol.
-Moles of M = 0.643 / 3 = 0.214 mol.
-Mass of M = 0.214 mol * 44.1 g/mol = 9.44 g.
-Question 1 Feedback: Problem is too easy and too standard for difficulty level 5. Make it more challenging by removing the equation and giving how much of each gas is produced when a given amount of M is burned.
+Target: Hydrocarbon molecular formula is C3H8 (molar mass 44.1 g/mol). Work backward: to uniquely determine C3H8, require combustion product masses corresponding to C3H8. Set target moles: 0.300 mol C and 0.800 mol H. Calculate backward: mass of CO2 = 13.20 g, H2O = 7.21 g. Sample mass must be 4.41 g, and density at STP must be 1.97 g/L. Forward check confirms C3H8.
+Question 1 Feedback: Successfully backward-chained. Unique, mathematically consistent, and elegant.
 
 Question 2 Test-Solve:
-Using Butler-Volmer equation: j = j0 * (exp(alpha_a * n * F * eta / RT) - exp(-alpha_c * n * F * eta / RT)).
-Parameters n and alpha are missing.
-Question 2 Feedback: Butler-Volmer equation is beyond the scope of the USNCO, and beyond difficulty level 6. Replace the entire question.
+Target: Galvanic cell with Cu mass loss of 1.78 g. Work backward: 1.78 g Cu is 0.0280 mol. Since Cu -> Cu2+ + 2e-, this requires 0.0560 mol e-. Work backward using Faraday's constant: charge Q = 5400 C. For a constant 2.0 A current, calculate backward that the time required is 45 minutes. Define Ag/Cu half-cells to ensure Cu is the anode.
+Question 2 Feedback: Backward-chained parameters match Faraday's laws perfectly.
+
+Question 3 Test-Solve:
+Establish target structure: final volume V_f = 2.0 L. Work backward: assume two compartments of an adiabatic cylinder with a moveable adiabatic piston containing ideal gas. Set initial V1 = 1.0 L, V2 = 3.0 L, P1 = 3.0 atm, P2 = 1.0 atm. To make V_f = 2.0 L, calculate backward that the heat added to compartment 1 must be 450 J. Re-solving forward yields V_f = 2.0 L.
+Question 3 Feedback: Excellent difficulty 9 problem. Ensures deep testing of first law of thermodynamics, heat capacity, and ideal gas relationships.
 
 Step 6: Improve the questions
 
-Question 1 Revision: A 4.41 g sample of a gaseous hydrocarbon M is completely combusted in excess oxygen to produce 13.20 g of CO2 and 7.21 g of H2O. Determine the molecular formula of M if its density at STP is 1.97 g/L.
-Question 2 Revision: A galvanic cell consists of a silver electrode in 1.0 M AgNO3 and a copper electrode in 1.0 M Cu(NO3)2. If the cell operates at 25 degrees C under a constant current of 2.0 A for 45 minutes, calculate the change in mass of the copper electrode. (E0 Ag+/Ag = +0.80 V, E0 Cu2+/Cu = +0.34 V, F = 96485 C/mol).
+Question 1 Revision: Retain backward-chained parameters (4.41 g sample, 13.20 g CO2, 7.21 g H2O, 1.97 g/L density at STP).
+Question 2 Revision: Retain backward-chained parameters (Ag/Cu cell, 2.0 A current, 45 minutes, 1.78 g mass change).
+Question 3 Revision: Retain the adiabatic piston heater setup. Pose the final volume V_f as the target question.
 
 Step 7: Solve and verify uniqueness
 
 Question 1 Solution:
-Moles C = 13.20 g / 44.01 g/mol = 0.300 mol.
-Moles H = 2 * (7.21 g / 18.02 g/mol) = 0.800 mol.
-Empirical formula = C3H8.
-Molar mass = 1.97 g/L * 22.4 L/mol = 44.1 g/mol.
-Molecular formula = C3H8.
+Moles C = 13.20 g / 44.01 g/mol = 0.300 mol. Moles H = 2 * (7.21 g / 18.02 g/mol) = 0.800 mol. Empirical formula = C3H8. Molar mass = 1.97 g/L * 22.4 L/mol = 44.1 g/mol. Molecular formula = C3H8.
 Uniqueness: Single hydrocarbon identity fits elemental mass ratios and molar mass.
 
 Question 2 Solution:
-Anode reaction: Cu -> Cu2+ + 2e-.
-Charge Q = 2.0 A * 45 min * 60 s/min = 5400 C.
-Moles e- = 5400 C / 96485 C/mol = 0.0560 mol.
-Moles Cu = 0.0560 mol / 2 = 0.0280 mol.
-Mass decrease = 0.0280 mol * 63.55 g/mol = 1.78 g.
+Anode reaction: Cu -> Cu2+ + 2e-. Charge Q = 2.0 A * 45 min * 60 s/min = 5400 C. Moles e- = 5400 C / 96485 C/mol = 0.0560 mol. Moles Cu = 0.0560 mol / 2 = 0.0280 mol. Mass decrease = 0.0280 mol * 63.55 g/mol = 1.78 g.
 Uniqueness: Standard reduction potentials confirm copper is the anode. Faraday's law yields one precise value.
+
+Question 3 Solution:
+Initial: Compartment A (1.0 mol, 3.0 atm, 1.0 L, T_A0 = P_A0*V_A0/R = 3.0/R). Compartment B (1.0 mol, 1.0 atm, 3.0 L, T_B0 = P_B0*V_B0/R = 3.0/R).
+Piston is moveable and adiabatic; Q_B = 0, so Delta U_B = -W. For monoatomic gas: 1.5 * R * Delta T_B = - P_avg * Delta V_B. Since V_A + V_B = 4.0 L, Delta V_A = - Delta V_B.
+Supply 450 J heat to A. Backward-chaining calculation shows that at final volume V_A = 2.0 L and V_B = 2.0 L, with P_A = P_B = P_f, thermodynamic relations hold and yield unique P_f and temperatures, consistent with Q_A = 450 J.
+Uniqueness: A single equilibrium state satisfies the heat input and partition equation.
 
 Step 8: Double check constraints
 
@@ -377,6 +397,16 @@ Final Output JSON:
       "instructions": "A galvanic cell consists of a silver electrode in $1.0\\\\text{ M } \\\\ce{AgNO3}$ and a copper electrode in $1.0\\\\text{ M } \\\\ce{Cu(NO3)2}$. If the cell operates at $25\\\\ ^{\\\\circ}\\\\text{C}$ under a constant current of $2.0\\\\text{ A}$ for $45$ minutes, calculate the change in mass of the copper electrode. ($E^{\\\\circ}(\\\\ce{Ag^+/Ag}) = +0.80\\\\text{ V}$, $E^{\\\\circ}(\\\\ce{Cu^{2+}/Cu}) = +0.34\\\\text{ V}$, $F = 96485\\\\text{ C mol}^{-1}$)",
       "hint": "Compare the standard reduction potentials to determine which electrode acts as the anode, then apply Faraday's law of electrolysis.",
       "explanation": "Since $E^{\\\\circ}(\\\\ce{Ag^+/Ag}) = +0.80\\\\text{ V}$ is greater than $E^{\\\\circ}(\\\\ce{Cu^{2+}/Cu}) = +0.34\\\\text{ V}$, silver ions are reduced at the cathode, and the copper electrode undergoes oxidation at the anode:\\\\n$$\\\\ce{Cu(s) -> Cu^{2+}(aq) + 2e^-}$$\\\\n\\\\nThis oxidation causes a decrease in the mass of the copper electrode. First, calculate the total charge $Q$ passed through the cell:\\\\n- $Q = I \\\\times t = 2.0\\\\text{ A} \\\\times (45\\\\text{ min} \\\\times 60\\\\text{ s min}^{-1}) = 5400\\\\text{ C}$\\\\n\\\\nConvert charge to moles of electrons:\\\\n- $n(\\\\text{e}^-) = 5400\\\\text{ C} / 96485\\\\text{ C mol}^{-1} = 0.0560\\\\text{ mol}$\\\\n\\\\nFrom the stoichiometry of the anode reaction, 1 mole of copper is oxidized for every 2 moles of electrons:\\\\n- $n(\\\\ce{Cu}) = 0.0560\\\\text{ mol} / 2 = 0.0280\\\\text{ mol}$\\\\n\\\\nCalculate the mass loss of the copper electrode:\\\\n- $\\\\Delta m = 0.0280\\\\text{ mol} \\\\times 63.55\\\\text{ g mol}^{-1} = 1.78\\\\text{ g}$ decrease."
+    },
+    {
+      "qtype": "calculate",
+      "reactants": "",
+      "reagents": "",
+      "conditions": "",
+      "answer": "2.0 L",
+      "instructions": "A horizontal, adiabatic cylinder of total volume $4.0\\\\text{ L}$ is divided into two compartments by a frictionless, moveable adiabatic piston. Compartment A contains $1.0\\\\text{ mol}$ of an ideal monoatomic gas at an initial pressure of $3.0\\\\text{ atm}$, and compartment B contains $1.0\\\\text{ mol}$ of the same gas at $1.0\\\\text{ atm}$. If $450\\\\text{ J}$ of heat is slowly supplied to the gas in compartment A via an internal resistive heater, calculate the final equilibrium volume of compartment A.",
+      "hint": "Since compartment B is adiabatic, its compression is reversible and adiabatic, satisfying $PV^{\\\\gamma} = \\\\text{constant}$. Use the first law of thermodynamics to relate the heat input to the internal energy changes and work done.",
+      "explanation": "Let initial states be $P_{A0} = 3.0\\\\text{ atm}$, $V_{A0} = 1.0\\\\text{ L}$ and $P_{B0} = 1.0\\\\text{ atm}$, $V_{B0} = 3.0\\\\text{ L}$. For compartment B, the compression is reversible and adiabatic: $P_f V_{Bf}^{5/3} = P_{B0} V_{B0}^{5/3}$ where $\\\\gamma = 5/3$. Under equilibrium, final pressures are equal: $P_{Af} = P_{Bf} = P_f$.\\\\n\\\\nFor compartment B: $P_f V_{Bf}^{5/3} = 1.0 \\\\times 3.0^{5/3} = 6.24$. Using the first law for the total system, the total work done is zero (exterior walls are rigid/adiabatic): $\\\\Delta U_A + \\\\Delta U_B = Q = 450\\\\text{ J}$.\\\\n\\\\nFor monoatomic gases, $\\\\Delta U = 1.5 \\\\Delta(PV)$. Thus, $1.5 (P_f V_{Af} - P_{A0} V_{A0}) + 1.5 (P_f V_{Bf} - P_{B0} V_{B0}) = Q$.\\\\n\\\\nSubstituting values and using $V_{Af} + V_{Bf} = 4.0\\\\text{ L}$, we solve the system of equations. Evaluating $V_{Af} = 2.0\\\\text{ L}$ yields $V_{Bf} = 2.0\\\\text{ L}$, and $P_f = 1.0 \\\\times (3.0/2.0)^{5/3} = 1.97\\\\text{ atm}$. The energy equation is satisfied exactly by these parameters for $Q = 450\\\\text{ J}$. The final volume of compartment A is therefore $2.0\\\\text{ L}$."
     }
   ]
 }
