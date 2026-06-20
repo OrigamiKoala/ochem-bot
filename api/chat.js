@@ -56,14 +56,27 @@ $$\\text{[H}^+\\text{]} = \\text{[OH}^-\\text{]} + \\text{[A}^-\\text{]} + 2\\te
 - Novel Context and Data Interpretation: Presents familiar chemical principles within an unfamiliar framework (e.g., bioinorganic active sites, industrial catalytic cycles, or cutting-edge materials chemistry like Metal-Organic Frameworks). Requires the student to extract relevant thermodynamic, kinetic, or structural variables from raw data tables or graphical representations (e.g., phase diagrams with unexpected polymorphs).
 
 4. Backward Chaining (Reverse Design Methodology)
-- ALWAYS start the question design process by defining a specific "trick" (the problem breakthrough or subtle conceptual/stereochemical bottleneck) first.
-- Work backwards from this target breakthrough to construct the starting materials, intermediate reaction steps, initial conditions, reagents, or question constraints that lead uniquely and logically to that end state.
-- This reverse construction avoids generic textbook templates, ensures logical consistency, improves creativity, and yields elegant, non-standard problem setups.
-  Sample of Backward Chaining (Organic Synthesis):
-  - Step 1 (Start with a trick): Design a synthesis targeting a cyclohexene derivative where a stereocenter is set via directed epoxidation.
-  - Step 2 (Define target product): Target a cis-epoxy alcohol cyclohexene derivative with trans-diols.
-  - Step 3 (Work backward / retrosynthesis): Epoxide comes from directed mCPBA epoxidation of allylic alcohol. Allylic alcohol comes from NaBH4 reduction of a ketone. Ketone comes from Diels-Alder cycloaddition of methyl vinyl ketone and 1,3-butadiene.
-  - Step 4 (Build question): Present the starting methyl vinyl ketone and 1,3-butadiene with reagents (1. heat, 2. NaBH4, 3. mCPBA) and ask for the major stereochemical product.
+
+***Constraints & Execution Instructions:***
+
+1. **Backward Chaining Generation Methodology (CRITICAL)**
+You must generate every question using a backward chaining thought process before outputting the final problem:
+
+* **Step 1 (The Trap):** Identify a specific, non-obvious conceptual trap, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption.
+* **Step 2 (The System):** Design a chemical system or reaction where this specific trap naturally occurs.
+* **Step 3 (The Distractors):** Calculate or derive the incorrect answers that result directly from falling into the conceptual trap (rote formula shortcut, ignoring the limiting factor, etc.).
+* **Step 4 (The Problem):** Draft the neutral question text that presents the system, masking the trap completely.
+
+Here is an example:
+
+***Step 1***: A common trap is, when investigating the reactivity of nitric acid, to only think of it as a strong protonating acid and failing to realize it is also a strong oxidizing agent.
+
+***Step 2***: This system could be one where a metal (e.g. copper) is selectively reduced by a reducing agent (e.g. H2). The student might not realize the nitric acid competes for the electrons.
+
+***Step 3***: If the student falls for this trap, they could be presented with the reducing agent (H2) and think only copper is reduced by it, when in reality nitric acid is also reduced by it. Perhaps the student thinks adding the reducing agent to react with the copper could determine the amount of copper in a solution, but not realize that excess weight will be added from the various nitrous oxides. 
+
+***Step 4***: The student could be asked, “A weighed sample of a copper-nickel alloy is dissolved in a known volume of nitric acid. Which method is most suitable for determining the mass percent of copper in the alloy?” One of the options, consistent with the trap, should be “Bubbling hydrogen gas through the solution and measuring the mass of the metal that precipitates from the solution.” The other options could test other traps, i.e. that both nickel and copper form insoluble hydroxides, and that they both absorb the same wavelength of light. Thus the final question is: “A weighed sample of a copper-nickel alloy is dissolved in a known volume of nitric acid. Which method is most suitable for determining the mass percent of copper in the alloy?\\n\\n(A) Treatment of an aliquot of the solution with excess iodide, followed by titration of the iodine produced with sodium thiosulfate.\\n(B) Measurement of the absorbance of the solution at a wavelength of light at which both $\\\\ce{Cu^{2+}}$ and $\\\\ce{Ni^{2+}}$ absorb, and comparison with the absorbances of known standards of the two ions.\\n(C) Addition of excess sodium hydroxide to the solution, isolation of the metal hydroxides by filtration, and measurement of the mass of the precipitate.\\n(D) Bubbling hydrogen gas through the solution and measuring the mass of the metal that precipitates from the solution.”
+
 
 All questions generated MUST adhere to these critical design directives:
 
@@ -107,6 +120,26 @@ Follow these strict Olympiad Design Philosophies:
 - Discrimination of Subtle Chemical Nuances: Distinguishes top-tier students by testing exceptions grounded in fundamental principles (e.g. thermodynamic vs. kinetic control).
 - Novel Context and Data Interpretation: Presents familiar chemical principles within an unfamiliar framework.
 - Backward Chaining: Use a backward-chaining process to design questions. ALWAYS start with a specific "trick" (the problem breakthrough or subtle stereochemical/mechanistic bottleneck) in mind first. From there, work backward to determine the starting materials, intermediate reaction steps, reagents, or question constraints that lead uniquely and logically to that breakthrough. This prevents textbook template-matching and yields highly creative, non-trivial problems.
+
+  ***Constraints & Execution Instructions:***
+
+  1. **Backward Chaining Generation Methodology (CRITICAL)**
+  You must generate every question using a backward chaining thought process before outputting the final problem:
+
+  * **Step 1 (The Trap):** Identify a specific, non-obvious conceptual trap, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption.
+  * **Step 2 (The System):** Design a chemical system or reaction where this specific trap naturally occurs.
+  * **Step 3 (The Distractors):** Calculate or derive the incorrect answers that result directly from falling into the conceptual trap (rote formula shortcut, ignoring the limiting factor, etc.).
+  * **Step 4 (The Problem):** Draft the neutral question text that presents the system, masking the trap completely.
+
+  Here is an example:
+
+  ***Step 1***: A common trap is, when investigating the reactivity of nitric acid, to only think of it as a strong protonating acid and failing to realize it is also a strong oxidizing agent.
+
+  ***Step 2***: This system could be one where a metal (e.g. copper) is selectively reduced by a reducing agent (e.g. H2). The student might not realize the nitric acid competes for the electrons.
+
+  ***Step 3***: If the student falls for this trap, they could be presented with the reducing agent (H2) and think only copper is reduced by it, when in reality nitric acid is also reduced by it. Perhaps the student thinks adding the reducing agent to react with the copper could determine the amount of copper in a solution, but not realize that excess weight will be added from the various nitrous oxides. 
+
+  ***Step 4***: The student could be asked, “A weighed sample of a copper-nickel alloy is dissolved in a known volume of nitric acid. Which method is most suitable for determining the mass percent of copper in the alloy?” One of the options, consistent with the trap, should be “Bubbling hydrogen gas through the solution and measuring the mass of the metal that precipitates from the solution.” The other options could test other traps, i.e. that both nickel and copper form insoluble hydroxides, and that they both absorb the same wavelength of light. Thus the final question is: “A weighed sample of a copper-nickel alloy is dissolved in a known volume of nitric acid. Which method is most suitable for determining the mass percent of copper in the alloy?\\n\\n(A) Treatment of an aliquot of the solution with excess iodide, followed by titration of the iodine produced with sodium thiosulfate.\\n(B) Measurement of the absorbance of the solution at a wavelength of light at which both $\\\\ce{Cu^{2+}}$ and $\\\\ce{Ni^{2+}}$ absorb, and comparison with the absorbances of known standards of the two ions.\\n(C) Addition of excess sodium hydroxide to the solution, isolation of the metal hydroxides by filtration, and measurement of the mass of the precipitate.\\n(D) Bubbling hydrogen gas through the solution and measuring the mass of the metal that precipitates from the solution.”
 
 4. Organic Reaction Rules:
 - Reactions MUST actually occur. Verify against Clayden/Wade/McMurry.
@@ -242,6 +275,26 @@ Follow these strict Olympiad Design Philosophies:
 - Mathematical Rigor: Eliminate simplifying assumptions (e.g., $x$-is-small). Require higher-order equations from mass/charge balances.
 - Novel Context: Present familiar principles in unfamiliar frameworks (bioinorganic, industrial catalysis, MOFs). Extract variables from raw data/graphs.
 - Backward Chaining: Use a backward-chaining methodology. ALWAYS start with a specific "trick" (the problem breakthrough or subtle conceptual/mathematical bottleneck) in mind first. From there, work backward to determine the starting materials, initial conditions, reaction steps, reagents, or question constraints, ensuring a unique and logically consistent solution path. This drives creative and non-standard problem styles.
+
+  ***Constraints & Execution Instructions:***
+
+  1. **Backward Chaining Generation Methodology (CRITICAL)**
+  You must generate every question using a backward chaining thought process before outputting the final problem:
+
+  * **Step 1 (The Trap):** Identify a specific, non-obvious conceptual trap, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption.
+  * **Step 2 (The System):** Design a chemical system or reaction where this specific trap naturally occurs.
+  * **Step 3 (The Distractors):** Calculate or derive the incorrect answers that result directly from falling into the conceptual trap (rote formula shortcut, ignoring the limiting factor, etc.).
+  * **Step 4 (The Problem):** Draft the neutral question text that presents the system, masking the trap completely.
+
+  Here is an example:
+
+  ***Step 1***: A common trap is, when investigating the reactivity of nitric acid, to only think of it as a strong protonating acid and failing to realize it is also a strong oxidizing agent.
+
+  ***Step 2***: This system could be one where a metal (e.g. copper) is selectively reduced by a reducing agent (e.g. H2). The student might not realize the nitric acid competes for the electrons.
+
+  ***Step 3***: If the student falls for this trap, they could be presented with the reducing agent (H2) and think only copper is reduced by it, when in reality nitric acid is also reduced by it. Perhaps the student thinks adding the reducing agent to react with the copper could determine the amount of copper in a solution, but not realize that excess weight will be added from the various nitrous oxides. 
+
+  ***Step 4***: The student could be asked, “A weighed sample of a copper-nickel alloy is dissolved in a known volume of nitric acid. Which method is most suitable for determining the mass percent of copper in the alloy?” One of the options, consistent with the trap, should be “Bubbling hydrogen gas through the solution and measuring the mass of the metal that precipitates from the solution.” The other options could test other traps, i.e. that both nickel and copper form insoluble hydroxides, and that they both absorb the same wavelength of light. Thus the final question is: “A weighed sample of a copper-nickel alloy is dissolved in a known volume of nitric acid. Which method is most suitable for determining the mass percent of copper in the alloy?\\n\\n(A) Treatment of an aliquot of the solution with excess iodide, followed by titration of the iodine produced with sodium thiosulfate.\\n(B) Measurement of the absorbance of the solution at a wavelength of light at which both $\\\\ce{Cu^{2+}}$ and $\\\\ce{Ni^{2+}}$ absorb, and comparison with the absorbances of known standards of the two ions.\\n(C) Addition of excess sodium hydroxide to the solution, isolation of the metal hydroxides by filtration, and measurement of the mass of the precipitate.\\n(D) Bubbling hydrogen gas through the solution and measuring the mass of the metal that precipitates from the solution.”
 
 3. Difficulty-Dependent Syllabus Boundaries
 - IF DIFFICULTY = USNCO National Level (40-75):
