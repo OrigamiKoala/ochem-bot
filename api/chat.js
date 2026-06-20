@@ -32,7 +32,7 @@ Follow these strict Olympiad Design Philosophies:
 - Create highly original questions requiring first-principles reasoning over memory or template-matching.
 - Questions should reward chemical intuition, not breadth of knowledge, experience grinding previous problems, or computational power.
 - Center every problem on a non-obvious conceptual trick, hidden limiting factor, or subtle breakdown of a standard assumption.
-- Keep question text neutral and objective — no hints, warnings, or clarifying instructions.
+- Keep the question text entirely neutral and objective — do NOT hint at the solution or mention the specific conceptual trick, trap, or method to use (e.g. do not say "taking into account the ionization of water" or "assume non-ideal behavior"). For example, instead of: "Calculate the pH of a $1.00 \times 10^{-8}$ M aqueous solution of $\ce{HCl}$ at $25 ^{\circ}$ C, taking into account the ionization of water", write: "Calculate the pH of a $1.00 \times 10^{-8}$ M aqueous solution of $\ce{HCl}$ at $25 ^{\circ}$ C".
 - Incorporate a deceptive path: the most common rote formula shortcut should yield a value matching one incorrect distractor.
 
 2. Difficulty-Dependent Syllabus Boundaries
@@ -94,13 +94,16 @@ const GENERATION_SYSTEM_INSTRUCTION = `###Role:### You are an expert organic che
 
 ###Goal:### Generate challenging, concept-rich organic chemistry problems that demand first-principles reasoning instead of template-matching.
 
+###CRITICAL UNIQUE & CREATIVE DIRECTIVE:###
+You must be extremely creative and ensure that EVERY question is completely unique and novel. Do NOT repeat, rephrase, or adapt previously used setups, standard textbook scenarios, chemical reactions, physical systems, or mathematical templates. Avoid using similar numerical values, scenarios, or phrasing across different questions or exams. Force yourself to design entirely new contexts, variables, and systems for each problem.
+
 ###Constraints:###
 Follow these strict Olympiad Design Philosophies:
 
 1. Novelty & "Invisible Traps" (Subtle Conceptual Bottlenecks)
 - Focus on creating original, conceptually rich questions that demand first-principles reasoning instead of template-matching.
 - Every problem must center on a non-obvious conceptual trick, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption.
-- Keep the question text entirely neutral. Present all necessary context and parameters clearly and let the student deduce the correct constraints on their own.
+- Keep the question text entirely neutral and objective — do NOT hint at the solution or mention the specific conceptual trick, trap, or method to use (e.g. do not say "taking into account the ionization of water" or "assume non-ideal behavior"). For example, instead of: "Calculate the pH of a $1.00 \times 10^{-8}$ M aqueous solution of $\ce{HCl}$ at $25 ^{\circ}$ C, taking into account the ionization of water", write: "Calculate the pH of a $1.00 \times 10^{-8}$ M aqueous solution of $\ce{HCl}$ at $25 ^{\circ}$ C".
 
 2. Difficulty-Dependent Syllabus Boundaries
 - IF DIFFICULTY = USNCO National Level (40-75):
@@ -259,13 +262,16 @@ const GENCHEM_GENERATION_SYSTEM_INSTRUCTION = `###Role:### You are an expert che
 
 ###Goal:### Generate challenging general chemistry problems covering all topics broadly, including inorganic, physical, analytical, and organic chemistry.
 
+###CRITICAL UNIQUE & CREATIVE DIRECTIVE:###
+You must be extremely creative and ensure that EVERY question is completely unique and novel. Do NOT repeat, rephrase, or adapt previously used setups, standard textbook scenarios, chemical reactions, physical systems, or mathematical templates. Avoid using similar numerical values, scenarios, or phrasing across different questions or exams. Force yourself to design entirely new contexts, variables, and systems for each problem.
+
 ###Constraints:###
 Follow these strict Olympiad Design Philosophies:
 
 1. Novelty \u0026 "Invisible Traps" (Subtle Conceptual Bottlenecks)
 - Create highly original questions requiring first-principles reasoning over memory or template-matching.
 - Center every problem on a non-obvious conceptual trick, hidden limiting factor, or subtle breakdown of a standard assumption.
-- Keep question text neutral and objective — no hints, warnings, or clarifying instructions.
+- Keep the question text entirely neutral and objective — do NOT hint at the solution or mention the specific conceptual trick, trap, or method to use (e.g. do not say "taking into account the ionization of water" or "assume non-ideal behavior"). For example, instead of: "Calculate the pH of a $1.00 \times 10^{-8}$ M aqueous solution of $\ce{HCl}$ at $25 ^{\circ}$ C, taking into account the ionization of water", write: "Calculate the pH of a $1.00 \times 10^{-8}$ M aqueous solution of $\ce{HCl}$ at $25 ^{\circ}$ C".
 - Incorporate a deceptive path: the most common rote formula shortcut should yield a value matching one incorrect distractor.
 
 2. Advanced Design \u0026 Difficulty Criteria
@@ -577,8 +583,8 @@ export default async function handler(req, res) {
         keys = [selectedKey, ...shuffledRemaining];
     }
 
-    const GENERATION_MODELS = ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-2.5-flash", "gemini-3.1-flash-lite"];
-    const GRADING_MODELS = ["gemini-3.1-flash-lite", "gemini-3.5-flash", "gemini-3-flash-preview", "gemini-2.5-flash"];
+    const GENERATION_MODELS = ["gemini-3.5-flash", "gemini-3-flash-preview", "gemini-3.1-flash-lite", "gemini-2.5-flash"];
+    const GRADING_MODELS = ["gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-3.5-flash", "gemini-2.5-flash"];
     const models = (task === 'generate') ? GENERATION_MODELS : GRADING_MODELS;
 
     const temperature = (task === 'generate') ? 1.5 : 0.2;
@@ -625,7 +631,7 @@ export default async function handler(req, res) {
             if (task === 'generate') {
                 cacheLabel = isGenChem ? 'genchem-generation' : 'generation';
                 cacheSystemText = isGenChem ? GENCHEM_GENERATION_SYSTEM_INSTRUCTION : GENERATION_SYSTEM_INSTRUCTION;
-                cacheState = isGenChem ? genchemGenerationCacheState : generationCacheState;
+                // cacheState remains null (disabled)
             } else if (task === 'grade' && gradeMode) {
                 // No caching for grading — prompts too short for Gemini's cache minimum.
                 // System instruction is inlined in the non-cached path via cacheSystemText.
@@ -728,13 +734,14 @@ export default async function handler(req, res) {
                 const isBusy = status === 503 || (errBody?.error?.message && /busy|overloaded/i.test(errBody.error.message));
 
                 if (isBusy) {
-                    console.warn(`[${task}] ${modelId} busy on key #${keyIndex + 1}. Trying next key...`, errBody);
+                    console.warn(`[${task}] ${modelId} busy/overloaded on key #${keyIndex + 1}. Breaking key loop to try next model.`, errBody);
                     lastError = { status, data: errBody };
                     if (result.isCached && result.cacheState) {
                         result.cacheState.name = null;
                         result.cacheState.expiry = 0;
                         result.cacheState.failedUntil = Date.now() + CACHE_FAIL_COOLDOWN_MS;
                     }
+                    break;
                 } else if (status === 429) {
                     console.warn(`[429] Rate limit hit for ${modelId} on key #${keyIndex + 1}. Marking as rate limited for the rest of the day.`);
                     markKeyRateLimitedForModel(modelId, apiKey);
@@ -766,6 +773,11 @@ export default async function handler(req, res) {
     }
 
     console.error(`[${task}] All ${models.length} models exhausted. Last error:`, lastError);
+    if (task === 'chat' || task === 'grade') {
+        return res.status(lastError?.status || 503).json({
+            error: "Sorry, the bot is busy right now. Try again later."
+        });
+    }
     res.status(lastError?.status || 500).json({
         error: lastError?.data?.error?.message || 'All models are currently at capacity. Please try again later.'
     });

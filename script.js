@@ -1803,8 +1803,29 @@ function resetQuestionUI() {
     }
 }
 
+function recordDoneQuestion(reaction) {
+    if (!reaction) return;
+    const text = reaction.instructions || reaction.instruction || reaction.question || reaction.text;
+    if (!text) return;
+    try {
+        const historyKey = isGenChemMode ? 'genchem_done_questions' : 'ochem_done_questions';
+        const past = JSON.parse(localStorage.getItem(historyKey) || '[]');
+        if (!past.includes(text)) {
+            past.push(text);
+            if (past.length > 50) past.shift();
+            localStorage.setItem(historyKey, JSON.stringify(past));
+        }
+    } catch (e) {
+        console.warn('Failed to record done question:', e);
+    }
+}
+
 // ------ Manage Display Logic ------
 function displayNextReaction() {
+    if (currentReaction) {
+        recordDoneQuestion(currentReaction);
+    }
+
     if (reactionQueue.length === 0) {
         // Mark that the user is waiting — no active reaction
         currentReaction = null;

@@ -195,12 +195,14 @@ export default function App() {
       const response = await apiGenerate({ prompt, isGenChemMode });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         const errMsg = errorData.error || "";
         console.error('Gemini API Error:', response.status, errorData);
 
         if (isExplicit) {
-          if (response.status === 503 || response.status === 500 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity')) {
+          if (errMsg) {
+            setMessageText(errMsg);
+          } else if (response.status === 503 || response.status === 500 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity')) {
             setMessageText("The bot is currently at capacity. Please try again in a moment.");
           } else {
             setMessageText("Oops. Looks like the bot messed up!");
@@ -491,11 +493,17 @@ Answer: ${currentReaction.answer}`;
       const response = await apiGrade({ prompt, image: base64Image, isLearnMode, isFreeDraw, isGenChemMode });
 
       if (!response.ok) {
-        const errorData = await response.json();
+        const errorData = await response.json().catch(() => ({}));
         const errMsg = errorData.error || "";
         console.error('Submission Gemini API Error:', response.status, errorData);
 
-        if (response.status === 503 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity')) {
+        if (response.status === 503 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity') || errMsg.toLowerCase().includes('exhausted') || errMsg.toLowerCase().includes('overloaded')) {
+          alert("Sorry, the bot is busy right now. Try again later.");
+        }
+
+        if (errMsg) {
+          setMessageText(errMsg);
+        } else if (response.status === 503 || response.status === 429 || errMsg.toLowerCase().includes('busy') || errMsg.toLowerCase().includes('capacity')) {
           setMessageText("The bot is currently at capacity. Please try again in a moment.");
         } else {
           setMessageText("Oops. Looks like the bot messed up!");
