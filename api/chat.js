@@ -55,17 +55,17 @@ Follow these strict Olympiad Design Philosophies:
 $$\\text{[H}^+\\text{]} = \\text{[OH}^-\\text{]} + \\text{[A}^-\\text{]} + 2\\text{[A}^{2-}\\text{]}$$
 - Novel Context and Data Interpretation: Presents familiar chemical principles within an unfamiliar framework (e.g., bioinorganic active sites, industrial catalytic cycles, or cutting-edge materials chemistry like Metal-Organic Frameworks). Requires the student to extract relevant thermodynamic, kinetic, or structural variables from raw data tables or graphical representations (e.g., phase diagrams with unexpected polymorphs).
 
-4. Backward Chaining (Reverse Design Methodology)
+4. Backward Chaining (Reverse Design Methodology). EVERY single question generated must be completely unique, original, and never seen before.
 
 ***Constraints & Execution Instructions:***
 
-1. **Backward Chaining Generation Methodology (CRITICAL)**
-You must generate every question using a backward chaining thought process before outputting the final problem:
+1. **Backward Chaining Generation Methodology (CRITICAL - Ensure 100% Uniqueness & Originality)**
+You must generate every question using a backward chaining thought process before outputting the final problem, ensuring that each question is completely unique, original, and never seen before:
 
-* **Step 1 (The Trap):** Identify a specific, non-obvious conceptual trap, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption.
-* **Step 2 (The System):** Design a chemical system or reaction where this specific trap naturally occurs.
-* **Step 3 (The Distractors):** Calculate or derive the incorrect answers that result directly from falling into the conceptual trap (rote formula shortcut, ignoring the limiting factor, etc.).
-* **Step 4 (The Problem):** Draft the neutral question text that presents the system, masking the trap completely.
+* **Step 1 (The Trap - Must be completely unique and original):** Identify a specific, non-obvious conceptual trap, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption. This trap must be entirely novel, original, and never seen before in any question or textbook.
+* **Step 2 (The System - Must be completely unique and original):** Design a chemical system or reaction where this specific trap naturally occurs. The system, reaction, or scenario context must be completely unique, original, and never seen before (avoid standard textbook setups).
+* **Step 3 (The Distractors - Must be completely unique and original):** Calculate or derive the incorrect answers that result directly from falling into the conceptual trap (rote formula shortcut, ignoring the limiting factor, etc.). Ensure the options are uniquely designed to target this specific trap.
+* **Step 4 (The Problem - Must be completely unique and original):** Draft the neutral question text that presents the system, masking the trap completely, written in a completely unique, original, and never-seen-before style.
 
 Here is an example:
 
@@ -122,17 +122,17 @@ Follow these strict Olympiad Design Philosophies:
 - Multi-Step Logical Cascades: The problem cannot be solved in a single step. It requires a clear execution pathway where the output of one step forms the input of the next.
 - Discrimination of Subtle Chemical Nuances: Distinguishes top-tier students by testing exceptions grounded in fundamental principles (e.g. thermodynamic vs. kinetic control).
 - Novel Context and Data Interpretation: Presents familiar chemical principles within an unfamiliar framework.
-- Backward Chaining: Use a backward-chaining process to design questions. ALWAYS start with a specific "trick" (the problem breakthrough or subtle stereochemical/mechanistic bottleneck) in mind first. From there, work backward to determine the starting materials, intermediate reaction steps, reagents, or question constraints that lead uniquely and logically to that breakthrough. This prevents textbook template-matching and yields highly creative, non-trivial problems.
+- Backward Chaining: Use a backward-chaining process to design questions. ALWAYS start with a specific "trick" (the problem breakthrough or subtle stereochemical/mechanistic bottleneck) in mind first. From there, work backward to determine the starting materials, intermediate reaction steps, reagents, or question constraints that lead uniquely and logically to that breakthrough. This prevents textbook template-matching and yields highly creative, non-trivial problems. EVERY single question generated must be completely unique, original, and never seen before.
 
   ***Constraints & Execution Instructions:***
 
-  1. **Backward Chaining Generation Methodology (CRITICAL)**
-  You must generate every question using a backward chaining thought process before outputting the final problem:
+  1. **Backward Chaining Generation Methodology (CRITICAL - Ensure 100% Uniqueness & Originality)**
+  You must generate every question using a backward chaining thought process before outputting the final problem, ensuring that each question is completely unique, original, and never seen before:
 
-  * **Step 1 (The Trap):** Identify a specific, non-obvious conceptual trap, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption.
-  * **Step 2 (The System):** Design a chemical system or reaction where this specific trap naturally occurs.
-  * **Step 3 (The Distractors):** Calculate or derive the incorrect answers that result directly from falling into the conceptual trap (rote formula shortcut, ignoring the limiting factor, etc.).
-  * **Step 4 (The Problem):** Draft the neutral question text that presents the system, masking the trap completely.
+  * **Step 1 (The Trap - Must be completely unique and original):** Identify a specific, non-obvious conceptual trap, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption. This trap must be entirely novel, original, and never seen before in any question or textbook.
+  * **Step 2 (The System - Must be completely unique, original, and as convoluted as possible):** Once you have the trick/trap in mind, design a chemical system or reaction where this specific trap naturally occurs, making the system/reaction as convoluted as possible while ensuring it is completely unique, original, and never seen before (avoid standard textbook setups).
+  * **Step 3 (The Distractors - Must be completely unique and original):** Calculate or derive the incorrect answers that result directly from falling into the conceptual trap (rote formula shortcut, ignoring the limiting factor, etc.). Ensure the options are uniquely designed to target this specific trap.
+  * **Step 4 (The Problem - Must be completely unique and original):** Draft the neutral question text that presents the system, masking the trap completely, written in a completely unique, original, and never-seen-before style.
 
   Here is an example:
 
@@ -280,17 +280,17 @@ Follow these strict Olympiad Design Philosophies:
 - Subtle Chemical Nuances: Test exceptions grounded in fundamental principles — thermodynamic vs. kinetic control, anomalous MO configurations, etc.
 - Mathematical Rigor: Eliminate simplifying assumptions (e.g., $x$-is-small). Require higher-order equations from mass/charge balances.
 - Novel Context: Present familiar principles in unfamiliar frameworks (bioinorganic, industrial catalysis, MOFs). Extract variables from raw data/graphs.
-- Backward Chaining: Use a backward-chaining methodology. ALWAYS start with a specific "trick" (the problem breakthrough or subtle conceptual/mathematical bottleneck) in mind first. From there, work backward to determine the starting materials, initial conditions, reaction steps, reagents, or question constraints, ensuring a unique and logically consistent solution path. This drives creative and non-standard problem styles.
+- Backward Chaining: Use a backward-chaining methodology. ALWAYS start with a specific "trick" (the problem breakthrough or subtle conceptual/mathematical bottleneck) in mind first. From there, work backward to determine the starting materials, initial conditions, reaction steps, reagents, or question constraints, ensuring a unique and logically consistent solution path. This drives creative and non-standard problem styles. EVERY single question generated must be completely unique, original, and never seen before.
 
   ***Constraints & Execution Instructions:***
 
-  1. **Backward Chaining Generation Methodology (CRITICAL)**
-  You must generate every question using a backward chaining thought process before outputting the final problem:
+  1. **Backward Chaining Generation Methodology (CRITICAL - Ensure 100% Uniqueness & Originality)**
+  You must generate every question using a backward chaining thought process before outputting the final problem, ensuring that each question is completely unique, original, and never seen before:
 
-  * **Step 1 (The Trap):** Identify a specific, non-obvious conceptual trap, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption.
-  * **Step 2 (The System):** Design a chemical system or reaction where this specific trap naturally occurs.
-  * **Step 3 (The Distractors):** Calculate or derive the incorrect answers that result directly from falling into the conceptual trap (rote formula shortcut, ignoring the limiting factor, etc.).
-  * **Step 4 (The Problem):** Draft the neutral question text that presents the system, masking the trap completely.
+  * **Step 1 (The Trap - Must be completely unique and original):** Identify a specific, non-obvious conceptual trap, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption. This trap must be entirely novel, original, and never seen before in any question or textbook.
+  * **Step 2 (The System - Must be completely unique, original, and as convoluted as possible):** Once you have the trick/trap in mind, design a chemical system or reaction where this specific trap naturally occurs, making the system/reaction as convoluted as possible while ensuring it is completely unique, original, and never seen before (avoid standard textbook setups).
+  * **Step 3 (The Distractors - Must be completely unique and original):** Calculate or derive the incorrect answers that result directly from falling into the conceptual trap (rote formula shortcut, ignoring the limiting factor, etc.). Ensure the options are uniquely designed to target this specific trap.
+  * **Step 4 (The Problem - Must be completely unique and original):** Draft the neutral question text that presents the system, masking the trap completely, written in a completely unique, original, and never-seen-before style.
 
   Here is an example:
 
