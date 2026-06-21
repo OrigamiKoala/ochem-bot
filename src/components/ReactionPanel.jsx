@@ -2,7 +2,6 @@ import { useEffect, useRef, useCallback } from 'react';
 import { renderRichText, parseSmilesSegments } from '../utils/richText';
 import { cleanSmiles, smilesOptions, smilesToFormula, trimCanvas } from '../utils/smiles';
 import { safeTypeset } from '../utils/mathJax';
-import { handleStream } from '../utils/stream';
 import { apiChat } from '../utils/api';
 
 const TRANSLATIONS = {
@@ -449,21 +448,14 @@ Answer concisely as ${isGenChemMode ? 'chemistry' : 'organic chemistry'} tutor. 
         return;
       }
 
-      await handleStream(
-        response,
-        (text) => {
-          botMsgDiv.innerText = text;
-          chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
-        },
-        (finalText) => {
-          if (finalText) {
-            renderRichText(finalText, botMsgDiv, true);
-            chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
-          } else {
-            botMsgDiv.innerText = "Sorry, I couldn't process that question.";
-          }
-        }
-      );
+      const responseData = await response.json();
+      const finalText = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (finalText) {
+        renderRichText(finalText, botMsgDiv, true);
+        chatMessagesRef.current.scrollTop = chatMessagesRef.current.scrollHeight;
+      } else {
+        botMsgDiv.innerText = "Sorry, I couldn't process that question.";
+      }
     } catch (e) {
       console.error("Chat error:", e);
       botMsgDiv.innerText = "Oops, I'm having trouble connecting to the lab.";

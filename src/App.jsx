@@ -5,7 +5,6 @@ import WhiteboardPanel from './components/WhiteboardPanel';
 import MessageContainer from './components/MessageContainer';
 import SettingsModal, { baseTopics, genchemBaseTopics } from './components/SettingsModal';
 import AboutModal from './components/AboutModal';
-import { handleStream } from './utils/stream';
 import { renderRichText } from './utils/richText';
 import { apiGenerate, apiGrade, apiChat, apiReevaluate } from './utils/api';
 import {
@@ -223,111 +222,103 @@ export default function App() {
         setIsMessageMinimized(false);
       }
 
-      await handleStream(
-        response,
-        (text) => {
-          if (isExplicit) {
-            setMessageText(`Generating questions... (${text.length} characters)${modelLabel}`);
+      const responseData = await response.json();
+      const finalText = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (finalText) {
+        try {
+          let data;
+          try {
+            data = JSON.parse(finalText.trim());
+          } catch (parseErr) {
+            console.warn("JSON parse failed, attempting jsonrepair...", parseErr.message);
+            const repaired = jsonrepair(finalText.trim());
+            data = JSON.parse(repaired);
+            console.log("jsonrepair succeeded, recovered reactions:", (data.reactions || data).length);
           }
-        },
-        (finalText) => {
-          if (finalText) {
-            try {
-              let data;
-              try {
-                data = JSON.parse(finalText.trim());
-              } catch (parseErr) {
-                console.warn("JSON parse failed, attempting jsonrepair...", parseErr.message);
-                const repaired = jsonrepair(finalText.trim());
-                data = JSON.parse(repaired);
-                console.log("jsonrepair succeeded, recovered reactions:", (data.reactions || data).length);
-              }
 
-              // Convert placeholder tokens to LaTeX
-              function applyLatexTokens(obj) {
-                if (typeof obj === 'string') {
-                  return obj
-                    .replace(/\{DELTA\}/g, '\\Delta')
-                    .replace(/\{deg\}/g, '^{\\circ}')
-                    .replace(/\{hv\}/g, 'h\\nu')
-                    .replace(/\{H2\}/g, 'H_2')
-                    .replace(/\{H\+\}/g, 'H^{+}');
+          // Convert placeholder tokens to LaTeX
+          function applyLatexTokens(obj) {
+            if (typeof obj === 'string') {
+              return obj
+                .replace(/\{DELTA\}/g, '\\Delta')
+                .replace(/\{deg\}/g, '^{\\circ}')
+                .replace(/\{hv\}/g, 'h\\nu')
+                .replace(/\{H2\}/g, 'H_2')
+                .replace(/\{H\+\}/g, 'H^{+}');
+            }
+            if (Array.isArray(obj)) return obj.map(applyLatexTokens);
+            if (obj && typeof obj === 'object') {
+              const out = {};
+              for (const k in obj) {
+                if (Object.prototype.hasOwnProperty.call(obj, k)) {
+                  if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
+                  Reflect.set(out, k, applyLatexTokens(Reflect.get(obj, k)));
                 }
-                if (Array.isArray(obj)) return obj.map(applyLatexTokens);
-                if (obj && typeof obj === 'object') {
-                  const out = {};
-                  for (const k in obj) {
-                    if (Object.prototype.hasOwnProperty.call(obj, k)) {
-                      if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
-                      Reflect.set(out, k, applyLatexTokens(Reflect.get(obj, k)));
-                    }
-                  }
-                  return out;
-                }
-                return obj;
               }
-              const processedData = applyLatexTokens(data);
+              return out;
+            }
+            return obj;
+          }
+          const processedData = applyLatexTokens(data);
 
-              let reactions = [];
-              if (Array.isArray(processedData)) {
-                processedData.forEach(item => {
-                  if (item && Array.isArray(item.reactions)) {
-                    reactions = reactions.concat(item.reactions);
-                  } else if (item && item.qtype) {
-                    reactions.push(item);
-                  }
-                });
-              } else if (processedData && Array.isArray(processedData.reactions)) {
-                reactions = processedData.reactions;
+          let reactions = [];
+          if (Array.isArray(processedData)) {
+            processedData.forEach(item => {
+              if (item && Array.isArray(item.reactions)) {
+                reactions = reactions.concat(item.reactions);
+              } else if (item && item.qtype) {
+                reactions.push(item);
               }
+            });
+          } else if (processedData && Array.isArray(processedData.reactions)) {
+            reactions = processedData.reactions;
+          }
 
-              if (reactions.length > 0) {
-                setReactionQueue(prev => {
-                  const updated = [...prev, ...reactions];
-                  reactionQueueRef.current = updated;
-                  saveQueueToCacheUtil(currentReactionRef.current, updated, isFreeDraw, isGenChemMode);
-                  return updated;
-                });
+          if (reactions.length > 0) {
+            setReactionQueue(prev => {
+              const updated = [...prev, ...reactions];
+              reactionQueueRef.current = updated;
+              saveQueueToCacheUtil(currentReactionRef.current, updated, isFreeDraw, isGenChemMode);
+              return updated;
+            });
 
-                // Immediate transition if user is waiting
-                if (!currentReactionRef.current) {
-                  const next = reactions[0];
-                  const rest = reactions.slice(1);
-                  setCurrentReaction(next);
-                  setReactionQueue(rest);
-                  reactionQueueRef.current = rest;
-                  saveQueueToCacheUtil(null, rest, isFreeDraw, isGenChemMode);
-                  setHasSubmitted(false);
-                  setLastFeedback('');
-                  setIsShowingAnswer(false);
-                  setHasUsedHint(false);
-                  setIsCanvasBlank(true);
-                  setShowReportBtn(false);
-                  setExplanationVisible(false);
-                  setShowExplainBtn(false);
-                  if (whiteboardRef.current) whiteboardRef.current.clearCanvas();
-                  setMessageVisible(false);
+            // Immediate transition if user is waiting
+            if (!currentReactionRef.current) {
+              const next = reactions[0];
+              const rest = reactions.slice(1);
+              setCurrentReaction(next);
+              setReactionQueue(rest);
+              reactionQueueRef.current = rest;
+              saveQueueToCacheUtil(null, rest, isFreeDraw, isGenChemMode);
+              setHasSubmitted(false);
+              setLastFeedback('');
+              setIsShowingAnswer(false);
+              setHasUsedHint(false);
+              setIsCanvasBlank(true);
+              setShowReportBtn(false);
+              setExplanationVisible(false);
+              setShowExplainBtn(false);
+              if (whiteboardRef.current) whiteboardRef.current.clearCanvas();
+              setMessageVisible(false);
 
-                  // Pre-fetch next batch if queue is running low
-                  if (rest.length <= 1) {
-                    setTimeout(() => fetchBatchReactions(false), 100);
-                  }
-                }
-              } else if (isExplicit) {
-                setMessageText("No questions were generated. Please try again.");
-                setMessageVisible(true);
-              }
-            } catch (e) {
-              console.error("JSON parse error", e, finalText);
-              if (isExplicit) {
-                setMessageText("Error parsing response.");
-                setMessageVisible(true);
-                setIsMessageMinimized(false);
+              // Pre-fetch next batch if queue is running low
+              if (rest.length <= 1) {
+                setTimeout(() => fetchBatchReactions(false), 100);
               }
             }
+          } else if (isExplicit) {
+            setMessageText("No questions were generated. Please try again.");
+            setMessageVisible(true);
+          }
+        } catch (e) {
+          console.error("JSON parse error", e, finalText);
+          if (isExplicit) {
+            setMessageText("Error parsing response.");
+            setMessageVisible(true);
+            setIsMessageMinimized(false);
           }
         }
-      );
+      }
     } catch (e) {
       console.error("Fetch error:", e);
       if (isExplicit) {
@@ -518,45 +509,39 @@ Answer: ${currentReaction.answer}`;
         setMessageText("Taking a bit longer — switched to a backup model...");
       }
 
-      await handleStream(
-        response,
-        (text) => {
-          setMessageText(text);
-        },
-        (finalText) => {
-          if (finalText) {
-            setMessageText(finalText);
-            setLastFeedback(finalText);
-            setHasSubmitted(true);
+      const responseData = await response.json();
+      const finalText = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (finalText) {
+        setMessageText(finalText);
+        setLastFeedback(finalText);
+        setHasSubmitted(true);
 
-            if (finalText.toLowerCase().trim().startsWith('correct') || (isFreeDraw && finalText.toLowerCase().trim().startsWith('plausible'))) {
-              setMessageClassName("success-text");
-              setIsShowingAnswer(true);
-              setShowReportBtn(false);
-              setShowExplainBtn(false);
+        if (finalText.toLowerCase().trim().startsWith('correct') || (isFreeDraw && finalText.toLowerCase().trim().startsWith('plausible'))) {
+          setMessageClassName("success-text");
+          setIsShowingAnswer(true);
+          setShowReportBtn(false);
+          setShowExplainBtn(false);
 
-              if (!isFreeDraw) {
-                // Remove correct question from cache
-                localStorage.setItem(
-                  getQueueCacheKey(isFreeDraw, isGenChemMode),
-                  JSON.stringify(reactionQueueRef.current)
-                );
-                setExplanationVisible(true);
-              }
-            } else {
-              setMessageClassName("error-text");
-              if (!isFreeDraw) {
-                setShowReportBtn(true);
-              }
-              if (isFreeDraw) {
-                setShowExplainBtn(true);
-              }
-              setMessageVisible(true);
-              setIsMessageMinimized(false);
-            }
+          if (!isFreeDraw) {
+            // Remove correct question from cache
+            localStorage.setItem(
+              getQueueCacheKey(isFreeDraw, isGenChemMode),
+              JSON.stringify(reactionQueueRef.current)
+            );
+            setExplanationVisible(true);
           }
+        } else {
+          setMessageClassName("error-text");
+          if (!isFreeDraw) {
+            setShowReportBtn(true);
+          }
+          if (isFreeDraw) {
+            setShowExplainBtn(true);
+          }
+          setMessageVisible(true);
+          setIsMessageMinimized(false);
         }
-      );
+      }
     } catch (e) {
       console.error("Submission error:", e);
       setMessageText("Oops. Looks like the bot messed up!");
@@ -595,31 +580,25 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
 
       if (!response.ok) throw new Error("API error");
 
-      await handleStream(
-        response,
-        (text) => {
-          setMessageText(text);
-        },
-        (finalText) => {
-          if (finalText) {
-            const feedback = finalText.trim();
-            setMessageText(feedback);
-            setLastFeedback(feedback);
+      const responseData = await response.json();
+      const finalText = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (finalText) {
+        const feedback = finalText.trim();
+        setMessageText(feedback);
+        setLastFeedback(feedback);
 
-            if (feedback.toLowerCase().startsWith('correct')) {
-              setMessageClassName("success-text");
-              setIsShowingAnswer(true);
-              localStorage.setItem(
-                getQueueCacheKey(isFreeDraw, isGenChemMode),
-                JSON.stringify(reactionQueueRef.current)
-              );
-              setExplanationVisible(true);
-            } else {
-              setMessageClassName("error-text");
-            }
-          }
+        if (feedback.toLowerCase().startsWith('correct')) {
+          setMessageClassName("success-text");
+          setIsShowingAnswer(true);
+          localStorage.setItem(
+            getQueueCacheKey(isFreeDraw, isGenChemMode),
+            JSON.stringify(reactionQueueRef.current)
+          );
+          setExplanationVisible(true);
+        } else {
+          setMessageClassName("error-text");
         }
-      );
+      }
     } catch (e) {
       console.error("Re-evaluation error:", e);
       setMessageText("Error re-evaluating.");
@@ -654,16 +633,12 @@ Output ONLY 'Correct' or 'Incorrect: [Brief reason]'. Max 10 words total.`;
       // The explanation is rendered into the explanation panel by ReactionPanel
       // We need to get a ref to the explanation content div
       // For now, we'll update the currentReaction's explanation
-      await handleStream(
-        response,
-        () => {},
-        (finalText) => {
-          if (finalText) {
-            // Update the current reaction's explanation to show in the panel
-            setCurrentReaction(prev => prev ? { ...prev, explanation: finalText } : prev);
-          }
-        }
-      );
+      const responseData = await response.json();
+      const finalText = responseData.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (finalText) {
+        // Update the current reaction's explanation to show in the panel
+        setCurrentReaction(prev => prev ? { ...prev, explanation: finalText } : prev);
+      }
     } catch (e) {
       console.error('Free Draw explain error:', e);
     } finally {

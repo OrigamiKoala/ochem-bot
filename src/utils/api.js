@@ -17,7 +17,7 @@ async function fetchWithModelLogging(url, options) {
   return response;
 }
 
-export async function apiGenerate({ prompt, isGenChemMode, stream = true, responseMimeType = 'application/json' }) {
+export async function apiGenerate({ prompt, isGenChemMode, stream = false, responseMimeType = 'application/json' }) {
   return fetchWithModelLogging('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -31,7 +31,7 @@ export async function apiGenerate({ prompt, isGenChemMode, stream = true, respon
   });
 }
 
-export async function apiGrade({ prompt, image, isLearnMode, isFreeDraw, isGenChemMode, stream = true }) {
+export async function apiGrade({ prompt, image, isLearnMode, isFreeDraw, isGenChemMode, stream = false }) {
   return fetchWithModelLogging('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -46,7 +46,7 @@ export async function apiGrade({ prompt, image, isLearnMode, isFreeDraw, isGenCh
   });
 }
 
-export async function apiChat({ prompt, image, isGenChemMode, isFreeDraw, stream = true }) {
+export async function apiChat({ prompt, image, isGenChemMode, isFreeDraw, stream = false }) {
   return fetchWithModelLogging('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -60,7 +60,7 @@ export async function apiChat({ prompt, image, isGenChemMode, isFreeDraw, stream
   });
 }
 
-export async function apiReevaluate({ prompt, image, isGenChemMode, isLearnMode, stream = true }) {
+export async function apiReevaluate({ prompt, image, isGenChemMode, isLearnMode, stream = false }) {
   return fetchWithModelLogging('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
