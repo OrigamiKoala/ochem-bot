@@ -217,7 +217,18 @@ export function renderRichText(text, container, isExplanation = false) {
       }
 
     } else if (seg.type === 'svg') {
-      const svgString = seg.content.trim();
+      let svgString = seg.content.trim();
+
+      // Adapt SVG code to dark mode: replace hardcoded black/dark with white/light,
+      // and remove hardcoded white backgrounds.
+      svgString = svgString
+        .replace(/stroke\s*=\s*['"](?:black|#000000|#000)['"]/gi, "stroke='#ffffff'")
+        .replace(/fill\s*=\s*['"](?:black|#000000|#000)['"]/gi, "fill='#ffffff'")
+        .replace(/fill\s*=\s*['"](?:white|#ffffff|#fff)['"]/gi, "fill='none'")
+        .replace(/background\s*:\s*(?:white|#ffffff|#fff|black|#000000|#000)/gi, "background:transparent")
+        .replace(/stroke\s*:\s*(?:black|#000000|#000)/gi, "stroke:#ffffff")
+        .replace(/fill\s*:\s*(?:black|#000000|#000)/gi, "fill:#ffffff");
+
       const wrapper = document.createElement('div');
       wrapper.className = 'inline-svg-diagram-wrapper';
       wrapper.style.display = 'block';
@@ -225,10 +236,10 @@ export function renderRichText(text, container, isExplanation = false) {
       wrapper.style.maxWidth = '580px';
 
       const card = document.createElement('div');
-      card.style.backgroundColor = '#ffffff';
+      card.style.backgroundColor = 'rgba(255, 255, 255, 0.02)';
+      card.style.border = '1px solid rgba(255, 255, 255, 0.08)';
       card.style.borderRadius = '10px';
       card.style.padding = '16px';
-      card.style.boxShadow = '0 2px 12px rgba(0,0,0,0.35)';
       card.style.overflow = 'hidden';
       card.style.lineHeight = '0';
 
