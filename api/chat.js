@@ -53,7 +53,15 @@ Follow these strict Olympiad Design Philosophies:
 - Discrimination of Subtle Chemical Nuances: Distinguishes top-tier students by testing exceptions grounded in fundamental principles rather than rote memorization. Focuses on electronic structures, periodic trends, and thermodynamic vs. kinetic control. Example: Predicting the major product of an electrophilic aromatic substitution where steric hindrance and electronic activation conflict, or identifying anomalies in molecular orbital configurations (e.g., $B_2$ vs $O_2$ paramagnetism and bond orders).
 - Mathematical and Algorithmic Rigor: Eliminates standard simplifying assumptions (e.g., the $x$-is-small approximation in weak acid ionization). Requires setting up and solving higher-order algebraic equations or systems of simultaneous equations derived from mass and charge balances. Example: Calculating the exact pH of a polyprotic acid solution where $K_{a2}$ is non-negligible or the solution is sufficiently dilute that water autoionization ($K_w$) must be factored into the charge balance equation:
 $$\\text{[H}^+\\text{]} = \\text{[OH}^-\\text{]} + \\text{[A}^-\\text{]} + 2\\text{[A}^{2-}\\text{]}$$
-- Novel Context and Data Interpretation: Presents familiar chemical principles within an unfamiliar framework (e.g., bioinorganic active sites, industrial catalytic cycles, or cutting-edge materials chemistry like Metal-Organic Frameworks). Requires the student to extract relevant thermodynamic, kinetic, or structural variables from raw data tables or graphical representations (e.g., phase diagrams with unexpected polymorphs).
+- Novel Context and Data Interpretation: Present familiar principles in unfamiliar, real-world frameworks. MANDATORY — every question must be set in an unfamiliar or real-world olympiad-appropriate context. Rotate through this menu; do NOT use the same context type twice:
+    • Industrial processes (Haber–Bosch, contact process, Hall–Héroult, Solvay, Fischer–Tropsch, Ostwald, organic synthesis scale-up)
+    • Atmospheric chemistry (ozone depletion mechanisms, NOx photochemical smog, stratospheric halogen cycles)
+    • Electroanalytical / separation science (cyclic voltammetry, ion-exchange chromatography, electrophoresis, potentiometry)
+    • Nuclear & radiochemistry (radioactive decay series, specific activity, neutron activation analysis, isotopic labelling in synthesis)
+    • Inorganic & organic materials (MOF gas adsorption, solid-state ion conductors, corrosion galvanic cells, crystal-field stabilization in spinels, conducting polymers)
+    • Organic synthesis context (multi-step retrosynthesis, protecting-group strategy, regio- and stereoselectivity in complex substrates)
+    • Thermochemical cycles (Born–Haber, Ellingham diagrams, coupled redox/precipitation equilibria)
+    • Spectroscopic identification (mass-spec fragmentation cascades, 1H-NMR of chiral or aromatic systems, IR of coordinated ligands)
 
 4. Backward Chaining (Reverse Design Methodology). EVERY single question generated must be completely unique, original, and never seen before.
 
@@ -77,6 +85,22 @@ Here is an example:
 
 ***Step 4***: The student could be asked, “A weighed sample of a copper-nickel alloy is dissolved in a known volume of nitric acid. Which method is most suitable for determining the mass percent of copper in the alloy?” One of the options, consistent with the trap, should be “Bubbling hydrogen gas through the solution and measuring the mass of the metal that precipitates from the solution.” The other options could test other traps, i.e. that both nickel and copper form insoluble hydroxides, and that they both absorb the same wavelength of light. Thus the final question is: “A weighed sample of a copper-nickel alloy is dissolved in a known volume of nitric acid. Which method is most suitable for determining the mass percent of copper in the alloy?\\n\\n(A) Treatment of an aliquot of the solution with excess iodide, followed by titration of the iodine produced with sodium thiosulfate.\\n(B) Measurement of the absorbance of the solution at a wavelength of light at which both $\\\\ce{Cu^{2+}}$ and $\\\\ce{Ni^{2+}}$ absorb, and comparison with the absorbances of known standards of the two ions.\\n(C) Addition of excess sodium hydroxide to the solution, isolation of the metal hydroxides by filtration, and measurement of the mass of the precipitate.\\n(D) Bubbling hydrogen gas through the solution and measuring the mass of the metal that precipitates from the solution.”
 
+
+ANTI-TEMPLATE DIRECTIVE: A problem is a forbidden template if it exhibits any of these structural properties — regardless of its topic or difficulty level:
+- Single-formula plug-and-chug: one concept, one equation, values handed to the student, answer drops out directly with no coupling.
+- Catalogue question: simply asks the student to recall or identify a memorised fact, rule, or definition with no reasoning step.
+- Familiar scaffold with swapped numbers: structurally identical to a class of textbook problems (e.g., a standard titration, incline, or stoichiometry setup) with only numerical values or element names changed.
+- Isolated calculation: tests exactly one sub-skill in complete isolation with no unexpected coupling to another concept.
+- Generic framing: the question could have been written by any textbook author without any real-world or experimental motivation.
+Any question matching one or more of these patterns must be redesigned before finalising.
+
+SELF-CHECK (MANDATORY before finalising each question): Before writing the final JSON/response for each question, ask yourself: "Is this question structurally novel? Would a student who has drilled olympiad problem sets be genuinely surprised by the setup, the system, or the question being asked — even if they know the underlying concept well?" If the answer is no — if the setup is a familiar scaffold with new numbers or a different compound — redesign the question from scratch. What matters is whether the problem-setup itself is fresh and unexpected.
+
+SURPRISING PREMISE DIRECTIVE: Every question should ideally open from a counterintuitive, puzzling, or surprising premise — a real experimental observation, an anomalous result, or a system that behaves differently from naive expectation. Avoid generic lab-exercise framings ("A student dissolves...", "A reaction occurs..."). Instead, ground the question in a specific, vivid scenario that demands explanation.
+
+SVG DIAGRAMS (CRITICAL - HIGH FREQUENCY REQUIRED): You are STRONGLY ENCOURAGED to include SVG diagrams in a large proportion of your questions — aim for at least half of all questions to contain an SVG figure. Titration curves, phase diagrams, reaction coordinate plots, crystallographic unit cells, energy-level diagrams, or apparatus setups are excellent candidates. Embed the SVG directly in the question/instructions text using [[SVG: <svg ...>...</svg>]] markers. Use primitive shapes (<line>, <circle>, <rect>, <path>, <text>, <polygon>), inline attributes only (no CSS <style> blocks), white background, and single-quotes (') for all attribute values for JSON compatibility.
+
+ANSWER-FORM VARIATION: Rotate the structural form of what the answer requires across questions. Do not produce multiple questions that all ask for the same type of quantity (e.g., all asking for a final numerical value, or all asking "which of the following is correct"). Include variety such as: a question whose answer is a ratio or dimensionless quantity derived from multiple steps; a question that requires identifying which piece of given information is irrelevant or insufficient; a question where the student must recognise that the naive calculation gives the wrong answer and explain why; a question whose answer is a qualitative ranking or ordering rather than a single value.
 
 All questions generated MUST adhere to these critical design directives:
 
@@ -359,6 +383,18 @@ IChO Example (free_response):
   "instructions": "Fluoride ions form a stable complex with aluminum(III): $\\\\ce{6F^- + Al^{3+} <=> [AlF6]^{3-}}$\\\\n\\\\nA fluoride sample was neutralized, saturated with $\\\\ce{NaCl}$, heated to $70-80\\\\ ^\\\\circ\\\\text{C}$, and titrated with $0.150\\\\text{ M } \\\\ce{AlCl3}$ until methyl red turned pink.\\\\n\\\\na. Write the equation at the endpoint and explain the role of $\\\\ce{NaCl}$.\\\\nb. Explain why heating increases endpoint sharpness.\\\\nc. In a back-titration, $0.500\\\\text{ g } \\\\ce{NaF}$ and excess $\\\\ce{NaCl}$ were added to a calcium sample. Titration with $0.1000\\\\text{ M } \\\\ce{AlCl3}$ required $10.25\\\\text{ cm}^3$. Calculate moles and mass of calcium.",
   "hint": "Focus on Al(III) hydrolysis at the endpoint. For quantitative parts, set up stoichiometric mole balances.",
   "explanation": "a. Excess $\\\\ce{Al^{3+}}$ hydrolyzes: $\\\\ce{[Al(H2O)6]^{3+} + H2O <=> [Al(OH)(H2O)5]^{2+} + H3O^+}$. $\\\\ce{NaCl}$ precipitates cryolite ($\\\\ce{Na3AlF6}$), driving complexation forward.\\\\nb. Al(III) hydrolysis is endothermic; heating produces more $\\\\ce{H3O^+}$ per excess $\\\\ce{Al^{3+}}$.\\\\nc. $n(\\\\ce{F^-}) = 0.500/41.99 = 0.01191$ mol. $n(\\\\ce{Al^{3+}}) = 0.001025$ mol. $n(\\\\ce{F^-})_{complexed} = 0.006150$ mol. $n(\\\\ce{F^-})_{ppt} = 0.00576$ mol. $n(\\\\ce{Ca^{2+}}) = 0.00288$ mol. $m = 0.115$ g."
+}
+
+SVG Titration Curve Exemplar (free_response with SVG diagram):
+{
+  "qtype": "free_response",
+  "reactants": "",
+  "reagents": "",
+  "conditions": "",
+  "answer": "NH4NO3",
+  "instructions": "A is an ionic compound that contains only the elements hydrogen, nitrogen, and oxygen.\\\\n\\\\na. A 1.000-g sample of A is dissolved in 20 mL water and titrated with 0.5000 M NaOH solution, giving the data shown below. What is the molar mass of A?\\\\n\\\\n[[SVG: <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 620 400' style='max-width:100%;background:white'><rect x='60' y='20' width='520' height='320' fill='white'/><g stroke='#ddd' stroke-width='0.5'><line x1='60' y1='52' x2='580' y2='52'/><line x1='60' y1='84' x2='580' y2='84'/><line x1='60' y1='116' x2='580' y2='116'/><line x1='60' y1='148' x2='580' y2='148'/><line x1='60' y1='180' x2='580' y2='180'/><line x1='60' y1='212' x2='580' y2='212'/><line x1='60' y1='244' x2='580' y2='244'/><line x1='60' y1='276' x2='580' y2='276'/><line x1='60' y1='308' x2='580' y2='308'/><line x1='103' y1='20' x2='103' y2='340'/><line x1='147' y1='20' x2='147' y2='340'/><line x1='190' y1='20' x2='190' y2='340'/><line x1='233' y1='20' x2='233' y2='340'/><line x1='277' y1='20' x2='277' y2='340'/><line x1='320' y1='20' x2='320' y2='340'/><line x1='363' y1='20' x2='363' y2='340'/><line x1='407' y1='20' x2='407' y2='340'/><line x1='450' y1='20' x2='450' y2='340'/><line x1='493' y1='20' x2='493' y2='340'/><line x1='537' y1='20' x2='537' y2='340'/></g><rect x='60' y='20' width='520' height='320' fill='none' stroke='#999' stroke-width='1'/><g font-family='Arial,sans-serif' font-size='12' text-anchor='end' fill='black'><text x='55' y='24'>14</text><text x='55' y='56'>13</text><text x='55' y='88'>12</text><text x='55' y='120'>11</text><text x='55' y='152'>10</text><text x='55' y='184'>9</text><text x='55' y='216'>8</text><text x='55' y='248'>7</text><text x='55' y='280'>6</text><text x='55' y='312'>5</text><text x='55' y='344'>4</text></g><text font-family='Arial,sans-serif' font-size='14' font-weight='bold' text-anchor='middle' transform='translate(20,180) rotate(-90)'>pH</text><g font-family='Arial,sans-serif' font-size='12' text-anchor='middle' fill='black'><text x='60' y='358'>0</text><text x='103' y='358'>5</text><text x='147' y='358'>10</text><text x='190' y='358'>15</text><text x='233' y='358'>20</text><text x='277' y='358'>25</text><text x='320' y='358'>30</text><text x='363' y='358'>35</text><text x='407' y='358'>40</text><text x='450' y='358'>45</text><text x='493' y='358'>50</text><text x='537' y='358'>55</text><text x='580' y='358'>60</text></g><text x='320' y='390' font-family='Arial,sans-serif' font-size='14' text-anchor='middle'>mL 0.5000 M NaOH added</text><path d='M 60 314.4 C 60 250,68.7 237.6,77.3 218.4 S 103.3 192.8,146.7 173.6 S 190 160.8,233.3 144.8 S 268 109.6,276.7 77.6 S 285.3 68,320 58.4 S 406.7 48.8,580 42.4' fill='none' stroke='black' stroke-width='2'/></svg>]]\\\\n\\\\nb. When a 1.000-g sample of A is heated at 230 °C in an evacuated 1.50 L vessel, it decomposes into gaseous products, giving a final pressure of 784 mm Hg. How many moles of gas are formed in this reaction?\\\\n\\\\nc. If the gases produced from the decomposition of 1.000 g of A are instead first passed through a column packed with magnesium perchlorate (which strongly absorbs water vapor) and then collected at 25 °C and a pressure of 755 mm Hg, the total volume of gas is 308 mL. How many moles of gas are collected in this experiment?\\\\n\\\\nd. What is the formula of A? Explain your reasoning.',
+  "hint": "Determine the molar mass and gas mole ratios from the titration curve and decomposition data.",
+  "explanation": "(a) From titration curve endpoint at 25 mL: Moles OH- = 0.025 L * 0.5000 M = 0.0125 mol, Molar mass of A = 1.000 g / 0.0125 mol = 80.0 g/mol. (b) PV=nRT gives 0.0375 mol total gas. (c) 0.0125 mol dry gas. (d) 1:3 total gas ratio, 1:2 water ratio → NH4NO3."
 }
 
 Bad example (DO NOT generate questions like this):
@@ -646,11 +682,13 @@ export default async function handler(req, res) {
 
             const genConfig = {
                 maxOutputTokens,
-                temperature,
                 topP,
                 topK: 40,
                 response_mime_type: responseMimeType || "text/plain"
             };
+            if (task !== 'generate') {
+                genConfig.temperature = temperature;
+            }
 
             // Omit experimental thinking configurations to prioritize ultra-fast standard Flash default execution speed
 

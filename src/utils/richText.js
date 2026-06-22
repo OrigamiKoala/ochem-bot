@@ -220,8 +220,21 @@ export function renderRichText(text, container, isExplanation = false) {
       const svgString = seg.content.trim();
       const wrapper = document.createElement('div');
       wrapper.className = 'inline-svg-diagram-wrapper';
+      wrapper.style.display = 'block';
+      wrapper.style.margin = '20px auto';
+      wrapper.style.maxWidth = '580px';
+
+      const card = document.createElement('div');
+      card.style.backgroundColor = '#ffffff';
+      card.style.borderRadius = '10px';
+      card.style.padding = '16px';
+      card.style.boxShadow = '0 2px 12px rgba(0,0,0,0.35)';
+      card.style.overflow = 'hidden';
+      card.style.lineHeight = '0';
+
+      wrapper.appendChild(card);
       container.appendChild(wrapper);
-      renderSVG(svgString, wrapper);
+      renderSVG(svgString, card);
 
     } else if (seg.content.trim().length > 0) {
       const span = document.createElement('span');

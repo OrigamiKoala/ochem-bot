@@ -19,6 +19,45 @@ import {
 // Run migration on module load
 migrateModeFlags();
 
+function escapeLiteralNewlines(jsonStr) {
+  let result = '';
+  let inString = false;
+  let escape = false;
+
+  for (let i = 0; i < jsonStr.length; i++) {
+    const ch = jsonStr.charAt(i);
+
+    if (inString) {
+      if (escape) {
+        if (ch === 'r' || ch === 't' || ch === 'b' || ch === 'f') {
+          result += '\\' + ch;
+        } else {
+          result += ch;
+        }
+        escape = false;
+      } else if (ch === '\\') {
+        result += ch;
+        escape = true;
+      } else if (ch === '"') {
+        result += ch;
+        inString = false;
+      } else if (ch === '\n') {
+        result += '\\n';
+      } else if (ch === '\r') {
+        result += '\\r';
+      } else {
+        result += ch;
+      }
+    } else {
+      if (ch === '"') {
+        inString = true;
+      }
+      result += ch;
+    }
+  }
+  return result;
+}
+
 export default function App() {
   // ---- Practice Mode State ----
   const [practiceMode, setPracticeMode] = useState(
@@ -228,10 +267,12 @@ export default function App() {
         try {
           let data;
           try {
-            data = JSON.parse(finalText.trim());
+            const escaped = escapeLiteralNewlines(finalText.trim());
+            data = JSON.parse(escaped);
           } catch (parseErr) {
             console.warn("JSON parse failed, attempting jsonrepair...", parseErr.message);
-            const repaired = jsonrepair(finalText.trim());
+            const escaped = escapeLiteralNewlines(finalText.trim());
+            const repaired = jsonrepair(escaped);
             data = JSON.parse(repaired);
             console.log("jsonrepair succeeded, recovered reactions:", (data.reactions || data).length);
           }
