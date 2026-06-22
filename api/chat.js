@@ -37,7 +37,7 @@ Follow these strict Olympiad Design Philosophies:
 
 2. Difficulty-Dependent Syllabus Boundaries
 - IF DIFFICULTY = USNCO National Level (40-75):
-  - Stick strictly to standard AP/USNCO curricula, utilizing only foundational concepts.
+  - Stick strictly to standard AP/USNCO curricula, utilizing only foundational concepts. Try not to bring in too much outside knowledge - the outside knowledge as first principles/preamble approach should be reserved strictly for IChO questions. USNCO questions should use the standard high school olympiad knowledge base, but go very deep conceptually and mathematically. However, it is okay to bring in some outside knowledge to set up a more convoluted chemical system.
   - Focus stereochemistry questions on basic configurations and simple diastereoselectivity.
   - Limit coordination chemistry questions to basic nomenclature, coordination number, and oxidation states.
   - Focus exclusively on algebra-based derivations and principles.
@@ -45,7 +45,7 @@ Follow these strict Olympiad Design Philosophies:
   - Increase difficulty by coupling unexpected systems (e.g., matching a non-trivial stoichiometry with an electrochemical change that alters concentration ratios, or an organic reaction where a common functional group exhibits atypical reactivity due to adjacent electronic effects).
 - IF DIFFICULTY = IChO Level (75-100):
   - Pivot to completely original, concept-first designs leveraging advanced chemical phenomena.
-  - The "First-Principles" Guardrail: Introduce advanced, extra-syllabus topics using self-contained, axiomatic background information within the problem preamble. A student must be able to deduce the correct path using standard prerequisites combined with the provided context.
+  - The "First-Principles" Guardrail: Introduce advanced, extra-syllabus topics (bringing in outside knowledge) using self-contained, axiomatic background information within the problem preamble. A student must be able to deduce the correct path using standard prerequisites combined with the provided context.
 
 3. Question Generation Criteria (For High-Difficulty Questions)
 - Conceptual Integration (Multi-Topic Coupling): Standard questions isolate a single topic (e.g., a simple acid-base titration). High-quality difficult questions require the simultaneous application of disparate chemical principles. Example: Coupling a coordination chemistry equilibrium ($K_f$) with a solubility product ($K_{sp}$) and an electrochemical cell ($E^{\\circ}$), requiring the user to determine free ligand concentration via Nernst equation manipulation.
@@ -131,7 +131,7 @@ Follow these strict Olympiad Design Philosophies:
 
 2. Difficulty-Dependent Syllabus Boundaries
 - IF DIFFICULTY = USNCO National Level (40-75):
-  - Stick strictly to standard AP/USNCO curricula, utilizing only foundational concepts.
+  - Stick strictly to standard AP/USNCO curricula, utilizing only foundational concepts. Try not to bring in too much outside knowledge - the outside knowledge as first principles/preamble approach should be reserved strictly for IChO questions. USNCO questions should use the standard high school olympiad knowledge base, but go very deep conceptually and mathematically.
   - Focus stereochemistry questions on basic configurations and simple diastereoselectivity.
   - Limit coordination chemistry questions to basic nomenclature, coordination number, and oxidation states.
   - Focus exclusively on algebra-based derivations and principles.
@@ -139,7 +139,7 @@ Follow these strict Olympiad Design Philosophies:
   - Increase difficulty by coupling unexpected systems (e.g., matching a non-trivial stoichiometry with an electrochemical change that alters concentration ratios, or an organic reaction where a common functional group exhibits atypical reactivity due to adjacent electronic effects).
 - IF DIFFICULTY = IChO Level (75-100):
   - Pivot to completely original, concept-first designs leveraging advanced chemical phenomena.
-  - The "First-Principles" Guardrail: Introduce advanced, extra-syllabus topics using self-contained, axiomatic background information within the problem preamble. A student must be able to deduce the correct path using standard prerequisites combined with the provided context.
+  - The "First-Principles" Guardrail: Introduce advanced, extra-syllabus topics (bringing in outside knowledge) using self-contained, axiomatic background information within the problem preamble. A student must be able to deduce the correct path using standard prerequisites combined with the provided context.
 
 3. Question Generation Criteria (For High-Difficulty Questions)
 - Conceptual Integration (Multi-Topic Coupling): Standard questions isolate a single topic. High-quality difficult questions require the simultaneous application of disparate chemical principles.
@@ -328,13 +328,13 @@ Follow these strict Olympiad Design Philosophies:
 
 3. Difficulty-Dependent Syllabus Boundaries
 - IF DIFFICULTY = USNCO National Level (40-75):
-  - Maintain USNCO scope but test to maximum depth.
+  - Maintain USNCO scope but test to maximum depth. Try not to bring in too much outside knowledge - the outside knowledge as first principles/preamble approach should be reserved strictly for IChO questions. USNCO questions should use the standard high school olympiad knowledge base, but go very deep conceptually and mathematically.
   - Limit to AP/USNCO curricula, non-calculus math, standard 1D-NMR/IR/UV-Vis.
   - Exclude Tafel equation, advanced quantum mechanics, etc.
   - Increase difficulty by coupling unexpected systems.
 - IF DIFFICULTY = IChO Level (75-100):
   - Pivot to original, concept-first designs with advanced phenomena.
-  - First-Principles Guardrail: Introduce extra-syllabus topics with self-contained axiomatic background in the problem preamble.
+  - First-Principles Guardrail: Introduce extra-syllabus topics (bringing in outside knowledge) with self-contained axiomatic background in the problem preamble.
 
 4. Structural Representation (SMILES Rules)
 - Simple formulas in standard prose/LaTeX (e.g., $\\\\text{H}_2\\\\text{O}$).
