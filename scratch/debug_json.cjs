@@ -1,6 +1,6 @@
 // scratch/debug_json.cjs
 const fs = require('fs');
-const content = fs.readFileSync('/Users/carlliu/stress-sandbox/api/generate.js', 'utf8');
+const content = fs.readFileSync('api/chat.js', 'utf8');
 
 function getBlock(name) {
   const startIdx = content.indexOf(name);
@@ -36,8 +36,7 @@ function getBlock(name) {
 for (let id of [6, 7, 8, 9]) {
   let raw = getBlock(`IChO Question Example ${id}:`);
   // Fix single quotes and backticks
-  raw = raw.replace(/\\+'/g, "'");
-  raw = raw.replace(/\\+`/g, "`");
+  raw = raw.replace(/(?<!\\)((?:\\\\)*)\\(['`])/g, "$1$2");
   try {
     JSON.parse(raw);
     console.log(`Block ${id} parsed successfully`);
