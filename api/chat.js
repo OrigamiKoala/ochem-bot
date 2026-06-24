@@ -787,11 +787,9 @@ export default async function handler(req, res) {
 
             const genConfig = {
                 max_output_tokens: maxOutputTokens,
-                top_p: topP
+                top_p: topP,
+                temperature: temperature
             };
-            if (task !== 'generate') {
-                genConfig.temperature = temperature;
-            }
 
             const input = [];
             if (image) {
