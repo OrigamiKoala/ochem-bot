@@ -691,7 +691,7 @@ export default async function handler(req, res) {
         keys = [selectedKey, ...shuffledRemaining];
     }
 
-    const GENERATION_MODELS = ["gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-3.5-flash", "gemini-2.5-flash"];
+    const GENERATION_MODELS = ["gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-2.5-flash"];
     const GRADING_MODELS = ["gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-3.5-flash", "gemini-2.5-flash"];
     const models = (task === 'generate') ? GENERATION_MODELS : GRADING_MODELS;
 
