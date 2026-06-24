@@ -783,9 +783,9 @@ export default async function handler(req, res) {
             }
 
             const genConfig = {
-                maxOutputTokens,
-                topP,
-                topK: 40
+                max_output_tokens: maxOutputTokens,
+                top_p: topP,
+                top_k: 40
             };
             if (task !== 'generate') {
                 genConfig.temperature = temperature;
