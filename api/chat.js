@@ -766,21 +766,24 @@ export default async function handler(req, res) {
         attemptIndex++;
 
         async function tryModelWithKey(apiKey) {
-            // Determine cache config (use separate caches for genchem mode)
-            let cacheSystemText = null;
+            // Build system instruction text (sent inline with prompt each time — never cached)
+            let systemText = null;
             if (task === 'generate') {
-                cacheSystemText = isGenChem
+                systemText = isGenChem
                     ? GENCHEM_GENERATION_SYSTEM_INSTRUCTION.replace('{{EXAMPLES}}', formatGenchemExemplarsForPrompt(getRandomGenchemExemplars(3)))
                     : GENERATION_SYSTEM_INSTRUCTION;
             } else if (task === 'grade' && gradeMode) {
                 if (isFreeDraw) {
-                    cacheSystemText = (gradeMode === 'learn') ? FREEDRAW_GRADING_LEARN_SYSTEM_INSTRUCTION : FREEDRAW_GRADING_NORMAL_SYSTEM_INSTRUCTION;
+                    systemText = (gradeMode === 'learn') ? FREEDRAW_GRADING_LEARN_SYSTEM_INSTRUCTION : FREEDRAW_GRADING_NORMAL_SYSTEM_INSTRUCTION;
                 } else if (isGenChem) {
-                    cacheSystemText = (gradeMode === 'learn') ? GENCHEM_GRADING_LEARN_SYSTEM_INSTRUCTION : GENCHEM_GRADING_NORMAL_SYSTEM_INSTRUCTION;
+                    systemText = (gradeMode === 'learn') ? GENCHEM_GRADING_LEARN_SYSTEM_INSTRUCTION : GENCHEM_GRADING_NORMAL_SYSTEM_INSTRUCTION;
                 } else {
-                    cacheSystemText = (gradeMode === 'learn') ? GRADING_LEARN_SYSTEM_INSTRUCTION : GRADING_NORMAL_SYSTEM_INSTRUCTION;
+                    systemText = (gradeMode === 'learn') ? GRADING_LEARN_SYSTEM_INSTRUCTION : GRADING_NORMAL_SYSTEM_INSTRUCTION;
                 }
             }
+
+            // Prepend system instructions to the user prompt (inline, not cached as system_instruction)
+            const fullPrompt = systemText ? systemText + '\n\n---\n\n' + prompt : prompt;
 
             const genConfig = {
                 max_output_tokens: maxOutputTokens,
@@ -800,7 +803,7 @@ export default async function handler(req, res) {
             }
             input.push({
                 type: 'text',
-                text: prompt
+                text: fullPrompt
             });
 
             const bodyPayload = {
@@ -812,10 +815,6 @@ export default async function handler(req, res) {
                     mime_type: responseMimeType || "text/plain"
                 }
             };
-
-            if (cacheSystemText) {
-                bodyPayload.system_instruction = cacheSystemText;
-            }
 
             if (stream) {
                 bodyPayload.stream = true;

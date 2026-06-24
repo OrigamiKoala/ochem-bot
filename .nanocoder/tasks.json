@@ -1,1 +1,20 @@
-[]
+[
+  {
+    "id": "844c300b",
+    "title": "Merge system instructions into inline prompt",
+    "description": "Move system instructions from cached system_instruction field into the main prompt text sent each time",
+    "status": "completed",
+    "createdAt": "2026-06-24T18:22:49.123Z",
+    "updatedAt": "2026-06-24T18:24:06.752Z",
+    "completedAt": "2026-06-24T18:24:06.752Z"
+  },
+  {
+    "id": "29554296",
+    "title": "Remove cached system_instruction from payload",
+    "description": "Remove the system_instruction field from the API body payload to prevent caching",
+    "status": "completed",
+    "createdAt": "2026-06-24T18:22:49.123Z",
+    "updatedAt": "2026-06-24T18:24:06.752Z",
+    "completedAt": "2026-06-24T18:24:06.752Z"
+  }
+]
