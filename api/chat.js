@@ -872,7 +872,8 @@ export default async function handler(req, res) {
 
                 const status = result.response.status;
                 const errBody = result.errBody;
-                const isBusy = status === 503 || (errBody?.error?.message && /busy|overloaded/i.test(errBody.error.message));
+                // 503 = overloaded, 500 = high demand — both should downgrade immediately, not rotate keys
+                const isBusy = status === 503 || status === 500 || (errBody?.error?.message && /busy|overloaded/i.test(errBody.error.message));
 
                 if (isBusy) {
                     console.warn(`[${task}] ${modelId} busy/overloaded on key #${keyIndex + 1}. Breaking key loop to try next model.`, errBody);
