@@ -15,12 +15,7 @@ function markKeyRateLimitedForModel(modelId, apiKey) {
     rateLimitRegistry.set(`${modelId}:${apiKey}`, today);
 }
 
-const CHALLENGE_PHILOSOPHY = `System Prompt: You are an expert examiner creating questions for high-stakes competitive olympiad exams.
-
-
-Follow these strict Olympiad Design Philosophies:
-
-
+const CHALLENGE_PHILOSOPHY = `
 1. Novelty & "Invisible Traps" (Subtle Conceptual Bottlenecks)
 - Create highly original questions requiring first-principles reasoning over memory or template-matching.
 - Questions should reward chemical intuition, not breadth of knowledge, experience grinding previous problems, or computational power.
@@ -111,57 +106,10 @@ const GENERATION_SYSTEM_INSTRUCTION = `###Role:### You are an expert organic che
 
 ###Goal:### Generate challenging, concept-rich organic chemistry problems that demand first-principles reasoning instead of template-matching.
 
-###CRITICAL UNIQUE & CREATIVE DIRECTIVE:###
-You must be extremely creative and ensure that EVERY question is completely unique and novel. Do NOT repeat, rephrase, or adapt previously used setups, standard textbook scenarios, chemical reactions, physical systems, or mathematical templates. Avoid using similar numerical values, scenarios, or phrasing across different questions or exams. Force yourself to design entirely new contexts, variables, and systems for each problem.
-
 ###Constraints:###
-Follow these strict Olympiad Design Philosophies:
+${CHALLENGE_PHILOSOPHY}
 
-1. Novelty & "Invisible Traps" (Subtle Conceptual Bottlenecks)
-- Focus on creating original, conceptually rich questions that demand first-principles reasoning instead of template-matching.
-- Every problem must center on a non-obvious conceptual trick, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption.
-- Keep the question text entirely neutral and objective — do NOT hint at the solution or mention the specific conceptual trick, trap, or method to use (e.g. do not say "taking into account the ionization of water" or "assume non-ideal behavior"). For example, instead of: "Calculate the pH of a $1.00 \times 10^{-8}$ M aqueous solution of $\ce{HCl}$ at $25 ^{\circ}$ C, taking into account the ionization of water", write: "Calculate the pH of a $1.00 \times 10^{-8}$ M aqueous solution of $\ce{HCl}$ at $25 ^{\circ}$ C".
-
-2. Difficulty-Dependent Syllabus Boundaries
-- IF DIFFICULTY = USNCO National Level (40-75):
-  - Stick strictly to standard AP/USNCO curricula, utilizing only foundational concepts. Try not to bring in too much outside knowledge - the outside knowledge as first principles/preamble approach should be reserved strictly for IChO questions. USNCO questions should use the standard high school olympiad knowledge base, but go very deep conceptually and mathematically.
-  - Do NOT test stereoselectivity or Tafel/Butler-Volmer equations (they are strictly reserved for IChO). Focus stereochemistry questions strictly on basic configurations.
-  - Limit coordination chemistry questions to basic nomenclature, coordination number, and oxidation states.
-  - Focus exclusively on algebra-based derivations and principles.
-  - Limit spectroscopy to standard 1D-NMR, IR, and UV-Vis.
-  - Increase difficulty by coupling unexpected systems (e.g., matching a non-trivial stoichiometry with an electrochemical change that alters concentration ratios, or an organic reaction where a common functional group exhibits atypical reactivity due to adjacent electronic effects).
-- IF DIFFICULTY = IChO Level (75-100):
-  - Pivot to completely original, concept-first designs leveraging advanced chemical phenomena.
-  - The "First-Principles" Guardrail: Introduce advanced, extra-syllabus topics (bringing in outside knowledge, such as stereoselectivity or Tafel/Butler-Volmer equations) using self-contained, axiomatic background information within the problem preamble. A student must be able to deduce the correct path using standard prerequisites combined with the provided context.
-
-3. Question Generation Criteria (For High-Difficulty Questions)
-- Conceptual Integration (Multi-Topic Coupling): Standard questions isolate a single topic. High-quality difficult questions require the simultaneous application of disparate chemical principles.
-- Multi-Step Logical Cascades: The problem cannot be solved in a single step. It requires a clear execution pathway where the output of one step forms the input of the next.
-- Discrimination of Subtle Chemical Nuances: Distinguishes top-tier students by testing exceptions grounded in fundamental principles (e.g. thermodynamic vs. kinetic control).
-- Novel Context and Data Interpretation: Presents familiar chemical principles within an unfamiliar framework.
-- Backward Chaining: Use a backward-chaining process to design questions. ALWAYS start with a specific "trick" (the problem breakthrough or subtle stereochemical/mechanistic bottleneck) in mind first. From there, work backward to determine the starting materials, intermediate reaction steps, reagents, or question constraints that lead uniquely and logically to that breakthrough. This prevents textbook template-matching and yields highly creative, non-trivial problems. EVERY single question generated must be completely unique, original, and never seen before.
-
-  ***Constraints & Execution Instructions:***
-
-  1. **Backward Chaining Generation Methodology (CRITICAL - Ensure 100% Uniqueness & Originality)**
-  You must generate every question using a backward chaining thought process before outputting the final problem, ensuring that each question is completely unique, original, and never seen before:
-
-  * **Step 1 (The Trap - Must be completely unique and original):** Identify a specific, non-obvious conceptual trap, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption. This trap must be entirely novel, original, and never seen before in any question or textbook.
-  * **Step 2 (The System - Must be completely unique, original, and as convoluted as possible):** Once you have the trick/trap in mind, design a chemical system or reaction where this specific trap naturally occurs, making the system/reaction as convoluted as possible while ensuring it is completely unique, original, and never seen before (avoid standard textbook setups).
-  * **Step 3 (The Distractors - Must be completely unique and original):** Calculate or derive the incorrect answers that result directly from falling into the conceptual trap (rote formula shortcut, ignoring the limiting factor, etc.). Ensure the options are uniquely designed to target this specific trap.
-  * **Step 4 (The Problem - Must be completely unique and original):** Draft the neutral question text that presents the system, masking the trap completely, written in a completely unique, original, and never-seen-before style.
-
-  Here is an example:
-
-  ***Step 1***: A common trap is, when investigating the reactivity of nitric acid, to only think of it as a strong protonating acid and failing to realize it is also a strong oxidizing agent.
-
-  ***Step 2***: This system could be one where a metal (e.g. copper) is selectively reduced by a reducing agent (e.g. H2). The student might not realize the nitric acid competes for the electrons.
-
-  ***Step 3***: If the student falls for this trap, they could be presented with the reducing agent (H2) and think only copper is reduced by it, when in reality nitric acid is also reduced by it. Perhaps the student thinks adding the reducing agent to react with the copper could determine the amount of copper in a solution, but not realize that excess weight will be added from the various nitrous oxides. 
-
-  ***Step 4***: The student could be asked, “A weighed sample of a copper-nickel alloy is dissolved in a known volume of nitric acid. Which method is most suitable for determining the mass percent of copper in the alloy?” One of the options, consistent with the trap, should be “Bubbling hydrogen gas through the solution and measuring the mass of the metal that precipitates from the solution.” The other options could test other traps, i.e. that both nickel and copper form insoluble hydroxides, and that they both absorb the same wavelength of light. Thus the final question is: “A weighed sample of a copper-nickel alloy is dissolved in a known volume of nitric acid. Which method is most suitable for determining the mass percent of copper in the alloy?\\n\\n(A) Treatment of an aliquot of the solution with excess iodide, followed by titration of the iodine produced with sodium thiosulfate.\\n(B) Measurement of the absorbance of the solution at a wavelength of light at which both $\\\\ce{Cu^{2+}}$ and $\\\\ce{Ni^{2+}}$ absorb, and comparison with the absorbances of known standards of the two ions.\\n(C) Addition of excess sodium hydroxide to the solution, isolation of the metal hydroxides by filtration, and measurement of the mass of the precipitate.\\n(D) Bubbling hydrogen gas through the solution and measuring the mass of the metal that precipitates from the solution.”
-
-4. Organic Reaction Rules:
+Oranic Reaction Rules:
 - Reactions MUST actually occur. Verify against Clayden/Wade/McMurry.
 - Symbols: {DELTA}=heat, {deg}=°, {hv}=hν, {H2}=H₂, {H+}=H⁺
 - Write solvents and reagents in plain text (e.g. EtOH, THF, H2O) instead of utilizing LaTeX \\text{}.
@@ -171,109 +119,10 @@ Follow these strict Olympiad Design Philosophies:
 ###Examples:###
 (No examples provided for organic chemistry generation. Focus strictly on correct JSON structure.)
 
-###Steps:###
-1. Brainstorm potential concepts for each question.
-2. Narrow down each concept into a particular topic for each question, as well as the subtle conceptual trap the user might fall into.
-3. Decide on a difficulty level for each question.
-4. For each question, generate the question text, taking into account the topic, trap, and difficulty level.
-5. Test-solve each of the questions to ensure they satisfy each of the constraints. Write feedback for each of the problems for how to improve them.
-6. Improve the questions based on the feedback. Fix all questions that do not adhere to the constraints, and ones you can easily solve.
-7. Solve each question. Double check that the answers generated are the only valid solutions. If the answer is not the only valid solution, change the problem, repeating steps 4 and 5. Explain the trick in the problem. If the trick is not a trap students are likely to fall into, or there is no trick, redo the question (add a trick).
-8. Double check that all constraints and output requirements have been met. If they have not, change the format and/or problem so that all constraints and output requirements are met.
-
-For example, your thought process might look like:
-
-Step 1: The user wants me to generate 5 chemistry olympiad questions with difficulty 50.
-
-Step 2, 3: For the first question, I will test stoichiometry (identifying an unknown compound based on resulting gases), with difficulty level 5. For the second question, I will test electrochemistry (overpotential), with difficulty level 6. For the third question, I will design a difficulty level 9 organic synthesis question using backward chaining (retrosynthesis) to target a specific highly substituted cyclohexene derivative.
-
-Step 4: Now I will generate the problem texts.
-
-1. A compound M reacts in the following reaction. $\ce{M + 5 O_2 -> 3 C O_2 + 4 H_2 O}. How many grams of $\ce{M}$ are required to form $14.4$ liters of $\ce{C O_2}$ at STP? The trap is to forget to balance out the chemical equation.
-
-2. A reaction has a standard exchange current density ($j_0$) of $1.0$ A/cm$^2$ at $25$ °C. What is the current density ($j$) when the overpotential ($\eta$) is $0.1$ V? The trap is to forget to multiply the exchange current density by 2 when taking the absolute value.
-
-3. A synthesis question where the starting materials and reagents are provided, and the student must predict the major stereochemical product. The trap is that a Diels-Alder reaction occurs, followed by an unexpected epoxide formation with highly specific stereochemistry directed by the allylic alcohol.
-
-Step 5: Test-solve and feedback (Backward Chaining)
-
-Question 1 Test-Solve:
-Target: Hydrocarbon molecular formula is C3H8 (molar mass 44.1 g/mol). Work backward: to uniquely determine C3H8, require combustion product masses corresponding to C3H8. Set target moles: 0.300 mol C and 0.800 mol H. Calculate backward: mass of CO2 = 13.20 g, H2O = 7.21 g. Sample mass must be 4.41 g, and density at STP must be 1.97 g/L. Forward check confirms C3H8.
-Question 1 Feedback: Successfully backward-chained. Unique, mathematically consistent, and elegant.
-
-Question 2 Test-Solve:
-Target: Galvanic cell with Cu mass loss of 1.78 g. Work backward: 1.78 g Cu is 0.0280 mol. Since Cu -> Cu2+ + 2e-, this requires 0.0560 mol e-. Work backward using Faraday's constant: charge Q = 5400 C. For a constant 2.0 A current, calculate backward that the time required is 45 minutes. Define Ag/Cu half-cells to ensure Cu is the anode.
-Question 2 Feedback: Backward-chained parameters match Faraday's laws perfectly.
-
-Question 3 Test-Solve:
-Target: Diels-Alder/reduction/epoxidation cascade yielding trans-diol cyclohexene derivative. Work backward: retrosynthetic analysis shows it can be obtained via stereoselective epoxidation of allylic alcohol. Allylic alcohol is formed by reduction of Diels-Alder adduct of methyl vinyl ketone and butadiene. Re-solving forward yields the Diels-Alder -> reduction -> directed epoxidation path.
-Question 3 Feedback: The stereoselectivity is extremely elegant and requires deep first-principles understanding of directed epoxidation. Perfect for a difficulty level 9 question.
-
-Step 6: Improve the questions
-
-Question 1 Revision: Retain backward-chained parameters (4.41 g sample, 13.20 g CO2, 7.21 g H2O, 1.97 g/L density at STP).
-Question 2 Revision: Retain backward-chained parameters (Ag/Cu cell, 2.0 A current, 45 minutes, 1.78 g mass change).
-Question 3 Revision: Retain the Diels-Alder -> reduction -> directed epoxidation cascade. Use clear, IUPAC/SMILES structures.
-
-Step 7: Solve and verify uniqueness
-
-Question 1 Solution:
-Moles C = 13.20 g / 44.01 g/mol = 0.300 mol. Moles H = 2 * (7.21 g / 18.02 g/mol) = 0.800 mol. Empirical formula = C3H8. Molar mass = 1.97 g/L * 22.4 L/mol = 44.1 g/mol. Molecular formula = C3H8.
-Uniqueness: Single hydrocarbon identity fits elemental mass ratios and molar mass.
-
-Question 2 Solution:
-Anode reaction: Cu -> Cu2+ + 2e-. Charge Q = 2.0 A * 45 min * 60 s/min = 5400 C. Moles e- = 5400 C / 96485 C/mol = 0.0560 mol. Moles Cu = 0.0560 mol / 2 = 0.0280 mol. Mass decrease = 0.0280 mol * 63.55 g/mol = 1.78 g.
-Uniqueness: Standard reduction potentials confirm copper is the anode. Faraday's law yields one precise value.
-
-Question 3 Solution:
-Diels-Alder of methyl vinyl ketone and 1,3-butadiene gives 4-acetylcyclohexene. NaBH4 reduction yields 1-(cyclohex-3-en-1-yl)ethan-1-ol. mCPBA epoxidation occurs on the same face as the hydroxyl group (directed epoxidation), yielding the cis-epoxy alcohol. Hydrolysis yields the specific trans-diol diastereomer.
-Uniqueness: Regio- and stereochemical paths are highly constrained by the directing hydroxyl group.
-
-Step 8: Double check constraints
-
-Target difficulties (5 and 6) met. Traps appropriate for USNCO. Formatting constraints followed. No bold text used.
-
-Final Output JSON:
-{
-  "reactions": [
-    {
-      "qtype": "calculate",
-      "reactants": "",
-      "reagents": "",
-      "conditions": "",
-      "answer": "C3H8",
-      "instructions": "A $4.41\\\\text{ g}$ sample of a gaseous hydrocarbon M is completely combusted in excess oxygen to produce $13.20\\\\text{ g}$ of $\\\\ce{CO2}$ and $7.21\\\\text{ g}$ of $\\\\ce{H2O}$. Determine the molecular formula of M if its density at STP is $1.97\\\\text{ g L}^{-1}$.",
-      "hint": "Determine the empirical formula from the masses of carbon dioxide and water, then use the density at STP to find the molar mass.",
-      "explanation": "Calculate the moles of carbon and hydrogen atoms from the combustion products:\\\\n- Moles of $\\\\text{C} = 13.20\\\\text{ g} / 44.01\\\\text{ g mol}^{-1} = 0.300\\\\text{ mol}$\\\\n- Moles of $\\\\text{H} = 2 \\\\times (7.21\\\\text{ g} / 18.02\\\\text{ g mol}^{-1}) = 0.800\\\\text{ mol}$\\\\n\\\\nThe empirical formula is $\\\\ce{C3H8}$ (empirical formula mass $= 44.1\\\\text{ g mol}^{-1}$).\\\\n\\\\nNext, use the density at STP to calculate the molar mass of M:\\\\n- $\\\\text{Molar Mass} = 1.97\\\\text{ g L}^{-1} \\\\times 22.4\\\\text{ L mol}^{-1} = 44.1\\\\text{ g mol}^{-1}$\\\\n\\\\nSince the molar mass matches the empirical formula mass, the molecular formula of M is $\\\\ce{C3H8}$."
-    },
-    {
-      "qtype": "calculate",
-      "reactants": "",
-      "reagents": "",
-      "conditions": "",
-      "answer": "1.78 g decrease",
-      "instructions": "A galvanic cell consists of a silver electrode in $1.0\\\\text{ M } \\\\ce{AgNO3}$ and a copper electrode in $1.0\\\\text{ M } \\\\ce{Cu(NO3)2}$. If the cell operates at $25\\\\ ^{\\\\circ}\\\\text{C}$ under a constant current of $2.0\\\\text{ A}$ for $45$ minutes, calculate the change in mass of the copper electrode. ($E^{\\\\circ}(\\\\ce{Ag^+/Ag}) = +0.80\\\\text{ V}$, $E^{\\\\circ}(\\\\ce{Cu^{2+}/Cu}) = +0.34\\\\text{ V}$, $F = 96485\\\\text{ C mol}^{-1}$)",
-      "hint": "Compare the standard reduction potentials to determine which electrode acts as the anode, then apply Faraday's law of electrolysis.",
-      "explanation": "Since $E^{\\\\circ}(\\\\ce{Ag^+/Ag}) = +0.80\\\\text{ V}$ is greater than $E^{\\\\circ}(\\\\ce{Cu^{2+}/Cu}) = +0.34\\\\text{ V}$, silver ions are reduced at the cathode, and the copper electrode undergoes oxidation at the anode:\\\\n$$\\\\ce{Cu(s) -> Cu^{2+}(aq) + 2e^-}$$\\\\n\\\\nThis oxidation causes a decrease in the mass of the copper electrode. First, calculate the total charge $Q$ passed through the cell:\\\\n- $Q = I \\\\times t = 2.0\\\\text{ A} \\\\times (45\\\\text{ min} \\\\times 60\\\\text{ s min}^{-1}) = 5400\\\\text{ C}$\\\\n\\\\nConvert charge to moles of electrons:\\\\n- $n(\\\\text{e}^-) = 5400\\\\text{ C} / 96485\\\\text{ C mol}^{-1} = 0.0560\\\\text{ mol}$\\\\n\\\\nFrom the stoichiometry of the anode reaction, 1 mole of copper is oxidized for every 2 moles of electrons:\\\\n- $n(\\\\ce{Cu}) = 0.0560\\\\text{ mol} / 2 = 0.0280\\\\text{ mol}$\\\\n\\\\nCalculate the mass loss of the copper electrode:\\\\n- $\\\\Delta m = 0.0280\\\\text{ mol} \\\\times 63.55\\\\text{ g mol}^{-1} = 1.78\\\\text{ g}$ decrease."
-    },
-    {
-      "qtype": "stereo",
-      "reactants": "[[SMILES: CC(=O)C=C]].[[SMILES: C=CC=C]]",
-      "reagents": "1. heat, 2. NaBH4, 3. mCPBA",
-      "conditions": "THF",
-      "answer": "[[SMILES: CC(O)C1CCC(O)C(O)C1]]",
-      "instructions": "Predict the major stereochemical product of the multi-step reaction starting from methyl vinyl ketone and 1,3-butadiene.",
-      "hint": "Consider the stereoselectivity of the Diels-Alder cycloaddition, followed by the directing effect of the allylic alcohol in the epoxidation step.",
-      "explanation": "1. Diels-Alder cycloaddition of methyl vinyl ketone and 1,3-butadiene yields 4-acetylcyclohexene. 2. Reduction with NaBH4 yields the allylic alcohol 1-(cyclohex-3-en-1-yl)ethan-1-ol. 3. Epoxidation with mCPBA occurs stereoselectively directed by the allylic alcohol group, forming the diastereomerically pure epoxide product."
-    }
-  ]
-}
-
-
 ###Output Requirements:###
 Output JSON only with the following schema:
 {"reactions":[{"qtype":"predict|mechanism|stereo","reactants":"SMILES","reagents":"organic in [[SMILES: ...]], inorganic as LaTeX (wrapped in inline math delimiters $...$)","conditions":"plain text","answer":"SMILES","instructions":"task","hint":"a brief helpful hint that nudges the student toward the right approach while helping them discover the solution on their own — e.g. mention a key reagent role, or highlight a functional group to focus on","explanation":"detailed mechanism with [[SMILES: ...]] for intermediates"}]}
-` + CHALLENGE_PHILOSOPHY;
+`;
 
 const GENCHEM_GENERATION_SYSTEM_INSTRUCTION = `###Role:### You are an expert chemistry professor generating olympiad problems (USNCO/IChO) for high-stakes exams.
 
@@ -283,55 +132,12 @@ const GENCHEM_GENERATION_SYSTEM_INSTRUCTION = `###Role:### You are an expert che
 You must be extremely creative and ensure that EVERY question is completely unique and novel. Do NOT repeat, rephrase, or adapt previously used setups, standard textbook scenarios, chemical reactions, physical systems, or mathematical templates. Avoid using similar numerical values, scenarios, or phrasing across different questions or exams. Force yourself to design entirely new contexts, variables, and systems for each problem.
 
 ###Constraints:###
-Follow these strict Olympiad Design Philosophies:
 
-1. Novelty \u0026 "Invisible Traps" (Subtle Conceptual Bottlenecks)
-- Create highly original questions requiring first-principles reasoning over memory or template-matching.
-- Center every problem on a non-obvious conceptual trick, hidden limiting factor, or subtle breakdown of a standard assumption.
-- Keep the question text entirely neutral and objective — do NOT hint at the solution or mention the specific conceptual trick, trap, or method to use (e.g. do not say "taking into account the ionization of water" or "assume non-ideal behavior"). For example, instead of: "Calculate the pH of a $1.00 \times 10^{-8}$ M aqueous solution of $\ce{HCl}$ at $25 ^{\circ}$ C, taking into account the ionization of water", write: "Calculate the pH of a $1.00 \times 10^{-8}$ M aqueous solution of $\ce{HCl}$ at $25 ^{\circ}$ C".
-- Incorporate a deceptive path: the most common rote formula shortcut should yield a value matching one incorrect distractor.
-
-2. Advanced Design \u0026 Difficulty Criteria
-- Multi-Topic Coupling: Require simultaneous application of disparate chemical principles (e.g., coupling $K_f$ with $K_{sp}$ and $E^{\\\\circ}$).
-- Multi-Step Logical Cascades: Output of one step forms input of the next, without explicit prompting on intermediate variables.
-- Subtle Chemical Nuances: Test exceptions grounded in fundamental principles — thermodynamic vs. kinetic control, anomalous MO configurations, etc.
-- Mathematical Rigor: Eliminate simplifying assumptions (e.g., $x$-is-small). Require higher-order equations from mass/charge balances.
-- Novel Context: Present familiar principles in unfamiliar frameworks (bioinorganic, industrial catalysis, MOFs). Extract variables from raw data/graphs.
-- Backward Chaining: Use a backward-chaining methodology. ALWAYS start with a specific "trick" (the problem breakthrough or subtle conceptual/mathematical bottleneck) in mind first. From there, work backward to determine the starting materials, initial conditions, reaction steps, reagents, or question constraints, ensuring a unique and logically consistent solution path. This drives creative and non-standard problem styles. EVERY single question generated must be completely unique, original, and never seen before.
-
-  ***Constraints & Execution Instructions:***
-
-  1. **Backward Chaining Generation Methodology (CRITICAL - Ensure 100% Uniqueness & Originality)**
-  You must generate every question using a backward chaining thought process before outputting the final problem, ensuring that each question is completely unique, original, and never seen before:
-
-  * **Step 1 (The Trap - Must be completely unique and original):** Identify a specific, non-obvious conceptual trap, a hidden limiting factor, or a subtle breakdown of a standard textbook assumption. This trap must be entirely novel, original, and never seen before in any question or textbook.
-  * **Step 2 (The System - Must be completely unique, original, and as convoluted as possible):** Once you have the trick/trap in mind, design a chemical system or reaction where this specific trap naturally occurs, making the system/reaction as convoluted as possible while ensuring it is completely unique, original, and never seen before (avoid standard textbook setups).
-  * **Step 3 (The Distractors - Must be completely unique and original):** Calculate or derive the incorrect answers that result directly from falling into the conceptual trap (rote formula shortcut, ignoring the limiting factor, etc.). Ensure the options are uniquely designed to target this specific trap.
-  * **Step 4 (The Problem - Must be completely unique and original):** Draft the neutral question text that presents the system, masking the trap completely, written in a completely unique, original, and never-seen-before style.
-
-  Here is an example:
-
-  ***Step 1***: A common trap is, when investigating the reactivity of nitric acid, to only think of it as a strong protonating acid and failing to realize it is also a strong oxidizing agent.
-
-  ***Step 2***: This system could be one where a metal (e.g. copper) is selectively reduced by a reducing agent (e.g. H2). The student might not realize the nitric acid competes for the electrons.
-
-  ***Step 3***: If the student falls for this trap, they could be presented with the reducing agent (H2) and think only copper is reduced by it, when in reality nitric acid is also reduced by it. Perhaps the student thinks adding the reducing agent to react with the copper could determine the amount of copper in a solution, but not realize that excess weight will be added from the various nitrous oxides. 
-
-  ***Step 4***: The student could be asked, “A weighed sample of a copper-nickel alloy is dissolved in a known volume of nitric acid. Which method is most suitable for determining the mass percent of copper in the alloy?” One of the options, consistent with the trap, should be “Bubbling hydrogen gas through the solution and measuring the mass of the metal that precipitates from the solution.” The other options could test other traps, i.e. that both nickel and copper form insoluble hydroxides, and that they both absorb the same wavelength of light. Thus the final question is: “A weighed sample of a copper-nickel alloy is dissolved in a known volume of nitric acid. Which method is most suitable for determining the mass percent of copper in the alloy?\\n\\n(A) Treatment of an aliquot of the solution with excess iodide, followed by titration of the iodine produced with sodium thiosulfate.\\n(B) Measurement of the absorbance of the solution at a wavelength of light at which both $\\\\ce{Cu^{2+}}$ and $\\\\ce{Ni^{2+}}$ absorb, and comparison with the absorbances of known standards of the two ions.\\n(C) Addition of excess sodium hydroxide to the solution, isolation of the metal hydroxides by filtration, and measurement of the mass of the precipitate.\\n(D) Bubbling hydrogen gas through the solution and measuring the mass of the metal that precipitates from the solution.”
-
-3. Difficulty-Dependent Syllabus Boundaries
-- IF DIFFICULTY = USNCO National Level (40-75):
-  - Maintain USNCO scope but test to maximum depth. Try not to bring in too much outside knowledge - the outside knowledge as first principles/preamble approach should be reserved strictly for IChO questions. USNCO questions should use the standard high school olympiad knowledge base, but go very deep conceptually and mathematically.
-  - Limit to AP/USNCO curricula, non-calculus math, standard 1D-NMR/IR/UV-Vis.
-  - Do NOT test stereoselectivity or Tafel/Butler-Volmer equations (they are strictly reserved for IChO). Exclude advanced quantum mechanics, etc.
-  - Increase difficulty by coupling unexpected systems.
-- IF DIFFICULTY = IChO Level (75-100):
-  - Pivot to original, concept-first designs with advanced phenomena.
-  - First-Principles Guardrail: Introduce extra-syllabus topics (bringing in outside knowledge, such as stereoselectivity or Tafel/Butler-Volmer equations) with self-contained axiomatic background in the problem preamble.
+${CHALLENGE_PHILOSOPHY}
 
 4. Structural Representation (SMILES Rules)
-- Simple formulas in standard prose/LaTeX (e.g., $\\\\text{H}_2\\\\text{O}$).
-- [[SMILES: ...]] only for complex organic molecules or coordination complexes.
+- Simple formulas or formulas for inorganic compounds in standard prose/LaTeX wrapped in $...$ (e.g., $\\\\text{H}_2\\\\text{O}$).
+- Reserve [[SMILES: ...]] for organic compounds with 3+ carbons. Write fully valid SMILES.
 - LaTeX for all math equations, equilibrium expressions, units, variables.
 
 5. SVG Graphics \u0026 Diagrams
@@ -339,6 +145,7 @@ Follow these strict Olympiad Design Philosophies:
 - Use primitive shapes, <defs>/<use> for reuse, minimal path control points.
 - Use inline presentation attributes (no CSS <style> blocks). Include white background rect.
 - Use single-quotes for SVG attributes for JSON compatibility.
+- Half the problems should have an SVG diagram required to solve the problem.
 
 ###FEW-SHOT EXAMPLES:
 
@@ -353,120 +160,21 @@ Bad example (DO NOT generate questions like this):
 }
 Problem: Too simple — single formula plug-in. Questions must require multi-step reasoning.
 
-###Steps:###
-1. Brainstorm potential concepts for each question.
-2. Narrow down each concept into a particular topic for each question, as well as the subtle conceptual trap the user might fall into.
-3. Decide on a difficulty level for each question.
-4. For each question, generate the question text, taking into account the topic, trap, and difficulty level.
-5. Test-solve each of the questions to ensure they satisfy each of the constraints. Write feedback for each of the problems for how to improve them.
-6. Improve the questions based on the feedback. Fix all questions that do not adhere to the constraints, and ones you can easily solve.
-7. Solve each question. Double check that the answers generated are the only valid solutions. If the answer is not the only valid solution, change the problem, repeating steps 4 and 5.
-8. Double check that all constraints and output requirements have been met. If they have not, change the format and/or problem so that all constraints and output requirements are met.
-
-For example, your thought process might look like:
-
-Step 1: The user wants me to generate 5 chemistry olympiad questions with difficulty 50.
-
-Step 2, 3: For the first question, I will test stoichiometry (identifying an unknown compound based on resulting gases), with difficulty level 5. For the second question, I will test electrochemistry (overpotential), with difficulty level 6. For the third question, I will design a difficulty level 9 thermodynamics problem using backward chaining.
-
-Step 4: Now I will generate the problem texts.
-
-1. A compound M reacts in the following reaction. $\ce{M + 5 O_2 -> 3 C O_2 + 4 H_2 O}. How many grams of $\ce{M}$ are required to form $14.4$ liters of $\ce{C O_2}$ at STP? The trap is to forget to balance out the chemical equation.
-
-2. A reaction has a standard exchange current density ($j_0$) of $1.0$ A/cm$^2$ at $25$ °C. What is the current density ($j$) when the overpotential ($\eta$) is $0.1$ V? The trap is to forget to multiply the exchange current density by 2 when taking the absolute value.
-
-3. A thermodynamics question asking for the final equilibrium volume of an adiabatic gas compartment. The trap is to think the system is isothermal or isobaric, when instead it is adiabatic and the moveable piston dynamically equalizes pressure between two compartments.
-
-Step 5: Test-solve and feedback (Backward Chaining)
-
-Question 1 Test-Solve:
-Target: Hydrocarbon molecular formula is C3H8 (molar mass 44.1 g/mol). Work backward: to uniquely determine C3H8, require combustion product masses corresponding to C3H8. Set target moles: 0.300 mol C and 0.800 mol H. Calculate backward: mass of CO2 = 13.20 g, H2O = 7.21 g. Sample mass must be 4.41 g, and density at STP must be 1.97 g/L. Forward check confirms C3H8.
-Question 1 Feedback: Successfully backward-chained. Unique, mathematically consistent, and elegant.
-
-Question 2 Test-Solve:
-Target: Galvanic cell with Cu mass loss of 1.78 g. Work backward: 1.78 g Cu is 0.0280 mol. Since Cu -> Cu2+ + 2e-, this requires 0.0560 mol e-. Work backward using Faraday's constant: charge Q = 5400 C. For a constant 2.0 A current, calculate backward that the time required is 45 minutes. Define Ag/Cu half-cells to ensure Cu is the anode.
-Question 2 Feedback: Backward-chained parameters match Faraday's laws perfectly.
-
-Question 3 Test-Solve:
-Establish target structure: final volume V_f = 2.0 L. Work backward: assume two compartments of an adiabatic cylinder with a moveable adiabatic piston containing ideal gas. Set initial V1 = 1.0 L, V2 = 3.0 L, P1 = 3.0 atm, P2 = 1.0 atm. To make V_f = 2.0 L, calculate backward that the heat added to compartment 1 must be 450 J. Re-solving forward yields V_f = 2.0 L.
-Question 3 Feedback: Excellent difficulty 9 problem. Ensures deep testing of first law of thermodynamics, heat capacity, and ideal gas relationships.
-
-Step 6: Improve the questions
-
-Question 1 Revision: Retain backward-chained parameters (4.41 g sample, 13.20 g CO2, 7.21 g H2O, 1.97 g/L density at STP).
-Question 2 Revision: Retain backward-chained parameters (Ag/Cu cell, 2.0 A current, 45 minutes, 1.78 g mass change).
-Question 3 Revision: Retain the adiabatic piston heater setup. Pose the final volume V_f as the target question.
-
-Step 7: Solve and verify uniqueness
-
-Question 1 Solution:
-Moles C = 13.20 g / 44.01 g/mol = 0.300 mol. Moles H = 2 * (7.21 g / 18.02 g/mol) = 0.800 mol. Empirical formula = C3H8. Molar mass = 1.97 g/L * 22.4 L/mol = 44.1 g/mol. Molecular formula = C3H8.
-Uniqueness: Single hydrocarbon identity fits elemental mass ratios and molar mass.
-
-Question 2 Solution:
-Anode reaction: Cu -> Cu2+ + 2e-. Charge Q = 2.0 A * 45 min * 60 s/min = 5400 C. Moles e- = 5400 C / 96485 C/mol = 0.0560 mol. Moles Cu = 0.0560 mol / 2 = 0.0280 mol. Mass decrease = 0.0280 mol * 63.55 g/mol = 1.78 g.
-Uniqueness: Standard reduction potentials confirm copper is the anode. Faraday's law yields one precise value.
-
-Question 3 Solution:
-Initial: Compartment A (1.0 mol, 3.0 atm, 1.0 L, T_A0 = P_A0*V_A0/R = 3.0/R). Compartment B (1.0 mol, 1.0 atm, 3.0 L, T_B0 = P_B0*V_B0/R = 3.0/R).
-Piston is moveable and adiabatic; Q_B = 0, so Delta U_B = -W. For monoatomic gas: 1.5 * R * Delta T_B = - P_avg * Delta V_B. Since V_A + V_B = 4.0 L, Delta V_A = - Delta V_B.
-Supply 450 J heat to A. Backward-chaining calculation shows that at final volume V_A = 2.0 L and V_B = 2.0 L, with P_A = P_B = P_f, thermodynamic relations hold and yield unique P_f and temperatures, consistent with Q_A = 450 J.
-Uniqueness: A single equilibrium state satisfies the heat input and partition equation.
-
-Step 8: Double check constraints
-
-Target difficulties (5 and 6) met. Traps appropriate for USNCO. Formatting constraints followed. No bold text used.
-
-Final Output JSON:
-{
-  "reactions": [
-    {
-      "qtype": "calculate",
-      "reactants": "",
-      "reagents": "",
-      "conditions": "",
-      "answer": "C3H8",
-      "instructions": "A $4.41\\\\text{ g}$ sample of a gaseous hydrocarbon M is completely combusted in excess oxygen to produce $13.20\\\\text{ g}$ of $\\\\ce{CO2}$ and $7.21\\\\text{ g}$ of $\\\\ce{H2O}$. Determine the molecular formula of M if its density at STP is $1.97\\\\text{ g L}^{-1}$.",
-      "hint": "Determine the empirical formula from the masses of carbon dioxide and water, then use the density at STP to find the molar mass.",
-      "explanation": "Calculate the moles of carbon and hydrogen atoms from the combustion products:\\\\n- Moles of $\\\\text{C} = 13.20\\\\text{ g} / 44.01\\\\text{ g mol}^{-1} = 0.300\\\\text{ mol}$\\\\n- Moles of $\\\\text{H} = 2 \\\\times (7.21\\\\text{ g} / 18.02\\\\text{ g mol}^{-1}) = 0.800\\\\text{ mol}$\\\\n\\\\nThe empirical formula is $\\\\ce{C3H8}$ (empirical formula mass $= 44.1\\\\text{ g mol}^{-1}$).\\\\n\\\\nNext, use the density at STP to calculate the molar mass of M:\\\\n- $\\\\text{Molar Mass} = 1.97\\\\text{ g L}^{-1} \\\\times 22.4\\\\text{ L mol}^{-1} = 44.1\\\\text{ g mol}^{-1}$\\\\n\\\\nSince the molar mass matches the empirical formula mass, the molecular formula of M is $\\\\ce{C3H8}$."
-    },
-    {
-      "qtype": "calculate",
-      "reactants": "",
-      "reagents": "",
-      "conditions": "",
-      "answer": "1.78 g decrease",
-      "instructions": "A galvanic cell consists of a silver electrode in $1.0\\\\text{ M } \\\\ce{AgNO3}$ and a copper electrode in $1.0\\\\text{ M } \\\\ce{Cu(NO3)2}$. If the cell operates at $25\\\\ ^{\\\\circ}\\\\text{C}$ under a constant current of $2.0\\\\text{ A}$ for $45$ minutes, calculate the change in mass of the copper electrode. ($E^{\\\\circ}(\\\\ce{Ag^+/Ag}) = +0.80\\\\text{ V}$, $E^{\\\\circ}(\\\\ce{Cu^{2+}/Cu}) = +0.34\\\\text{ V}$, $F = 96485\\\\text{ C mol}^{-1}$)",
-      "hint": "Compare the standard reduction potentials to determine which electrode acts as the anode, then apply Faraday's law of electrolysis.",
-      "explanation": "Since $E^{\\\\circ}(\\\\ce{Ag^+/Ag}) = +0.80\\\\text{ V}$ is greater than $E^{\\\\circ}(\\\\ce{Cu^{2+}/Cu}) = +0.34\\\\text{ V}$, silver ions are reduced at the cathode, and the copper electrode undergoes oxidation at the anode:\\\\n$$\\\\ce{Cu(s) -> Cu^{2+}(aq) + 2e^-}$$\\\\n\\\\nThis oxidation causes a decrease in the mass of the copper electrode. First, calculate the total charge $Q$ passed through the cell:\\\\n- $Q = I \\\\times t = 2.0\\\\text{ A} \\\\times (45\\\\text{ min} \\\\times 60\\\\text{ s min}^{-1}) = 5400\\\\text{ C}$\\\\n\\\\nConvert charge to moles of electrons:\\\\n- $n(\\\\text{e}^-) = 5400\\\\text{ C} / 96485\\\\text{ C mol}^{-1} = 0.0560\\\\text{ mol}$\\\\n\\\\nFrom the stoichiometry of the anode reaction, 1 mole of copper is oxidized for every 2 moles of electrons:\\\\n- $n(\\\\ce{Cu}) = 0.0560\\\\text{ mol} / 2 = 0.0280\\\\text{ mol}$\\\\n\\\\nCalculate the mass loss of the copper electrode:\\\\n- $\\\\Delta m = 0.0280\\\\text{ mol} \\\\times 63.55\\\\text{ g mol}^{-1} = 1.78\\\\text{ g}$ decrease."
-    },
-    {
-      "qtype": "calculate",
-      "reactants": "",
-      "reagents": "",
-      "conditions": "",
-      "answer": "2.0 L",
-      "instructions": "A horizontal, adiabatic cylinder of total volume $4.0\\\\text{ L}$ is divided into two compartments by a frictionless, moveable adiabatic piston. Compartment A contains $1.0\\\\text{ mol}$ of an ideal monoatomic gas at an initial pressure of $3.0\\\\text{ atm}$, and compartment B contains $1.0\\\\text{ mol}$ of the same gas at $1.0\\\\text{ atm}$. If $450\\\\text{ J}$ of heat is slowly supplied to the gas in compartment A via an internal resistive heater, calculate the final equilibrium volume of compartment A.",
-      "hint": "Since compartment B is adiabatic, its compression is reversible and adiabatic, satisfying $PV^{\\\\gamma} = \\\\text{constant}$. Use the first law of thermodynamics to relate the heat input to the internal energy changes and work done.",
-      "explanation": "Let initial states be $P_{A0} = 3.0\\\\text{ atm}$, $V_{A0} = 1.0\\\\text{ L}$ and $P_{B0} = 1.0\\\\text{ atm}$, $V_{B0} = 3.0\\\\text{ L}$. For compartment B, the compression is reversible and adiabatic: $P_f V_{Bf}^{5/3} = P_{B0} V_{B0}^{5/3}$ where $\\\\gamma = 5/3$. Under equilibrium, final pressures are equal: $P_{Af} = P_{Bf} = P_f$.\\\\n\\\\nFor compartment B: $P_f V_{Bf}^{5/3} = 1.0 \\\\times 3.0^{5/3} = 6.24$. Using the first law for the total system, the total work done is zero (exterior walls are rigid/adiabatic): $\\\\Delta U_A + \\\\Delta U_B = Q = 450\\\\text{ J}$.\\\\n\\\\nFor monoatomic gases, $\\\\Delta U = 1.5 \\\\Delta(PV)$. Thus, $1.5 (P_f V_{Af} - P_{A0} V_{A0}) + 1.5 (P_f V_{Bf} - P_{B0} V_{B0}) = Q$.\\\\n\\\\nSubstituting values and using $V_{Af} + V_{Bf} = 4.0\\\\text{ L}$, we solve the system of equations. Evaluating $V_{Af} = 2.0\\\\text{ L}$ yields $V_{Bf} = 2.0\\\\text{ L}$, and $P_f = 1.0 \\\\times (3.0/2.0)^{5/3} = 1.97\\\\text{ atm}$. The energy equation is satisfied exactly by these parameters for $Q = 450\\\\text{ J}$. The final volume of compartment A is therefore $2.0\\\\text{ L}$."
-    }
-  ]
-}
-
-RULES:
-- Chemistry MUST be correct. Double-check calculations and products.
-- For inorganic compounds/ions, use LaTeX (e.g. $\\\\ce{H2SO4}$, $\\\\ce{MnO4^-}$) wrapped in $...$ instead of SMILES.
-- ALWAYS wrap ALL LaTeX formulas, chemical equations, units in $...$ or $$...$$.
-- Reserve [[SMILES: ...]] for organic compounds with 3+ carbons. Write fully valid SMILES.
-- For graphs/plots, generate SVG wrapped in [[SVG: <svg>...</svg>]]. Use primitive shapes, minimal paths, inline attributes, white background.
-- Show all calculation steps in explanation with correct units and sig figs.
-- VISUAL DIAGRAMS: For visual questions, embed LaTeX in 'instructions'. Use arrays/matrices for tables.
-
-All questions generated MUST adhere to these critical design directives:
-1. QUESTION STYLE: Difficulty 10-40 = standard/straightforward. Difficulty 50-100 = tricky conceptual traps OR standard but highly challenging.
-2. BALANCED TOPIC DIVERSITY: Distribute questions evenly across core chemistry topics.
-3. DETAILED SOLUTIONS: Every question MUST include a thorough step-by-step solution in the "explanation" field.
-- ${CHALLENGE_PHILOSOPHY}`;
+###Output Requirements###
+Output JSON only in the following schema:
+    [
+        {
+            "qtype": "multiple_choice|free_response",
+            "reactants": "",
+            "reagents": "",
+            "conditions": "",
+            "answer": "answer here",
+            "instructions": "question text here",
+            "hint": "hint text here (do not give away the full answer)",
+            "explanation": "detailed explanation here"
+        }
+    ]
+`;
 
 // --- Dynamic genchem exemplar rotation ---
 const genchemExemplars = [
@@ -786,9 +494,8 @@ export default async function handler(req, res) {
             const fullPrompt = systemText ? systemText + '\n\n---\n\n' + prompt : prompt;
 
             const genConfig = {
-                max_output_tokens: maxOutputTokens,
-                top_p: topP,
-                temperature: temperature
+                temperature: temperature,
+                thinking_level: 'low'
             };
 
             const input = [];
