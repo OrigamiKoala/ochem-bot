@@ -361,23 +361,33 @@ export default async function handler(req, res) {
     const isGenChem = mode === 'genchem';
     const isFreeDraw = mode === 'freedraw';
 
-    let keys = isGenChem
-        ? [
-            process.env.GEN_CHEM_API_KEY,
-            process.env.GEN_CHEM_API_KEY_2,
-            process.env.GEN_CHEM_API_KEY_3,
-            process.env.GEMINI_API_KEY,
-            process.env.GEMINI_API_KEY_2,
-            process.env.GEMINI_API_KEY_3
-        ].filter(Boolean)
-        : [
-            process.env.GEMINI_API_KEY,
-            process.env.GEMINI_API_KEY_2,
-            process.env.GEMINI_API_KEY_3,
-            process.env.GEN_CHEM_API_KEY,
-            process.env.GEN_CHEM_API_KEY_2,
-            process.env.GEN_CHEM_API_KEY_3
-        ].filter(Boolean);
+    let keys = [
+        process.env.api_1,
+        process.env.api_2,
+        process.env.api_3,
+        process.env.api_4,
+        process.env.api_5,
+        process.env.api_6,
+        process.env.api_7,
+        process.env.api_8,
+        process.env.api_9,
+        process.env.api_10,
+        process.env.api_11,
+        process.env.api_12,
+        process.env.api_13,
+        process.env.api_14,
+        process.env.api_15,
+        process.env.api_16,
+        process.env.api_17,
+        process.env.api_18,
+        process.env.api_19,
+        process.env.api_20,
+        process.env.api_21,
+        process.env.api_22,
+        process.env.api_23,
+        process.env.api_24,
+        process.env.api_25
+    ];
 
     if (keys.length === 0) {
         return res.status(500).json({ error: 'All GEMINI_API_KEY and GEN_CHEM_API_KEY variants missing' });
