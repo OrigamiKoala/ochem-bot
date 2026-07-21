@@ -413,10 +413,6 @@ export default async function handler(req, res) {
     const GRADING_MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
     const models = (task === 'generate') ? GENERATION_MODELS : GRADING_MODELS;
 
-    const temperature = (task === 'generate') ? 1.5 : 0.2;
-    const topP = (task === 'generate') ? 0.95 : 0.8;
-    const maxOutputTokens = (task === 'generate') ? 8192 : 1024;
-
     // Build URL correctly
     function buildUrl(apiKey) {
         return `https://generativelanguage.googleapis.com/v1beta/interactions?key=${apiKey}`;
