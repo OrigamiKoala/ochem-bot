@@ -409,8 +409,8 @@ export default async function handler(req, res) {
         keys = [selectedKey, ...shuffledRemaining];
     }
 
-    const GENERATION_MODELS = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-2.5-flash"];
-    const GRADING_MODELS = ["gemini-3.1-flash-lite", "gemini-3-flash-preview", "gemini-3.5-flash", "gemini-2.5-flash"];
+    const GENERATION_MODELS = ["gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
+    const GRADING_MODELS = ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite"];
     const models = (task === 'generate') ? GENERATION_MODELS : GRADING_MODELS;
 
     const temperature = (task === 'generate') ? 1.5 : 0.2;
@@ -484,7 +484,7 @@ export default async function handler(req, res) {
         attemptIndex++;
 
         async function tryModelWithKey(apiKey) {
-            // Build system instruction text (sent inline with prompt each time — never cached)
+            // Build system instruction text
             let systemText = null;
             if (task === 'generate') {
                 systemText = isGenChem
@@ -500,11 +500,7 @@ export default async function handler(req, res) {
                 }
             }
 
-            // Prepend system instructions to the user prompt (inline, not cached as system_instruction)
-            const fullPrompt = systemText ? systemText + '\n\n---\n\n' + prompt : prompt;
-
             const genConfig = {
-                temperature: temperature,
                 thinking_level: 'low'
             };
 
@@ -518,7 +514,7 @@ export default async function handler(req, res) {
             }
             input.push({
                 type: 'text',
-                text: fullPrompt
+                text: prompt
             });
 
             const bodyPayload = {
@@ -530,6 +526,10 @@ export default async function handler(req, res) {
                     mime_type: responseMimeType || "text/plain"
                 }
             };
+
+            if (systemText) {
+                bodyPayload.system_instruction = systemText;
+            }
 
             if (stream) {
                 bodyPayload.stream = true;

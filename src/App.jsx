@@ -93,7 +93,7 @@ export default function App() {
   const [currentReaction, setCurrentReaction] = useState(null);
   const [reactionQueue, setReactionQueue] = useState([]);
   const [isFetching, setIsFetching] = useState(false);
-  const [fetchingModel, setFetchingModel] = useState('gemini-3.5-flash');
+  const [fetchingModel, setFetchingModel] = useState('gemini-3.6-flash');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // ---- UI State ----
@@ -180,12 +180,12 @@ export default function App() {
     if (isFetchingRef.current) return;
     isFetchingRef.current = true;
     setIsFetching(true);
-    setFetchingModel('gemini-3.5-flash');
+    setFetchingModel('gemini-3.6-flash');
 
     const queue = reactionQueueRef.current;
 
     if (isExplicit && queue.length === 0) {
-      setMessageText("Generating... (fetching gemini-3.5-flash)");
+      setMessageText("Generating... (fetching gemini-3.6-flash)");
       setMessageClassName('');
       setMessageVisible(true);
       setIsMessageMinimized(false);
@@ -251,7 +251,7 @@ export default function App() {
         return;
       }
 
-      const modelUsed = response.headers.get('X-Model-Used') || 'gemini-3.5-flash';
+      const modelUsed = response.headers.get('X-Model-Used') || 'gemini-3.6-flash';
       setFetchingModel(modelUsed);
       const modelLabel = modelUsed ? ` [${modelUsed}]` : '';
 
