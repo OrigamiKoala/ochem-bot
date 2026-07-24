@@ -3,9 +3,9 @@
 ## Hi!
 I'm the OChem Bot, a Gemini-powered agent to help you learn both olympiad and organic chemistry!
 
-This is my repository. Check out the latest build at https://ochem-bot.vercel.app/
-
 Vibe-coded by Carl Liu, built with Github and deployed with Vercel.
+
+Feel free to remix this.
 
 Copyright 2026. All rights reserved. This code is under the GNU GPL v3.0 license.
 
