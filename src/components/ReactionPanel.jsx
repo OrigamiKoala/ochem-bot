@@ -189,11 +189,19 @@ export default function ReactionPanel({
     return clean;
   }
 
+  function isMechanismQuestion(data) {
+    if (!data) return false;
+    const qtype = (data.qtype || '').toLowerCase();
+    if (qtype.includes('mechanism')) return true;
+    const text = (data.instructions || data.instruction || data.question || data.text || '').toLowerCase();
+    return text.includes('mechanism');
+  }
+
   function renderReactionOneStep(data, container, showAnswer = false) {
     container.textContent = '';
 
     let cleanReactants = extractPureSmiles(data.reactants);
-    let cleanAnswer = showAnswer && data.answer ? extractPureSmiles(data.answer) : "";
+    let cleanAnswer = (showAnswer || isMechanismQuestion(data)) && data.answer ? extractPureSmiles(data.answer) : "";
 
     const reactantMolecules = cleanReactants.split('.').map(s => s.trim()).filter(s => s.length > 0);
     const answerMolecules = cleanAnswer.split('.').map(s => s.trim()).filter(s => s.length > 0);
@@ -413,8 +421,9 @@ export default function ReactionPanel({
         safeTypeset(arrowContainer);
       }
 
-      // Show answer
-      if (showAnswer && data.answer) {
+      // Show answer (or target product for mechanism questions)
+      const shouldShowAnswer = showAnswer || isMechanismQuestion(data);
+      if (shouldShowAnswer && data.answer) {
         let cleanAnswer = extractPureSmiles(data.answer);
         const answerLooksSMILES = !cleanAnswer.includes(' ') && (/[=\(\)#\[\]]/.test(cleanAnswer) || cleanAnswer.length < 80) && /^[A-Za-z0-9@+\-\[\]\(\)\\/#=.]+$/.test(cleanAnswer);
 

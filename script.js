@@ -1285,8 +1285,9 @@ function renderReaction(data, showAnswer = false) {
         safeTypeset(arrowContainer);
     }
 
-    // Show the answer only when explicitly requested (give-up or correct submission)
-    if (showAnswer) {
+    // Show the answer when explicitly requested (give-up or correct submission) or for mechanism questions
+    const shouldShowAnswer = showAnswer || isMechanismQuestion(data);
+    if (shouldShowAnswer) {
         if (data.answer) {
             let cleanAnswer = extractPureSmiles(data.answer);
             // Check if answer looks like pure SMILES (no spaces)
