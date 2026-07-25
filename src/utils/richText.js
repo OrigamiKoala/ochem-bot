@@ -123,11 +123,18 @@ export function wrapBracesInLatex(text) {
       
       if (depth === 0) {
         const content = text.substring(i + 1, j - 1);
-        if (content.trim().length > 0) {
-          if (content.trim().startsWith('\\ce{') && content.trim().endsWith('}')) {
-            result += `$${content}$`;
+        const trimmedContent = content.trim();
+
+        const ceMatch = result.match(/\\ce\s*$/);
+        if (ceMatch) {
+          result = result.substring(0, result.length - ceMatch[0].length);
+        }
+
+        if (trimmedContent.length > 0) {
+          if (trimmedContent.startsWith('\\ce{') && trimmedContent.endsWith('}')) {
+            result += `$${trimmedContent}$`;
           } else {
-            result += `$\\ce{${content}}$`;
+            result += `$\\ce{${trimmedContent}}$`;
           }
         } else {
           result += '{}';

@@ -1110,9 +1110,18 @@ function isLikelySmiles(token) {
         'O3', 'D2O', 'NaH', 'KH', 'LiH', 'CaH2', 'NaNH2', 'KNH2', 'tBuOK', 'tBuONa', 'NaOEt',
         'NaOMe', 'KOEt', 'KOMe', 'LDA', 'LiHMDS', 'NaHMDS', 'KHMDS', 'nBuLi', 'sBuLi', 'tBuLi',
         'MeLi', 'PhLi', 'MeMgBr', 'MeMgCl', 'EtMgBr', 'PhMgBr', 'PhMgCl', 'Zn', 'Mg', 'Fe', 'Cu',
+        'Hg', 'OAc', 'Hg(OAc)2'
     ]);
 
     if (excludeList.has(s) || excludeList.has(s.toUpperCase())) return false;
+
+    // Reject token if outside brackets it contains non-SMILES element letters
+    // Valid unbracketed SMILES letters: B, C, N, O, P, S, F, I, b, c, n, o, p, s, Cl, Br
+    const outsideBrackets = s.replace(/\[[^\]]*\]/g, '');
+    const cleanOutside = outsideBrackets.replace(/Cl/g, '').replace(/Br/g, '');
+    if (/[^BCNOSPFIbcnospfi0-9@+\-\(\)\\/#=.]/.test(cleanOutside)) {
+        return false;
+    }
 
     const atoms = s.match(/[COHNSPFIBcns]|\b(Cl|Br)\b/g);
     if (!atoms) return false;
@@ -1133,12 +1142,32 @@ function isLikelySmiles(token) {
 
 function autoTagSmiles(text) {
     if (!text) return "";
-    return text.replace(/\b[A-Za-z0-9@+\-\[\]\(\)\\/#=.]+\b/g, (token) => {
-        if (isLikelySmiles(token)) {
-            return `[[SMILES: ${token}]]`;
+    // Protect LaTeX math and \ce blocks from being touched by SMILES auto-tagging
+    const parts = [];
+    let lastIdx = 0;
+    const mathRegex = /(\$\$.*?\$\$|\$.*?\$|\\\(.*?\\\)|\\\[.*?\\\]|\\ce\{.*?\})/gs;
+    let match;
+
+    while ((match = mathRegex.exec(text)) !== null) {
+        if (match.index > lastIdx) {
+            parts.push({ isMath: false, content: text.substring(lastIdx, match.index) });
         }
-        return token;
-    });
+        parts.push({ isMath: true, content: match[0] });
+        lastIdx = match.index + match[0].length;
+    }
+    if (lastIdx < text.length) {
+        parts.push({ isMath: false, content: text.substring(lastIdx) });
+    }
+
+    return parts.map(part => {
+        if (part.isMath) return part.content;
+        return part.content.replace(/\b[A-Za-z0-9@+\-\[\]\(\)\\/#=.]+\b/g, (token) => {
+            if (isLikelySmiles(token)) {
+                return `[[SMILES: ${token}]]`;
+            }
+            return token;
+        });
+    }).join('');
 }
 
 // ------ Submit and Evaluate ------
