@@ -10,3 +10,5 @@ Check out my Github repo at https://github.com/OrigamiKoala/ochem-bot.
 Copyright 2026. All rights reserved.
 <br><br>
 Got questions or feedback? DM my creator on Discord at @origamikoala.
+<br><br>
+Like this project? Consider supporting me on [Patreon](https://www.patreon.com/cw/origamikoala).
