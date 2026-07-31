@@ -45,10 +45,10 @@ let raw9 = getBlock("IChO Question Example 9:");
 
 // Apply fixes to all raw strings:
 for (let id of [6, 7, 8, 9]) {
-  if (id === 6) raw6 = raw6.replace(/\\+'/g, "'").replace(/\\+`/g, "`");
-  if (id === 7) raw7 = raw7.replace(/\\+'/g, "'").replace(/\\+`/g, "`");
-  if (id === 8) raw8 = raw8.replace(/\\+'/g, "'").replace(/\\+`/g, "`");
-  if (id === 9) raw9 = raw9.replace(/\\+'/g, "'").replace(/\\+`/g, "`");
+  if (id === 6) raw6 = raw6.replace(/(?<!\\)((?:\\\\)*)\\(['`])/g, "$1$2");
+  if (id === 7) raw7 = raw7.replace(/(?<!\\)((?:\\\\)*)\\(['`])/g, "$1$2");
+  if (id === 8) raw8 = raw8.replace(/(?<!\\)((?:\\\\)*)\\(['`])/g, "$1$2");
+  if (id === 9) raw9 = raw9.replace(/(?<!\\)((?:\\\\)*)\\(['`])/g, "$1$2");
 }
 
 console.log("Found and fixed raw blocks!");
