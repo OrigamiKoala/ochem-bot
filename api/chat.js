@@ -356,10 +356,39 @@ function extractTextFromInteraction(interaction) {
     return '';
 }
 
+// --- Simple IP Rate Limiting ---
+const ipRateLimitRegistry = new Map();
+const IP_RATE_LIMIT_MAX = 50;
+const IP_RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+
+function isIpRateLimited(ip) {
+    const now = Date.now();
+    const record = ipRateLimitRegistry.get(ip);
+    if (!record || now - record.startTime > IP_RATE_LIMIT_WINDOW) {
+        ipRateLimitRegistry.set(ip, { startTime: now, count: 1 });
+        return false;
+    }
+    record.count++;
+    return record.count > IP_RATE_LIMIT_MAX;
+}
+
 export default async function handler(req, res) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+    // Simple IP Rate Limiting
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'unknown';
+    if (isIpRateLimited(ip)) {
+        return res.status(429).json({ error: 'Too many requests from this IP' });
+    }
+
     const { prompt, image, responseMimeType, task, gradeMode, stream, mode } = req.body;
+
+    // Security validation
+    if (prompt && typeof prompt !== 'string') return res.status(400).json({ error: 'Invalid prompt type' });
+    if (prompt && prompt.length > 50000) return res.status(400).json({ error: 'Prompt too large' });
+    if (image && typeof image !== 'string') return res.status(400).json({ error: 'Invalid image type' });
+    if (image && image.length > 10 * 1024 * 1024) return res.status(400).json({ error: 'Image too large' });
+
     const isGenChem = mode === 'genchem';
     const isFreeDraw = mode === 'freedraw';
 

@@ -1,6 +1,6 @@
-import { cleanSmiles, smilesToFormula, smilesOptions, trimCanvas } from './smiles';
-import { safeTypeset } from './mathJax';
-import { renderSVG } from './svglib';
+import { cleanSmiles, smilesToFormula, smilesOptions, trimCanvas } from './smiles.js';
+import { safeTypeset } from './mathJax.js';
+import { renderSVG } from './svglib.js';
 
 // Parse text into segments of {type: 'text'|'smiles'|'svg', content: string}.
 // Handles SMILES atom brackets (e.g. [O-], [NH2]) inside [[SMILES: ...]] and [[SVG: ...]] tags

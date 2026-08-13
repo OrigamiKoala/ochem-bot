@@ -8,22 +8,24 @@
  * 3. Numbered env vars like api_1..api_N, GEMINI_API_KEY_1..N, GEN_CHEM_API_KEY_1..N
  */
 export function getGeminiApiKeys() {
-    const keys = [];
+    const keysSet = new Set();
 
     // 1. Comma-separated list
     if (process.env.GEMINI_API_KEYS) {
         const list = process.env.GEMINI_API_KEYS.split(',').map(k => k.trim()).filter(Boolean);
-        keys.push(...list);
+        for (const k of list) {
+            keysSet.add(k);
+        }
     }
 
     // 2. Standard single key env vars
     if (process.env.GEMINI_API_KEY) {
         const key = process.env.GEMINI_API_KEY.trim();
-        if (key && !keys.includes(key)) keys.push(key);
+        if (key) keysSet.add(key);
     }
     if (process.env.GEN_CHEM_API_KEY) {
         const key = process.env.GEN_CHEM_API_KEY.trim();
-        if (key && !keys.includes(key)) keys.push(key);
+        if (key) keysSet.add(key);
     }
 
     // 3. Numbered API keys (e.g. api_1, api_2, GEMINI_API_KEY_1, GEN_CHEM_API_KEY_1, etc.)
@@ -56,10 +58,10 @@ export function getGeminiApiKeys() {
     const sortedIndices = Array.from(numberedKeysMap.keys()).sort((a, b) => a - b);
     for (const idx of sortedIndices) {
         const k = numberedKeysMap.get(idx);
-        if (k && !keys.includes(k)) {
-            keys.push(k);
+        if (k) {
+            keysSet.add(k);
         }
     }
 
-    return keys;
+    return Array.from(keysSet);
 }

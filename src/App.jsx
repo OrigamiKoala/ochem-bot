@@ -5,7 +5,6 @@ import WhiteboardPanel from './components/WhiteboardPanel';
 import MessageContainer from './components/MessageContainer';
 import SettingsModal, { baseTopics, genchemBaseTopics } from './components/SettingsModal';
 import AboutModal from './components/AboutModal';
-import { renderRichText } from './utils/richText';
 import { apiGenerate, apiGrade, apiChat, apiReevaluate } from './utils/api';
 import {
   migrateModeFlags,
@@ -74,10 +73,6 @@ export default function App() {
   );
 
   // Topics
-  const getActiveBaseTopics = useCallback(() => {
-    return isGenChemMode ? genchemBaseTopics : baseTopics;
-  }, [isGenChemMode]);
-
   const [userCustomTopics, setUserCustomTopics] = useState(
     () => JSON.parse(localStorage.getItem(getCustomTopicsKey(isGenChemMode))) || []
   );
@@ -135,11 +130,6 @@ export default function App() {
 
   useEffect(() => { reactionQueueRef.current = reactionQueue; }, [reactionQueue]);
   useEffect(() => { currentReactionRef.current = currentReaction; }, [currentReaction]);
-
-  // ---- Save helpers ----
-  const saveQueue = useCallback((reaction, queue) => {
-    saveQueueToCacheUtil(reaction, queue, isFreeDraw, isGenChemMode);
-  }, [isFreeDraw, isGenChemMode]);
 
   // ---- Starter Questions ----
   const getStarterQuestion = useCallback(async (targetTopic, targetDifficulty) => {
@@ -274,7 +264,6 @@ export default function App() {
             const escaped = escapeLiteralNewlines(finalText.trim());
             const repaired = jsonrepair(escaped);
             data = JSON.parse(repaired);
-            console.log("jsonrepair succeeded, recovered reactions:", (data.reactions || data).length);
           }
 
           // Convert placeholder tokens to LaTeX
