@@ -15,7 +15,7 @@ export function safeTypeset(element) {
 
 // Wait for MathJax to finish loading, then flush the queue
 function initMathJaxReadyHook() {
-  if (window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
+  if (typeof window !== 'undefined' && window.MathJax && window.MathJax.startup && window.MathJax.startup.promise) {
     window.MathJax.startup.promise.then(() => {
       _mathJaxReady = true;
       while (_mathJaxQueue.length > 0) {
@@ -25,10 +25,12 @@ function initMathJaxReadyHook() {
         }
       }
     });
-  } else {
+  } else if (typeof window !== 'undefined') {
     setTimeout(initMathJaxReadyHook, 200);
   }
 }
 
 // Initialize immediately on module load
-initMathJaxReadyHook();
+if (typeof window !== 'undefined') {
+  initMathJaxReadyHook();
+}
